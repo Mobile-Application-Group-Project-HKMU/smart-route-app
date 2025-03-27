@@ -11,15 +11,23 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "We need your location to find nearby bus stops and provide navigation services."
-      }
+        "NSLocationWhenInUseUsageDescription": "We need your location to find nearby bus stops and provide navigation services.",
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "bundleIdentifier": "com.lihikopei.smartkmbapp"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION"]
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ],
+      "package": "com.lihikopei.smartkmbapp"
     },
     "web": {
       "bundler": "metro",
@@ -41,6 +49,14 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "55ed9a6e-a2d8-4127-a47f-47271d8e0a92"
+      }
     }
   }
 }

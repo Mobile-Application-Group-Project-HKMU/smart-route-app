@@ -220,11 +220,10 @@ export default function NearbyScreen() {
               </ThemedText>
             ) : (
               <View style={styles.listContainer}>
-                <FlatList
-                  data={nearbyStops}
-                  keyExtractor={(item) => item.stop}
-                  renderItem={({ item }) => (
+                <View style={styles.list}>
+                  {nearbyStops.map((item) => (
                     <TouchableOpacity
+                      key={item.stop}
                       style={styles.stopItem}
                       onPress={() => handleStopPress(item)}
                     >
@@ -242,10 +241,8 @@ export default function NearbyScreen() {
                         <IconSymbol name="map.fill" size={20} color="#0a7ea4" />
                       </TouchableOpacity>
                     </TouchableOpacity>
-                  )}
-                  style={styles.list}
-                  contentContainerStyle={styles.listContent}
-                />
+                  ))}
+                </View>
               </View>
             )}
           </ThemedView>

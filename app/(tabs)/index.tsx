@@ -66,6 +66,10 @@ export default function HomeScreen() {
     router.push(`/stop/${stop.stop}`);
   };
 
+  const navigateToAbout = () => {
+    router.push('/about?fromIndex=true');
+  };
+
   return (
     <ParallaxScrollView
       headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
@@ -148,6 +152,17 @@ export default function HomeScreen() {
             )}
           </>
         )}
+      </ThemedView>
+      
+      {/* Add About section */}
+      <ThemedView style={styles.aboutSection}>
+        <TouchableOpacity 
+          style={styles.aboutButton} 
+          onPress={navigateToAbout}
+        >
+          <IconSymbol name="info.circle.fill" size={20} color="#8B4513" />
+          <ThemedText style={styles.aboutButtonText}>About This App</ThemedText>
+        </TouchableOpacity>
       </ThemedView>
     </ParallaxScrollView>
   );
@@ -235,6 +250,25 @@ const styles = StyleSheet.create({
   },
   quickNavText: {
     marginTop: 8,
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#8B4513',
+  },
+  aboutSection: {
+    alignItems: 'center',
+    marginBottom: 30,
+  },
+  aboutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFD580',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 24,
+    justifyContent: 'center',
+  },
+  aboutButtonText: {
+    marginLeft: 8,
     fontSize: 16,
     fontWeight: '500',
     color: '#8B4513',
