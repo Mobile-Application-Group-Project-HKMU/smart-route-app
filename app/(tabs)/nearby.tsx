@@ -110,151 +110,164 @@ export default function NearbyScreen() {
   };
 
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A7C7E7', dark: '#0A3161' }}
-      headerImage={
-        <IconSymbol
-          size={310}
-          color="#0A3161"
-          name="location.fill"
-          style={styles.headerImage}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Nearby Stops</ThemedText>
-      </ThemedView>
+    <ThemedView style={styles.container}>
 
-      <ThemedView style={styles.radiusSelector}>
-        <TouchableOpacity
-          style={[styles.radiusButton, radius === 250 ? styles.activeRadiusButton : null]}
-          onPress={() => changeRadius(250)}
-        >
-          <ThemedText style={radius === 250 ? styles.activeRadiusText : null}>250m</ThemedText>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.radiusButton, radius === 500 ? styles.activeRadiusButton : null]}
-          onPress={() => changeRadius(500)}
-        >
-          <ThemedText style={radius === 500 ? styles.activeRadiusText : null}>500m</ThemedText>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.radiusButton, radius === 1000 ? styles.activeRadiusButton : null]}
-          onPress={() => changeRadius(1000)}
-        >
-          <ThemedText style={radius === 1000 ? styles.activeRadiusText : null}>1km</ThemedText>
-        </TouchableOpacity>
-      </ThemedView>
 
-      {!location && !error && !loading ? (
-        <ThemedView style={styles.initialState}>
-          <IconSymbol name="location.fill" size={48} color="#0a7ea4" />
-          <ThemedText style={styles.initialText}>
-            Tap the location button to find bus stops near you
-          </ThemedText>
-          <TouchableOpacity
-            style={styles.startButton}
-            onPress={requestLocationPermission}
+      <ParallaxScrollView
+        headerBackgroundColor={{ light: '#A7C7E7', dark: '#0A3161' }}
+        headerImage={
+          <IconSymbol
+            size={310}
+            color="#0A3161"
+            name="location.fill"
+            style={styles.headerImage}
+          />
+        }
+      >
+        <ThemedView style={styles.titleContainer}>
+          <ThemedText type="title">Nearby Stops</ThemedText>
+        </ThemedView>
+        {location && (
+        <View style={styles.fixedMapContainer}>
+          <MapView
+            ref={mapRef}
+            style={styles.map}
+            // Only use PROVIDER_GOOGLE on Android
+            provider={Platform.OS === "android" ? PROVIDER_GOOGLE : undefined}
+            initialRegion={{
+              latitude: location.coords.latitude,
+              longitude: location.coords.longitude,
+              latitudeDelta: LATITUDE_DELTA,
+              longitudeDelta: LONGITUDE_DELTA,
+            }}
           >
-            <ThemedText style={styles.startButtonText}>Find Nearby Stops</ThemedText>
-          </TouchableOpacity>
-        </ThemedView>
-      ) : loading ? (
-        <ActivityIndicator size="large" style={styles.loader} />
-      ) : error ? (
-        <ThemedView style={styles.errorContainer}>
-          <ThemedText style={styles.errorText}>{error}</ThemedText>
-          <TouchableOpacity style={styles.retryButton} onPress={refreshLocation}>
-            <ThemedText style={styles.retryButtonText}>Retry</ThemedText>
-          </TouchableOpacity>
-        </ThemedView>
-      ) : (
-        <ThemedView style={styles.content}>
-          {location && (
-            <View style={styles.mapContainer}>
-              <MapView
-                ref={mapRef}
-                style={styles.map}
-                // Only use PROVIDER_GOOGLE on Android
-                provider={Platform.OS === "android" ? PROVIDER_GOOGLE : undefined}
-                initialRegion={{
-                  latitude: location.coords.latitude,
-                  longitude: location.coords.longitude,
-                  latitudeDelta: LATITUDE_DELTA,
-                  longitudeDelta: LONGITUDE_DELTA,
-                }}
-              >
-                {/* User location marker */}
-                <Marker
-                  coordinate={{
-                    latitude: location.coords.latitude,
-                    longitude: location.coords.longitude,
-                  }}
-                  pinColor="blue"
-                  title="Your Location"
-                />
+            {/* User location marker */}
+            <Marker
+              coordinate={{
+                latitude: location.coords.latitude,
+                longitude: location.coords.longitude,
+              }}
+              pinColor="blue"
+              title="Your Location"
+            />
 
-                {/* Bus stop markers */}
-                {nearbyStops.map((stop) => (
-                  <Marker
-                    key={stop.stop}
-                    coordinate={{ latitude: stop.lat, longitude: stop.long }}
-                    title={stop.name_en}
-                    description={`${Math.round(stop.distance)}m away`}
-                    onCalloutPress={() => handleStopPress(stop)}
-                  />
-                ))}
-              </MapView>
-            </View>
-          )}
-
-          <ThemedText type="subtitle" style={styles.listTitle}>
-            Nearby Stops ({nearbyStops.length})
-          </ThemedText>
-
-          {nearbyStops.length === 0 ? (
-            <ThemedText style={styles.noStopsText}>
-              No bus stops found within {radius}m of your location
-            </ThemedText>
-          ) : (
-            <View style={styles.listContainer}>
-              <FlatList
-                data={nearbyStops}
-                keyExtractor={(item) => item.stop}
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    style={styles.stopItem}
-                    onPress={() => handleStopPress(item)}
-                  >
-                    <IconSymbol name="location.fill" size={24} color="#0A3161" style={styles.stopIcon} />
-                    <ThemedView style={styles.stopInfo}>
-                      <ThemedText style={styles.stopName}>{item.name_en}</ThemedText>
-                      <ThemedText style={styles.stopDistance}>
-                        {Math.round(item.distance)}m away
-                      </ThemedText>
-                    </ThemedView>
-                    <TouchableOpacity
-                      style={styles.mapButton}
-                      onPress={() => goToStop(item)}
-                    >
-                      <IconSymbol name="map.fill" size={20} color="#0a7ea4" />
-                    </TouchableOpacity>
-                  </TouchableOpacity>
-                )}
-                style={styles.list}
-                contentContainerStyle={styles.listContent}
+            {/* Bus stop markers */}
+            {nearbyStops.map((stop) => (
+              <Marker
+                key={stop.stop}
+                coordinate={{ latitude: stop.lat, longitude: stop.long }}
+                title={stop.name_en}
+                description={`${Math.round(stop.distance)}m away`}
+                onCalloutPress={() => handleStopPress(stop)}
               />
-            </View>
-          )}
-        </ThemedView>
+            ))}
+          </MapView>
+        </View>
       )}
-    </ParallaxScrollView>
+
+        <ThemedView style={styles.radiusSelector}>
+          <TouchableOpacity
+            style={[styles.radiusButton, radius === 250 ? styles.activeRadiusButton : null]}
+            onPress={() => changeRadius(250)}
+          >
+            <ThemedText style={radius === 250 ? styles.activeRadiusText : null}>250m</ThemedText>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.radiusButton, radius === 500 ? styles.activeRadiusButton : null]}
+            onPress={() => changeRadius(500)}
+          >
+            <ThemedText style={radius === 500 ? styles.activeRadiusText : null}>500m</ThemedText>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.radiusButton, radius === 1000 ? styles.activeRadiusButton : null]}
+            onPress={() => changeRadius(1000)}
+          >
+            <ThemedText style={radius === 1000 ? styles.activeRadiusText : null}>1km</ThemedText>
+          </TouchableOpacity>
+        </ThemedView>
+
+        {!location && !error && !loading ? (
+          <ThemedView style={styles.initialState}>
+            <IconSymbol name="location.fill" size={48} color="#0a7ea4" />
+            <ThemedText style={styles.initialText}>
+              Tap the location button to find bus stops near you
+            </ThemedText>
+            <TouchableOpacity
+              style={styles.startButton}
+              onPress={requestLocationPermission}
+            >
+              <ThemedText style={styles.startButtonText}>Find Nearby Stops</ThemedText>
+            </TouchableOpacity>
+          </ThemedView>
+        ) : loading ? (
+          <ActivityIndicator size="large" style={styles.loader} />
+        ) : error ? (
+          <ThemedView style={styles.errorContainer}>
+            <ThemedText style={styles.errorText}>{error}</ThemedText>
+            <TouchableOpacity style={styles.retryButton} onPress={refreshLocation}>
+              <ThemedText style={styles.retryButtonText}>Retry</ThemedText>
+            </TouchableOpacity>
+          </ThemedView>
+        ) : (
+          <ThemedView style={styles.content}>
+            <ThemedText type="subtitle" style={styles.listTitle}>
+              Nearby Stops ({nearbyStops.length})
+            </ThemedText>
+
+            {nearbyStops.length === 0 ? (
+              <ThemedText style={styles.noStopsText}>
+                No bus stops found within {radius}m of your location
+              </ThemedText>
+            ) : (
+              <View style={styles.listContainer}>
+                <FlatList
+                  data={nearbyStops}
+                  keyExtractor={(item) => item.stop}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity
+                      style={styles.stopItem}
+                      onPress={() => handleStopPress(item)}
+                    >
+                      <IconSymbol name="location.fill" size={24} color="#0A3161" style={styles.stopIcon} />
+                      <ThemedView style={styles.stopInfo}>
+                        <ThemedText style={styles.stopName}>{item.name_en}</ThemedText>
+                        <ThemedText style={styles.stopDistance}>
+                          {Math.round(item.distance)}m away
+                        </ThemedText>
+                      </ThemedView>
+                      <TouchableOpacity
+                        style={styles.mapButton}
+                        onPress={() => goToStop(item)}
+                      >
+                        <IconSymbol name="map.fill" size={20} color="#0a7ea4" />
+                      </TouchableOpacity>
+                    </TouchableOpacity>
+                  )}
+                  style={styles.list}
+                  contentContainerStyle={styles.listContent}
+                />
+              </View>
+            )}
+          </ThemedView>
+        )}
+      </ParallaxScrollView>
+    </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
+  },
+  fixedMapContainer: {
+    height: 200,
+    width: '100%',
+    // position: 'absolute',
+    top: 0,
+    zIndex: 10,
+  },
+  contentWithMap: {
+    paddingTop: 200, // Match height of map
   },
   headerImage: {
     color: '#0A3161',
@@ -315,11 +328,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   mapContainer: {
-    height: 200,
-    marginBottom: 16,
-    borderRadius: 12,
-    overflow: 'hidden',
-    position: 'relative',
+    display: 'none', // Hide the original map container
   },
   map: {
     ...StyleSheet.absoluteFillObject,
@@ -366,7 +375,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   listContent: {
-    paddingBottom: 100,
+    paddingBottom: 120, // Add extra padding to prevent content being hidden
   },
   stopItem: {
     flexDirection: 'row',

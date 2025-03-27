@@ -430,7 +430,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   stopsListContent: {
-    paddingBottom: 20,
+    paddingBottom: 120, // Increased padding to prevent content being hidden by bottom nav
   },
   stopItem: {
     flexDirection: "row",

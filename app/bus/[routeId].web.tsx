@@ -275,4 +275,7 @@ const styles = StyleSheet.create({
   favoriteButton: {
     marginRight: 12,
   },
+  etasListContent: {
+    paddingBottom: 120, // Increased padding to prevent content being hidden
+  },
 });

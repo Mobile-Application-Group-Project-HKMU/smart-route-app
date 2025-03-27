@@ -172,6 +172,10 @@ export default function StopETAScreen() {
     });
   };
 
+  const navigateToRoute = (routeId: string, bound: string, serviceType: string) => {
+    router.push(`/bus/${routeId}?bound=${bound}&serviceType=${serviceType}`);
+  };
+
   return (
     <ThemedView style={styles.container}>
       <Stack.Screen
@@ -277,7 +281,14 @@ export default function StopETAScreen() {
               }
               renderItem={({ item }) => (
                 <ThemedView style={styles.etaCard}>
-                  <ThemedView style={styles.routeHeader}>
+                  <TouchableOpacity 
+                    onPress={() => navigateToRoute(
+                      item.route, 
+                      item.direction === 'Inbound' ? 'I' : 'O', 
+                      item.serviceType
+                    )}
+                    style={styles.routeHeader}
+                  >
                     <ThemedView style={styles.routeNumberContainer}>
                       <ThemedText style={styles.routeNumber}>
                         {item.route}
@@ -290,8 +301,12 @@ export default function StopETAScreen() {
                       <ThemedText style={styles.directionText}>
                         {item.direction} • Service Type: {item.serviceType}
                       </ThemedText>
+                      <ThemedView style={styles.viewRouteButton}>
+                        <IconSymbol name="arrow.right.circle" size={14} color="#0a7ea4" />
+                        <ThemedText style={styles.viewRouteText}>View Route</ThemedText>
+                      </ThemedView>
                     </ThemedView>
-                  </ThemedView>
+                  </TouchableOpacity>
 
                   <ThemedView style={styles.etaList}>
                     {item.etas.map((eta, index) => (
@@ -391,7 +406,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   etasListContent: {
-    paddingBottom: 20,
+    paddingBottom: 120, // Increased padding to prevent content being hidden
     gap: 16,
   },
   etaCard: {
@@ -464,5 +479,15 @@ const styles = StyleSheet.create({
   },
   favoriteButton: {
     marginRight: 8,
+  },
+  viewRouteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  viewRouteText: {
+    fontSize: 12,
+    color: '#0a7ea4',
+    marginLeft: 4,
   },
 });
