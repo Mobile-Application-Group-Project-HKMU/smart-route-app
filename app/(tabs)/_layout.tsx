@@ -11,6 +11,14 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 export default function TabLayout() {
   const colorScheme = useColorScheme();
 
+  // NOTE: To make the app work on web platforms, web-specific versions of files
+  // have been created for pages that use react-native-maps:
+  // - app/bus/[routeId].web.tsx
+  // - app/stop/[stopId].web.tsx
+  //
+  // The "nearby" tab has been temporarily removed as it requires location services
+  // and maps which are not fully web-compatible.
+
   return (
     <Tabs
       screenOptions={{
@@ -34,12 +42,21 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="explore"
+        name="bus"
         options={{
-          title: 'Explore',
+          title: 'Bus Routes',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
         }}
       />
+        <Tabs.Screen
+        name="nearby"
+        options={{
+          title: 'Nearby',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="map.fill" color={color} />,
+        }}
+      />
+
+
     </Tabs>
   );
 }
