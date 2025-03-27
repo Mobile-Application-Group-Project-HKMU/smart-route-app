@@ -149,22 +149,6 @@ export default function HomeScreen() {
           </>
         )}
       </ThemedView>
-
-      <ThemedView style={styles.section}>
-        <ThemedText type="subtitle">Quick Navigation</ThemedText>
-        
-        <ThemedView style={styles.quickNav}>
-          <TouchableOpacity 
-            style={styles.quickNavButton}
-            onPress={() => router.push('/bus')}
-          >
-            <IconSymbol name="paperplane.fill" size={32} color="#8B4513" />
-            <ThemedText style={styles.quickNavText}>Bus Routes</ThemedText>
-          </TouchableOpacity>
-          
-
-        </ThemedView>
-      </ThemedView>
     </ParallaxScrollView>
   );
 }
