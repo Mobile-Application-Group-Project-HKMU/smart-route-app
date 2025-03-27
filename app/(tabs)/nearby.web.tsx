@@ -6,94 +6,99 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { findNearbyStops, type Stop } from '@/util/kmb';
+import ParallaxScrollView from '@/components/ParallaxScrollView';
 
 export default function NearbyScreenWeb() {
-  const [nearbyStops, setNearbyStops] = useState<Array<Stop & { distance: number }>>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [radius, setRadius] = useState(500); // Default radius in meters
   const [userCoordinates, setUserCoordinates] = useState<{latitude: number, longitude: number} | null>(null);
+  const [nearbyStops, setNearbyStops] = useState<Stop[]>([]);
+  const [radius, setRadius] = useState(500); // Default 500m radius
+
+  const findStopsNearLocation = async (latitude: number, longitude: number, searchRadius: number) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const stops = await findNearbyStops(latitude, longitude, searchRadius);
+      setNearbyStops(stops);
+    } catch (err) {
+      setError("Failed to find nearby stops. Please try again.");
+      console.error("Error fetching nearby stops:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const requestLocationPermission = async () => {
     try {
       setLoading(true);
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          async (position) => {
-            const userCoords = {
-              latitude: position.coords.latitude,
-              longitude: position.coords.longitude
-            };
-            setUserCoordinates(userCoords);
-            await fetchNearbyStops(userCoords.latitude, userCoords.longitude);
-          },
-          (error) => {
-            console.error('Error getting location:', error);
-            setError('Failed to get your location. Please ensure location services are enabled in your browser.');
-            setLoading(false);
-          },
-          { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
-        );
-      } else {
-        setError('Geolocation is not supported by this browser.');
+      setError(null);
+      
+      if (!navigator.geolocation) {
+        setError("Geolocation is not supported by your browser");
         setLoading(false);
+        return;
       }
+      
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          setUserCoordinates({ latitude, longitude });
+          findStopsNearLocation(latitude, longitude, radius);
+        },
+        (err) => {
+          setError("Unable to retrieve your location. Please allow location access.");
+          console.error("Geolocation error:", err);
+          setLoading(false);
+        }
+      );
     } catch (err) {
-      console.error('Error in location permission:', err);
-      setError('An unexpected error occurred while accessing location services.');
+      setError("Failed to get your location. Please try again.");
+      console.error("Error getting location:", err);
       setLoading(false);
     }
   };
 
-  const fetchNearbyStops = async (latitude: number, longitude: number) => {
-    try {
-      const stops = await findNearbyStops(latitude, longitude, radius);
-      setNearbyStops(stops);
-      setLoading(false);
-    } catch (err) {
-      console.error('Error finding nearby stops:', err);
-      setError('Failed to find nearby stops');
-      setLoading(false);
-    }
+  const refreshLocation = async () => {
+    await requestLocationPermission();
   };
 
-  const refreshLocation = () => {
-    setLoading(true);
-    requestLocationPermission();
+  const changeRadius = (newRadius: number) => {
+    setRadius(newRadius);
+    if (userCoordinates) {
+      findStopsNearLocation(
+        userCoordinates.latitude,
+        userCoordinates.longitude,
+        newRadius
+      );
+    }
   };
 
   const handleStopPress = (stop: Stop) => {
     router.push(`/stop/${stop.stop}`);
   };
 
-  const changeRadius = (newRadius: number) => {
-    setRadius(newRadius);
-    if (userCoordinates) {
-      setLoading(true);
-      fetchNearbyStops(userCoordinates.latitude, userCoordinates.longitude);
-    }
-  };
-
   return (
-    <ThemedView style={styles.container}>
-      <ThemedView style={styles.header}>
+    <ParallaxScrollView
+      headerBackgroundColor={{ light: '#A7C7E7', dark: '#0A3161' }}
+      headerImage={
+        <IconSymbol
+          size={310}
+          color="#0A3161"
+          name="location.fill"
+          style={styles.headerImage}
+        />
+      }>
+      <ThemedView style={styles.titleContainer}>
         <ThemedText type="title">Nearby Stops</ThemedText>
-        <TouchableOpacity 
-          style={styles.refreshButton}
-          onPress={refreshLocation}
-          disabled={loading}
-        >
-          <IconSymbol name="location.circle.fill" size={28} color="#0a7ea4" />
-        </TouchableOpacity>
       </ThemedView>
 
       <ThemedView style={styles.radiusSelector}>
-        <ThemedText>Distance: </ThemedText>
         <TouchableOpacity 
-          style={[styles.radiusButton, radius === 300 ? styles.activeRadiusButton : null]} 
-          onPress={() => changeRadius(300)}
+          style={[styles.radiusButton, radius === 250 ? styles.activeRadiusButton : null]} 
+          onPress={() => changeRadius(250)}
         >
-          <ThemedText style={radius === 300 ? styles.activeRadiusText : null}>300m</ThemedText>
+          <ThemedText style={radius === 250 ? styles.activeRadiusText : null}>250m</ThemedText>
         </TouchableOpacity>
         <TouchableOpacity 
           style={[styles.radiusButton, radius === 500 ? styles.activeRadiusButton : null]} 
@@ -158,16 +163,16 @@ export default function NearbyScreenWeb() {
             </ThemedView>
           )}
 
-          <ThemedView style={styles.listContainer}>
-            <ThemedText type="subtitle" style={styles.listTitle}>
-              Nearby Stops ({nearbyStops.length})
-            </ThemedText>
+          <ThemedText type="subtitle" style={styles.listTitle}>
+            Nearby Stops ({nearbyStops.length})
+          </ThemedText>
 
-            {nearbyStops.length === 0 ? (
-              <ThemedText style={styles.noStopsText}>
-                No bus stops found within {radius}m of your location
-              </ThemedText>
-            ) : (
+          {nearbyStops.length === 0 ? (
+            <ThemedText style={styles.noStopsText}>
+              No bus stops found within {radius}m of your location
+            </ThemedText>
+          ) : (
+            <View style={styles.listContainer}>
               <FlatList
                 data={nearbyStops}
                 keyExtractor={(item) => item.stop}
@@ -176,7 +181,7 @@ export default function NearbyScreenWeb() {
                     style={styles.stopItem}
                     onPress={() => handleStopPress(item)}
                   >
-                    <IconSymbol name="location.fill" size={24} color="#8B4513" style={styles.stopIcon} />
+                    <IconSymbol name="location.fill" size={24} color="#0A3161" style={styles.stopIcon} />
                     <ThemedView style={styles.stopInfo}>
                       <ThemedText style={styles.stopName}>{item.name_en}</ThemedText>
                       <ThemedText style={styles.stopDistance}>
@@ -186,13 +191,14 @@ export default function NearbyScreenWeb() {
                     <IconSymbol name="chevron.right" size={20} color="#808080" />
                   </TouchableOpacity>
                 )}
-                style={styles.stopsList}
+                style={styles.list}
+                contentContainerStyle={styles.listContent}
               />
-            )}
-          </ThemedView>
+            </View>
+          )}
         </ThemedView>
       )}
-    </ThemedView>
+    </ParallaxScrollView>
   );
 }
 
@@ -200,6 +206,18 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
+  },
+  headerImage: {
+    color: '#0A3161',
+    bottom: -90,
+    left: -35,
+    position: 'absolute',
+    opacity: 0.7,
+  },
+  titleContainer: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 16,
   },
   header: {
     flexDirection: 'row',
@@ -210,135 +228,145 @@ const styles = StyleSheet.create({
   refreshButton: {
     padding: 8,
   },
+  radiusSelector: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginVertical: 12,
+  },
+  radiusButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginHorizontal: 8,
+    backgroundColor: '#f0f0f0',
+  },
+  activeRadiusButton: {
+    backgroundColor: '#0A3161',
+  },
+  activeRadiusText: {
+    color: 'white',
+  },
   initialState: {
-    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
+    marginTop: 20,
+    backgroundColor: "#f5f5f5",
+    borderRadius: 12,
   },
   initialText: {
-    fontSize: 18,
+    fontSize: 16,
     textAlign: 'center',
-    marginTop: 16,
-    marginBottom: 24,
+    marginVertical: 16,
   },
   startButton: {
-    backgroundColor: '#0a7ea4',
-    paddingHorizontal: 20,
+    backgroundColor: '#0A3161',
     paddingVertical: 12,
-    borderRadius: 8,
+    paddingHorizontal: 24,
+    borderRadius: 24,
+    marginTop: 16,
   },
   startButtonText: {
     color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
   },
-  radiusSelector: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  radiusButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    marginHorizontal: 4,
-    backgroundColor: '#f0f0f0',
-  },
-  activeRadiusButton: {
-    backgroundColor: '#0a7ea4',
-  },
-  activeRadiusText: {
-    color: 'white',
-  },
   loader: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    marginTop: 20,
   },
   errorContainer: {
-    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
+    backgroundColor: "#ffefef",
+    borderRadius: 12,
+    marginTop: 20,
   },
   errorText: {
-    fontSize: 16,
     textAlign: 'center',
     marginBottom: 16,
-    maxWidth: 400,
+    color: '#c00',
   },
   retryButton: {
-    backgroundColor: '#0a7ea4',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
+    backgroundColor: '#0A3161',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 20,
   },
   retryButtonText: {
     color: 'white',
     fontWeight: 'bold',
   },
   content: {
-    flex: 1,
+    marginTop: 16,
   },
   webMapPlaceholder: {
     height: 200,
-    marginBottom: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#f5f5f5',
     borderRadius: 12,
+    marginBottom: 16,
+    padding: 16,
   },
   webMapText: {
-    marginTop: 12,
+    textAlign: 'center',
+    marginTop: 8,
     fontSize: 16,
-    opacity: 0.7,
   },
   locationText: {
     marginTop: 8,
     fontSize: 14,
-    opacity: 0.5,
+    opacity: 0.7,
   },
   openMapButton: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#0a7ea4',
-    paddingHorizontal: 16,
     paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
     marginTop: 12,
-    borderRadius: 8,
   },
   openMapIcon: {
     marginRight: 8,
   },
   openMapText: {
-    fontSize: 16,
     color: 'white',
     fontWeight: '500',
-  },
-  listContainer: {
-    flex: 1,
   },
   listTitle: {
     marginBottom: 12,
   },
+  listContainer: {
+    flex: 1,
+  },
   noStopsText: {
     textAlign: 'center',
-    marginTop: 20,
-    opacity: 0.7,
+    marginVertical: 20,
+    fontSize: 16,
   },
-  stopsList: {
+  list: {
     flex: 1,
+  },
+  listContent: {
+    paddingBottom: 100,
   },
   stopItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    padding: 12,
+    borderRadius: 10,
+    backgroundColor: '#f5f5f5',
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 1.5,
+    elevation: 2,
   },
   stopIcon: {
-    marginRight: 16,
+    marginRight: 12,
   },
   stopInfo: {
     flex: 1,
