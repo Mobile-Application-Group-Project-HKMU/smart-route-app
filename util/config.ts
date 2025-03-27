@@ -4,7 +4,11 @@ import { Platform } from 'react-native';
 export const mapConfig = {
   // Only use Google Maps provider on Android
   // Use the default Apple Maps on iOS to avoid the AirGoogleMaps error
+  // For web, we'll use mock components
   useGoogleMapsProvider: Platform.OS === 'android',
+  
+  // Disable actual map rendering on web to prevent errors
+  shouldRenderMap: Platform.OS !== 'web',
 };
 
 // Other global configuration options
