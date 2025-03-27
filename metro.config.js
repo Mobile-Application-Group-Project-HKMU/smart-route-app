@@ -20,10 +20,11 @@ defaultConfig.resolver.sourceExts = process.env.RCT_METRO_PLATFORMS
     ).concat(defaultConfig.resolver.sourceExts)
   : defaultConfig.resolver.sourceExts;
 
-// Add module map for web platform
+// Enhanced module map for web platform
 defaultConfig.resolver.extraNodeModules = {
   ...defaultConfig.resolver.extraNodeModules,
   'react-native-maps': require.resolve('./components/mocks/react-native-maps.web.js'),
+  'react-native/Libraries/Utilities/codegenNativeCommands': require.resolve('./components/mocks/emptyModule.js'),
 };
 
 module.exports = defaultConfig;
