@@ -162,13 +162,7 @@ export default function HomeScreen() {
             <ThemedText style={styles.quickNavText}>Bus Routes</ThemedText>
           </TouchableOpacity>
           
-          <TouchableOpacity 
-            style={styles.quickNavButton}
-            onPress={() => router.push('/explore')}
-          >
-            <IconSymbol name="chevron.left.forwardslash.chevron.right" size={32} color="#8B4513" />
-            <ThemedText style={styles.quickNavText}>Explore</ThemedText>
-          </TouchableOpacity>
+
         </ThemedView>
       </ThemedView>
     </ParallaxScrollView>
