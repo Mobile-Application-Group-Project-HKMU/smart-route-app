@@ -16,6 +16,27 @@ export const FavStationExampleData: FavRouteStation = {
   stationID: ["4", "5", "6"],
 };
 
+// Initialize storage with empty arrays
+const initializeStorage = async () => {
+  try {
+    const kmbFavorites = await AsyncStorage.getItem('kmbFavorites');
+    const stationFavorites = await AsyncStorage.getItem('stationFavorites');
+    
+    if (kmbFavorites === null) {
+      await AsyncStorage.setItem('kmbFavorites', JSON.stringify({ kmbID: [] }));
+    }
+    
+    if (stationFavorites === null) {
+      await AsyncStorage.setItem('stationFavorites', JSON.stringify({ stationID: [] }));
+    }
+  } catch (error) {
+    console.error("Error initializing storage:", error);
+  }
+};
+
+// Call this when app starts
+initializeStorage();
+
 export async function saveToLocalStorage(key: string, data: FavRouteStation | FavRouteKMB): Promise<void> {
   try {
     const jsonData = JSON.stringify(data);
@@ -32,6 +53,12 @@ export async function getFromLocalStorage(key: string): Promise<FavRouteStation 
     if (jsonData) {
       return JSON.parse(jsonData) as FavRouteStation | FavRouteKMB;
     } else {
+      // Return empty default structures instead of null
+      if (key === 'kmbFavorites') {
+        return { kmbID: [] };
+      } else if (key === 'stationFavorites') {
+        return { stationID: [] };
+      }
       console.warn(`No data found in storage for key: ${key}`);
       return null;
     }
