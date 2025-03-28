@@ -51,6 +51,11 @@ const commonTranslations: Record<string, Record<Language, string>> = {
     'zh-Hant': '此項目已從您的收藏中移除。',
     'zh-Hans': '此项目已从您的收藏中移除。'
   },
+  'navigate': {
+    'en': 'Navigate',
+    'zh-Hant': '導航',
+    'zh-Hans': '导航'
+  },
 };
 
 export default commonTranslations;
