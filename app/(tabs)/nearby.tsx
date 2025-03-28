@@ -130,7 +130,12 @@ export default function NearbyScreen() {
           <ThemedText type="title">{t("nearby.title")}</ThemedText>
         </ThemedView>
         {location && (
-          <View style={styles.fixedMapContainer}>
+          <View
+            style={[
+              styles.fixedMapContainer,
+              { marginTop: 16, marginBottom: 16 },
+            ]}
+          >
             <MapView
               ref={mapRef}
               style={styles.map}
@@ -300,10 +305,12 @@ const styles = StyleSheet.create({
   fixedMapContainer: {
     height: 200,
     width: "100%",
-
-    top: 0,
-    zIndex: 10,
+    borderRadius: 12,
+    overflow: "hidden",
+    position: "relative", // Change from fixed positioning
+    zIndex: 1, // Lower z-index
   },
+
   contentWithMap: {
     paddingTop: 200,
   },
