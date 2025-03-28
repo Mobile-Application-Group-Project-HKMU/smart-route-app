@@ -27,7 +27,9 @@ const LONGITUDE_DELTA = LATITUDE_DELTA * (width / height);
 export default function NearbyScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [location, setLocation] = useState<Location.LocationObject | null>(null);
+  const [location, setLocation] = useState<Location.LocationObject | null>(
+    null
+  );
   const [nearbyStops, setNearbyStops] = useState<Stop[]>([]);
   const [radius, setRadius] = useState(500); // Default 500m radius
   const mapRef = useRef<MapView | null>(null);
@@ -55,19 +57,19 @@ export default function NearbyScreen() {
     try {
       setLoading(true);
       setError(null);
-      
+
       const { status } = await Location.requestForegroundPermissionsAsync();
-      
+
       if (status !== "granted") {
         setError("Location permission is required to find nearby stops");
         setLoading(false);
         return;
       }
-      
+
       const currentLocation = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.Balanced,
       });
-      
+
       setLocation(currentLocation);
       fetchNearbyStops(
         currentLocation.coords.latitude,
@@ -113,10 +115,8 @@ export default function NearbyScreen() {
 
   return (
     <ThemedView style={styles.container}>
-
-
       <ParallaxScrollView
-        headerBackgroundColor={{ light: '#A7C7E7', dark: '#0A3161' }}
+        headerBackgroundColor={{ light: "#A7C7E7", dark: "#0A3161" }}
         headerImage={
           <IconSymbol
             size={310}
@@ -127,64 +127,81 @@ export default function NearbyScreen() {
         }
       >
         <ThemedView style={styles.titleContainer}>
-          <ThemedText type="title">{t('nearby.title')}</ThemedText>
+          <ThemedText type="title">{t("nearby.title")}</ThemedText>
         </ThemedView>
         {location && (
-        <View style={styles.fixedMapContainer}>
-          <MapView
-            ref={mapRef}
-            style={styles.map}
-            // Only use PROVIDER_GOOGLE on Android
-            provider={Platform.OS === "android" ? PROVIDER_GOOGLE : undefined}
-            initialRegion={{
-              latitude: location.coords.latitude,
-              longitude: location.coords.longitude,
-              latitudeDelta: LATITUDE_DELTA,
-              longitudeDelta: LONGITUDE_DELTA,
-            }}
-          >
-            {/* User location marker */}
-            <Marker
-              coordinate={{
+          <View style={styles.fixedMapContainer}>
+            <MapView
+              ref={mapRef}
+              style={styles.map}
+              // Only use PROVIDER_GOOGLE on Android
+              provider={Platform.OS === "android" ? PROVIDER_GOOGLE : undefined}
+              initialRegion={{
                 latitude: location.coords.latitude,
                 longitude: location.coords.longitude,
+                latitudeDelta: LATITUDE_DELTA,
+                longitudeDelta: LONGITUDE_DELTA,
               }}
-              pinColor="blue"
-              title="Your Location"
-            />
-
-            {/* Bus stop markers */}
-            {nearbyStops.map((stop) => (
+            >
+              {/* User location marker */}
               <Marker
-                key={stop.stop}
-                coordinate={{ latitude: stop.lat, longitude: stop.long }}
-                title={stop.name_en}
-                description={`${Math.round(stop.distance)}m away`}
-                onCalloutPress={() => handleStopPress(stop)}
+                coordinate={{
+                  latitude: location.coords.latitude,
+                  longitude: location.coords.longitude,
+                }}
+                pinColor="blue"
+                title="Your Location"
               />
-            ))}
-          </MapView>
-        </View>
-      )}
+
+              {/* Bus stop markers */}
+              {nearbyStops.map((stop) => (
+                <Marker
+                  key={stop.stop}
+                  coordinate={{ latitude: stop.lat, longitude: stop.long }}
+                  title={stop.name_en}
+                  description={`${Math.round(stop.distance)}m away`}
+                  onCalloutPress={() => handleStopPress(stop)}
+                />
+              ))}
+            </MapView>
+          </View>
+        )}
 
         <ThemedView style={styles.radiusSelector}>
           <TouchableOpacity
-            style={[styles.radiusButton, radius === 250 ? styles.activeRadiusButton : null]}
+            style={[
+              styles.radiusButton,
+              radius === 250 ? styles.activeRadiusButton : null,
+            ]}
             onPress={() => changeRadius(250)}
           >
-            <ThemedText style={radius === 250 ? styles.activeRadiusText : null}>250m</ThemedText>
+            <ThemedText style={radius === 250 ? styles.activeRadiusText : null}>
+              250m
+            </ThemedText>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.radiusButton, radius === 500 ? styles.activeRadiusButton : null]}
+            style={[
+              styles.radiusButton,
+              radius === 500 ? styles.activeRadiusButton : null,
+            ]}
             onPress={() => changeRadius(500)}
           >
-            <ThemedText style={radius === 500 ? styles.activeRadiusText : null}>500m</ThemedText>
+            <ThemedText style={radius === 500 ? styles.activeRadiusText : null}>
+              500m
+            </ThemedText>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.radiusButton, radius === 1000 ? styles.activeRadiusButton : null]}
+            style={[
+              styles.radiusButton,
+              radius === 1000 ? styles.activeRadiusButton : null,
+            ]}
             onPress={() => changeRadius(1000)}
           >
-            <ThemedText style={radius === 1000 ? styles.activeRadiusText : null}>1km</ThemedText>
+            <ThemedText
+              style={radius === 1000 ? styles.activeRadiusText : null}
+            >
+              1km
+            </ThemedText>
           </TouchableOpacity>
         </ThemedView>
 
@@ -192,13 +209,15 @@ export default function NearbyScreen() {
           <ThemedView style={styles.initialState}>
             <IconSymbol name="location.fill" size={48} color="#0a7ea4" />
             <ThemedText style={styles.initialText}>
-              {t('nearby.tap.instruction')}
+              {t("nearby.tap.instruction")}
             </ThemedText>
             <TouchableOpacity
               style={styles.startButton}
               onPress={requestLocationPermission}
             >
-              <ThemedText style={styles.startButtonText}>{t('nearby.find.stops')}</ThemedText>
+              <ThemedText style={styles.startButtonText}>
+                {t("nearby.find.stops")}
+              </ThemedText>
             </TouchableOpacity>
           </ThemedView>
         ) : loading ? (
@@ -206,19 +225,25 @@ export default function NearbyScreen() {
         ) : error ? (
           <ThemedView style={styles.errorContainer}>
             <ThemedText style={styles.errorText}>{error}</ThemedText>
-            <TouchableOpacity style={styles.retryButton} onPress={refreshLocation}>
+            <TouchableOpacity
+              style={styles.retryButton}
+              onPress={refreshLocation}
+            >
               <ThemedText style={styles.retryButtonText}>Retry</ThemedText>
             </TouchableOpacity>
           </ThemedView>
         ) : (
           <ThemedView style={styles.content}>
             <ThemedText type="subtitle" style={styles.listTitle}>
-              {t('nearby.stops.count').replace('{0}', nearbyStops.length.toString())}
+              {t("nearby.stops.count").replace(
+                "{0}",
+                nearbyStops.length.toString()
+              )}
             </ThemedText>
 
             {nearbyStops.length === 0 ? (
               <ThemedText style={styles.noStopsText}>
-                {t('nearby.no.stops').replace('{0}', radius.toString())}
+                {t("nearby.no.stops").replace("{0}", radius.toString())}
               </ThemedText>
             ) : (
               <View style={styles.listContainer}>
@@ -229,14 +254,25 @@ export default function NearbyScreen() {
                       style={styles.stopItem}
                       onPress={() => handleStopPress(item)}
                     >
-                      <IconSymbol name="location.fill" size={24} color="#0A3161" style={styles.stopIcon} />
+                      <IconSymbol
+                        name="location.fill"
+                        size={24}
+                        color="#0A3161"
+                        style={styles.stopIcon}
+                      />
                       <ThemedView style={styles.stopInfo}>
                         <ThemedText style={styles.stopName}>
-                          {language === 'en' ? item.name_en : 
-                           language === 'zh-Hans' ? item.name_sc : item.name_tc}
+                          {language === "en"
+                            ? item.name_en
+                            : language === "zh-Hans"
+                            ? item.name_sc
+                            : item.name_tc}
                         </ThemedText>
                         <ThemedText style={styles.stopDistance}>
-                          {t('nearby.meters.away').replace('{0}', Math.round(item.distance).toString())}
+                          {t("nearby.meters.away").replace(
+                            "{0}",
+                            Math.round(item.distance).toString()
+                          )}
                         </ThemedText>
                       </ThemedView>
                       <TouchableOpacity
@@ -263,29 +299,29 @@ const styles = StyleSheet.create({
   },
   fixedMapContainer: {
     height: 200,
-    width: '100%',
-    // position: 'absolute',
+    width: "100%",
+
     top: 0,
     zIndex: 10,
   },
   contentWithMap: {
-    paddingTop: 200, // Match height of map
+    paddingTop: 200,
   },
   headerImage: {
-    color: '#0A3161',
+    color: "#0A3161",
     bottom: -90,
     left: -35,
-    position: 'absolute',
+    position: "absolute",
     opacity: 0.7,
   },
   titleContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 8,
     marginBottom: 16,
   },
   radiusSelector: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
     marginVertical: 12,
   },
   radiusButton: {
@@ -293,17 +329,17 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 20,
     marginHorizontal: 8,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: "#f0f0f0",
   },
   activeRadiusButton: {
-    backgroundColor: '#0A3161',
+    backgroundColor: "#0A3161",
   },
   activeRadiusText: {
-    color: 'white',
+    color: "white",
   },
   initialState: {
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     padding: 20,
     marginTop: 20,
     backgroundColor: "#f5f5f5",
@@ -311,26 +347,26 @@ const styles = StyleSheet.create({
   },
   initialText: {
     fontSize: 16,
-    textAlign: 'center',
+    textAlign: "center",
     marginVertical: 16,
   },
   startButton: {
-    backgroundColor: '#0A3161',
+    backgroundColor: "#0A3161",
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 24,
     marginTop: 16,
   },
   startButtonText: {
-    color: 'white',
+    color: "white",
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   content: {
     marginTop: 16,
   },
   mapContainer: {
-    display: 'none', // Hide the original map container
+    display: "none",
   },
   map: {
     ...StyleSheet.absoluteFillObject,
@@ -339,27 +375,27 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   errorContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     padding: 20,
     backgroundColor: "#ffefef",
     borderRadius: 12,
     marginTop: 20,
   },
   errorText: {
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: 16,
-    color: '#c00',
+    color: "#c00",
   },
   retryButton: {
-    backgroundColor: '#0A3161',
+    backgroundColor: "#0A3161",
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 20,
   },
   retryButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
+    color: "white",
+    fontWeight: "bold",
   },
   listTitle: {
     marginBottom: 12,
@@ -368,7 +404,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   noStopsText: {
-    textAlign: 'center',
+    textAlign: "center",
     marginTop: 12,
     marginBottom: 12,
     fontSize: 16,
@@ -377,16 +413,16 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   listContent: {
-    paddingBottom: 120, // Add extra padding to prevent content being hidden
+    paddingBottom: 120,
   },
   stopItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: 12,
     borderRadius: 10,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: "#f5f5f5",
     marginBottom: 12,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.2,
     shadowRadius: 1.5,
@@ -400,7 +436,7 @@ const styles = StyleSheet.create({
   },
   stopName: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   stopDistance: {
     fontSize: 14,

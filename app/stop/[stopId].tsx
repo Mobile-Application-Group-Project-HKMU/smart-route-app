@@ -140,7 +140,11 @@ export default function StopETAScreen() {
 
       Alert.alert(
         t(isFavorite ? "favorites.remove" : "favorites.add"),
-        t(isFavorite ? "favorites.remove.description" : "favorites.add.description")
+        t(
+          isFavorite
+            ? "favorites.remove.description"
+            : "favorites.add.description"
+        )
       );
     } catch (error) {
       console.error("Error updating favorites:", error);
@@ -178,7 +182,11 @@ export default function StopETAScreen() {
     });
   };
 
-  const navigateToRoute = (routeId: string, bound: string, serviceType: string) => {
+  const navigateToRoute = (
+    routeId: string,
+    bound: string,
+    serviceType: string
+  ) => {
     router.push(`/bus/${routeId}?bound=${bound}&serviceType=${serviceType}`);
   };
 
@@ -307,12 +315,14 @@ export default function StopETAScreen() {
               }
               renderItem={({ item }) => (
                 <ThemedView style={styles.etaCard}>
-                  <TouchableOpacity 
-                    onPress={() => navigateToRoute(
-                      item.route, 
-                      item.direction === 'Inbound' ? 'I' : 'O', 
-                      item.serviceType
-                    )}
+                  <TouchableOpacity
+                    onPress={() =>
+                      navigateToRoute(
+                        item.route,
+                        item.direction === "Inbound" ? "I" : "O",
+                        item.serviceType
+                      )
+                    }
                     style={styles.routeHeader}
                   >
                     <ThemedView style={styles.routeNumberContainer}>
@@ -327,12 +337,22 @@ export default function StopETAScreen() {
                           : item.destination_tc}
                       </ThemedText>
                       <ThemedText style={styles.directionText}>
-                        {t(item.direction === 'Inbound' ? 'stop.direction.inbound' : 'stop.direction.outbound')} • 
-                        {t('stop.service.type')}: {item.serviceType}
+                        {t(
+                          item.direction === "Inbound"
+                            ? "stop.direction.inbound"
+                            : "stop.direction.outbound"
+                        )}{" "}
+                        •{t("stop.service.type")}: {item.serviceType}
                       </ThemedText>
                       <ThemedView style={styles.viewRouteButton}>
-                        <IconSymbol name="arrow.right.circle" size={14} color="#0a7ea4" />
-                        <ThemedText style={styles.viewRouteText}>{t("stop.view.route")}</ThemedText>
+                        <IconSymbol
+                          name="arrow.right.circle"
+                          size={14}
+                          color="#0a7ea4"
+                        />
+                        <ThemedText style={styles.viewRouteText}>
+                          {t("stop.view.route")}
+                        </ThemedText>
                       </ThemedView>
                     </ThemedView>
                   </TouchableOpacity>
@@ -347,9 +367,7 @@ export default function StopETAScreen() {
                         </ThemedText>
                         {eta.rmk_en && (
                           <ThemedText style={styles.etaRemark}>
-                            {language === "en"
-                              ? eta.rmk_en
-                              : eta.rmk_tc}
+                            {language === "en" ? eta.rmk_en : eta.rmk_tc}
                           </ThemedText>
                         )}
                       </ThemedView>
@@ -437,7 +455,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   etasListContent: {
-    paddingBottom: 120, // Increased padding to prevent content being hidden
+    paddingBottom: 120,
     gap: 16,
   },
   etaCard: {
