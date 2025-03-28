@@ -12,7 +12,7 @@ import { Route, getAllRoutes, Stop, getAllStops } from '@/util/kmb';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function HomeScreen() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [favoriteRoutes, setFavoriteRoutes] = useState<Array<Route & { key: string }>>([]);
   const [favoriteStops, setFavoriteStops] = useState<Stop[]>([]);
   const [loading, setLoading] = useState(true);
@@ -130,7 +130,11 @@ export default function HomeScreen() {
                               <ThemedText style={styles.routeNumber}>{item.route}</ThemedText>
                             </ThemedView>
                             <ThemedText style={styles.destination} numberOfLines={1}>
-                              {item.dest_en}
+                              {language === 'en' 
+                                ? item.dest_en 
+                                : language === 'zh-Hans' 
+                                  ? typeof item.dest_tc === 'string' ? item.dest_tc : item.dest_en
+                                  : typeof item.dest_tc === 'string' ? item.dest_tc : item.dest_en}
                             </ThemedText>
                           </ThemedView>
                         </TouchableOpacity>
@@ -155,7 +159,11 @@ export default function HomeScreen() {
                           <ThemedView style={styles.favoriteCardContent}>
                             <IconSymbol name="location.fill" size={24} color="#8B4513" />
                             <ThemedText style={styles.stopName} numberOfLines={2}>
-                              {item.name_en}
+                              {language === 'en' 
+                                ? item.name_en 
+                                : language === 'zh-Hans' 
+                                  ? item.name_sc 
+                                  : item.name_tc}
                             </ThemedText>
                           </ThemedView>
                         </TouchableOpacity>

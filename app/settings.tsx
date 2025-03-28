@@ -26,13 +26,6 @@ export default function SettingsScreen() {
         <ThemedView style={styles.settingItem}>
           <LanguageSwitcher />
         </ThemedView>
-        <TouchableOpacity 
-          style={styles.returnButton} 
-          onPress={() => router.back()}
-        >
-          <IconSymbol name="arrow.left.circle.fill" size={20} color="#8B4513" />
-          <ThemedText style={styles.returnButtonText}>{t('settings.return')}</ThemedText>
-        </TouchableOpacity>
       </ThemedView>
       
 
