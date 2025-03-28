@@ -30,7 +30,6 @@ import {
   getFromLocalStorage,
 } from "@/util/favourite";
 import { useLanguage } from "@/contexts/LanguageContext";
-import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 const { width } = Dimensions.get("window");
 

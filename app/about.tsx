@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { StyleSheet, Pressable, Linking, useColorScheme, ScrollView } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 
 const CONTENT = {
@@ -32,7 +33,7 @@ const CONTENT = {
     technicalSpecifications: {
       title: "Technical Architecture",
       stack: [
-        "Frontend:React Expo 5 (Application Routing)",
+        "Frontend: React Expo 5 (Application Routing)",
         "Language: TypeScript",
         "State Management: Git",
       ],
@@ -47,7 +48,45 @@ const CONTENT = {
       ],
     },
   },
-  zh: {
+  'zh-Hant': {
+    title: "項目概況",
+    teamTitle: "技術團隊構成",
+    termsTitle: "使用條款與政策",
+    school: "香港都會大學",
+    projectContext: {
+      department: "電腦工程系",
+      course: "COMP S313F 移動應用程式編程",
+      academicPeriod: "2025年春季學期",
+      projectType: "課程小組項目",
+    },
+    description: "本學術項目作為現代移動開發範式的綜合實踐，整合了前沿技術方案與行業最佳實踐。",
+    keyFeatures: {
+      title: "核心功能體系",
+      items: [
+        "實時數據可視化引擎",
+        "動態多語言本地化系統",
+        "自適應響應式佈局架構",
+      ],
+    },
+    technicalSpecifications: {
+      title: "技術架構說明",
+      stack: [
+        "前端: React Expo 5 (Application Routing)",
+        "開發語言: TypeScript",
+        "狀態管理: Git",
+      ],
+    },
+    policy: {
+      title: "使用條款與免責聲明",
+      clauses: [
+        "嚴格限於非商業用途",
+        "數據完整性免責聲明 - 關鍵業務場景建議獨立驗證",
+        "系統衍生決策的有限責任條款",
+        "開源協議: MIT (麻省理工學院許可證)",
+      ],
+    },
+  },
+  'zh-Hans': {
     title: "项目概况",
     teamTitle: "技术团队构成",
     termsTitle: "使用条款与政策",
@@ -58,7 +97,7 @@ const CONTENT = {
       academicPeriod: "2025年春季学期",
       projectType: "课程小组项目",
     },
-      description:"本学术项目作为现代移动开发范式的综合实践，整合了前沿技术方案与行业最佳实践。",
+    description: "本学术项目作为现代移动开发范式的综合实践，整合了前沿技术方案与行业最佳实践。",
     keyFeatures: {
       title: "核心功能体系",
       items: [
@@ -71,7 +110,6 @@ const CONTENT = {
       title: "技术架构说明",
       stack: [
         "前端: React Expo 5 (Application Routing)",
-
         "开发语言: TypeScript",
         "状态管理: Git",
       ],
@@ -129,7 +167,7 @@ const TEAM_MEMBERS = [
 
 export default function AboutScreen() {
   const { fromIndex } = useLocalSearchParams();
-  const [language, setLanguage] = useState<'en' | 'zh'>('en');
+  const { language } = useLanguage();
   const content = CONTENT[language];
   const colorScheme = useColorScheme();
   
@@ -140,10 +178,6 @@ export default function AboutScreen() {
     }
   }, [fromIndex]);
 
-  const toggleLanguage = () => {
-    setLanguage(prev => prev === 'en' ? 'zh' : 'en');
-  };
-
   const openLink = (url: string) => {
     if (url) {
       Linking.openURL(url);
@@ -152,16 +186,6 @@ export default function AboutScreen() {
   
   return (
     <ThemedView style={styles.container}>
-      <ThemedView style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backButton}>
-          <IconSymbol name="arrow.left" size={24} color={colorScheme === 'dark' ? '#fff' : '#000'} />
-        </Pressable>
-        <ThemedText type="title">{content.title}</ThemedText>
-        <Pressable onPress={toggleLanguage} style={styles.languageButton}>
-          <ThemedText>{language === 'en' ? '中文' : 'EN'}</ThemedText>
-        </Pressable>
-      </ThemedView>
-      
       <ScrollView style={styles.scrollView}>
         <ThemedView style={styles.section}>
           <ThemedText style={styles.schoolName}>{content.school}</ThemedText>
@@ -231,11 +255,8 @@ const styles = StyleSheet.create({
   backButton: {
     padding: 8,
   },
-  languageButton: {
-    padding: 8,
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: '#cccccc',
+  languageSwitcherContainer: {
+    marginLeft: 8,
   },
   scrollView: {
     flex: 1,

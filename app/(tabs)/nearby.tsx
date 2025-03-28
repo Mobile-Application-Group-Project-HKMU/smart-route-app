@@ -19,7 +19,6 @@ import { IconSymbol } from "@/components/ui/IconSymbol";
 import { findNearbyStops, type Stop } from "@/util/kmb";
 import ParallaxScrollView from "@/components/ParallaxScrollView";
 import { useLanguage } from "@/contexts/LanguageContext";
-import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 const { width, height } = Dimensions.get("window");
 const LATITUDE_DELTA = 0.01;

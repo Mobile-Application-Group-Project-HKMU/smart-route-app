@@ -10,7 +10,7 @@ import { classifyStopETAs, getAllStops, type ClassifiedETA, type Stop } from '@/
 import { formatTransportTime } from '@/util/datetime';
 import { FavRouteStation, saveToLocalStorage, getFromLocalStorage } from '@/util/favourite';
 import { useLanguage } from '@/contexts/LanguageContext';
-import LanguageSwitcher from '@/components/LanguageSwitcher';
+
 
 export default function StopETAScreen() {
   const { t, language } = useLanguage();
