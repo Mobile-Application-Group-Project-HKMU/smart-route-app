@@ -29,10 +29,13 @@ import {
   saveToLocalStorage,
   getFromLocalStorage,
 } from "@/util/favourite";
+import { useLanguage } from "@/contexts/LanguageContext";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 const { width } = Dimensions.get("window");
 
 export default function StopETAScreen() {
+  const { t, language } = useLanguage();
   const { stopId } = useLocalSearchParams();
   const [etas, setEtas] = useState<ClassifiedETA[]>([]);
   const [stopInfo, setStopInfo] = useState<Stop | null>(null);
@@ -89,7 +92,7 @@ export default function StopETAScreen() {
           console.error("Failed to fetch ETAs:", error);
           if (isMounted) {
             setLoading(false);
-            Alert.alert("Error", "Failed to load arrival times");
+            Alert.alert(t("error.generic"), t("error.load.arrival.times"));
           }
         }
       };
@@ -109,7 +112,7 @@ export default function StopETAScreen() {
       setEtas(stopETAs);
     } catch (error) {
       console.error("Failed to refresh ETAs:", error);
-      Alert.alert("Error", "Failed to refresh arrival times");
+      Alert.alert(t("error.generic"), t("error.refresh.arrival.times"));
     } finally {
       setRefreshing(false);
     }
@@ -137,14 +140,12 @@ export default function StopETAScreen() {
       setIsFavorite(!isFavorite);
 
       Alert.alert(
-        isFavorite ? "Removed from Favorites" : "Added to Favorites",
-        isFavorite
-          ? "This stop has been removed from your favorites."
-          : "This stop has been added to your favorites."
+        t(isFavorite ? "favorites.remove" : "favorites.add"),
+        t(isFavorite ? "favorites.remove.description" : "favorites.add.description")
       );
     } catch (error) {
       console.error("Error updating favorites:", error);
-      Alert.alert("Error", "Failed to update favorites");
+      Alert.alert(t("error.generic"), t("error.update.favorites"));
     }
   };
 
@@ -152,7 +153,13 @@ export default function StopETAScreen() {
     if (!stopInfo) return;
 
     const { lat, long } = stopInfo;
-    const label = encodeURI(stopInfo.name_en);
+    const label = encodeURI(
+      language === "en"
+        ? stopInfo.name_en
+        : language === "zh-Hans"
+        ? stopInfo.name_sc
+        : stopInfo.name_tc
+    );
 
     let url = "";
     if (Platform.OS === "ios") {
@@ -167,7 +174,7 @@ export default function StopETAScreen() {
       if (supported) {
         Linking.openURL(url);
       } else {
-        Alert.alert("Navigation Error", "Unable to open maps app");
+        Alert.alert(t("error.navigation"), t("error.open.maps"));
       }
     });
   };
@@ -180,7 +187,13 @@ export default function StopETAScreen() {
     <ThemedView style={styles.container}>
       <Stack.Screen
         options={{
-          title: stopInfo ? stopInfo.name_en : "Bus Stop",
+          title: stopInfo
+            ? language === "en"
+              ? stopInfo.name_en
+              : language === "zh-Hans"
+              ? stopInfo.name_sc
+              : stopInfo.name_tc
+            : t("stop.title"),
           headerRight: () => (
             <View style={styles.headerButtons}>
               <TouchableOpacity
@@ -210,12 +223,20 @@ export default function StopETAScreen() {
         <>
           <ThemedView style={styles.stopHeader}>
             <ThemedText type="title" style={styles.stopName}>
-              {stopInfo?.name_en || "Bus Stop"}
+              {language === "en"
+                ? stopInfo?.name_en || t("stop.title")
+                : language === "zh-Hans"
+                ? stopInfo?.name_sc || t("stop.title")
+                : stopInfo?.name_tc || t("stop.title")}
             </ThemedText>
             <ThemedText style={styles.stopNameChinese}>
-              {stopInfo?.name_tc || "巴士站"}
+              {language === "zh-Hans"
+                ? stopInfo?.name_sc || t("stop.title")
+                : stopInfo?.name_tc || t("stop.title")}
             </ThemedText>
-            <ThemedText style={styles.stopId}>Stop ID: {stopId}</ThemedText>
+            <ThemedText style={styles.stopId}>
+              {t("stop.id")}: {stopId}
+            </ThemedText>
           </ThemedView>
 
           {stopInfo && (
@@ -237,7 +258,13 @@ export default function StopETAScreen() {
                     latitude: stopInfo.lat,
                     longitude: stopInfo.long,
                   }}
-                  title={stopInfo.name_en}
+                  title={
+                    language === "en"
+                      ? stopInfo.name_en
+                      : language === "zh-Hans"
+                      ? stopInfo.name_sc
+                      : stopInfo.name_tc
+                  }
                 />
               </MapView>
               <TouchableOpacity
@@ -250,7 +277,7 @@ export default function StopETAScreen() {
                   color="white"
                 />
                 <ThemedText style={styles.navigationButtonText}>
-                  Navigate
+                  {t("navigate")}
                 </ThemedText>
               </TouchableOpacity>
             </ThemedView>
@@ -264,13 +291,13 @@ export default function StopETAScreen() {
           )}
 
           <ThemedText type="subtitle" style={styles.arrivalsTitle}>
-            Upcoming Arrivals
+            {t("stop.arrivals")}
           </ThemedText>
 
           {etas.length === 0 ? (
             <ThemedView style={styles.noETAs}>
               <ThemedText style={styles.noETAsText}>
-                No bus arrivals scheduled at this time
+                {t("stop.no.arrivals")}
               </ThemedText>
             </ThemedView>
           ) : (
@@ -296,14 +323,17 @@ export default function StopETAScreen() {
                     </ThemedView>
                     <ThemedView style={styles.routeInfo}>
                       <ThemedText style={styles.destination}>
-                        {item.destination_en}
+                        {language === "en"
+                          ? item.destination_en
+                          : item.destination_tc}
                       </ThemedText>
                       <ThemedText style={styles.directionText}>
-                        {item.direction} • Service Type: {item.serviceType}
+                        {t(item.direction === 'Inbound' ? 'stop.direction.inbound' : 'stop.direction.outbound')} • 
+                        {t('stop.service.type')}: {item.serviceType}
                       </ThemedText>
                       <ThemedView style={styles.viewRouteButton}>
                         <IconSymbol name="arrow.right.circle" size={14} color="#0a7ea4" />
-                        <ThemedText style={styles.viewRouteText}>View Route</ThemedText>
+                        <ThemedText style={styles.viewRouteText}>{t("stop.view.route")}</ThemedText>
                       </ThemedView>
                     </ThemedView>
                   </TouchableOpacity>
@@ -313,12 +343,14 @@ export default function StopETAScreen() {
                       <ThemedView key={index} style={styles.etaItem}>
                         <ThemedText style={styles.etaTime}>
                           {eta.eta
-                            ? formatTransportTime(eta.eta, "en", "relative")
-                            : "No data"}
+                            ? formatTransportTime(eta.eta, language, "relative")
+                            : t("no.data")}
                         </ThemedText>
                         {eta.rmk_en && (
                           <ThemedText style={styles.etaRemark}>
-                            {eta.rmk_en}
+                            {language === "en"
+                              ? eta.rmk_en
+                              : eta.rmk_tc}
                           </ThemedText>
                         )}
                       </ThemedView>
@@ -481,13 +513,13 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   viewRouteButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginTop: 4,
   },
   viewRouteText: {
     fontSize: 12,
-    color: '#0a7ea4',
+    color: "#0a7ea4",
     marginLeft: 4,
   },
 });

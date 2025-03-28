@@ -9,8 +9,11 @@ import BusRouteCard from '@/components/BusRouteCard';
 import SearchBox from '@/components/SearchBox';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { getAllRoutes, Route, getAllStops, Stop } from '@/util/kmb';
+import { useLanguage } from '@/contexts/LanguageContext';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 
 export default function BusRoutesScreen() {
+  const { t, language } = useLanguage();
   const [routes, setRoutes] = useState<Route[]>([]);
   const [filteredRoutes, setFilteredRoutes] = useState<Route[]>([]);
   const [stations, setStations] = useState<Stop[]>([]);
@@ -89,11 +92,11 @@ export default function BusRoutesScreen() {
         />
       }>
       <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Bus Routes</ThemedText>
+        <ThemedText type="title">{t('bus.title')}</ThemedText>
       </ThemedView>
 
       <SearchBox 
-        placeholder={searchType === 'routes' ? "Search by route number or destination" : "Search by station name or ID"}
+        placeholder={searchType === 'routes' ? t('bus.search.routes') : t('bus.search.stations')}
         value={searchQuery}
         onChangeText={setSearchQuery}
       />
@@ -109,7 +112,7 @@ export default function BusRoutesScreen() {
           <ThemedText 
             style={searchType === 'routes' ? styles.activeSearchTypeText : undefined}
           >
-            Routes
+            {t('bus.tab.routes')}
           </ThemedText>
         </TouchableOpacity>
         <TouchableOpacity 
@@ -122,7 +125,7 @@ export default function BusRoutesScreen() {
           <ThemedText 
             style={searchType === 'stations' ? styles.activeSearchTypeText : undefined}
           >
-            Stations
+            {t('bus.tab.stations')}
           </ThemedText>
         </TouchableOpacity>
       </ThemedView>
@@ -133,7 +136,7 @@ export default function BusRoutesScreen() {
         <ThemedView style={styles.routesContainer}>
           {searchType === 'routes' ? (
             filteredRoutes.length === 0 ? (
-              <ThemedText style={styles.noResults}>No routes found</ThemedText>
+              <ThemedText style={styles.noResults}>{t('bus.no.results')}</ThemedText>
             ) : (
               <FlatList
                 data={filteredRoutes.slice(0, 20)} // Limit displayed routes for performance
@@ -142,6 +145,7 @@ export default function BusRoutesScreen() {
                   <BusRouteCard 
                     route={item} 
                     onPress={() => handleRoutePress(item)}
+                    language={language}
                   />
                 )}
                 style={styles.list}
@@ -150,7 +154,7 @@ export default function BusRoutesScreen() {
             )
           ) : (
             filteredStations.length === 0 ? (
-              <ThemedText style={styles.noResults}>No stations found</ThemedText>
+              <ThemedText style={styles.noResults}>{t('bus.no.results')}</ThemedText>
             ) : (
               <FlatList
                 data={filteredStations.slice(0, 20)} // Limit displayed stations for performance
@@ -169,8 +173,14 @@ export default function BusRoutesScreen() {
                         style={styles.stationIcon}
                       />
                       <ThemedView style={styles.stationInfo}>
-                        <ThemedText style={styles.stationName}>{item.name_en}</ThemedText>
-                        <ThemedText style={styles.stationId}>ID: {item.stop}</ThemedText>
+                        <ThemedText style={styles.stationName}>
+                          {language === 'en' 
+                            ? item.name_en 
+                            : language === 'zh-Hans' 
+                              ? item.name_sc 
+                              : item.name_tc}
+                        </ThemedText>
+                        <ThemedText style={styles.stationId}>{t('bus.stationId')}: {item.stop}</ThemedText>
                       </ThemedView>
                       <IconSymbol
                         name="chevron.right"

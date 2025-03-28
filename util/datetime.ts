@@ -1,7 +1,6 @@
-
 export const formatTransportTime = (
     isoString: string,
-    lang: 'en' | 'zh',
+    lang: 'en' | 'zh-Hant' | 'zh-Hans' | 'zh',
     type: 'absolute' | 'relative' = 'absolute'
   ) => {
     try {
@@ -11,16 +10,21 @@ export const formatTransportTime = (
       if (type === 'relative') {
         const diffMinutes = Math.round((date.getTime() - now.getTime()) / 60000);
         
-        if (diffMinutes < 1) return lang === 'en' ? 'Due' : '即将到达';
+        if (diffMinutes < 1) {
+          return lang === 'en' ? 'Due' : '即将到达';
+        }
+        
         if (diffMinutes < 60) {
-          return lang === 'en' 
-            ? `${diffMinutes} min${diffMinutes > 1 ? 's' : ''}`
-            : `${diffMinutes}分钟`;
+          if (lang === 'en') {
+            return `${diffMinutes} min${diffMinutes > 1 ? 's' : ''}`;
+          } else {
+            return `${diffMinutes}分钟`;
+          }
         }
       }
   
       const formatter = new Intl.DateTimeFormat(
-        lang === 'en' ? 'en-US' : 'zh-CN',
+        lang === 'en' ? 'en-US' : (lang === 'zh-Hant' ? 'zh-HK' : 'zh-CN'),
         {
           hour: 'numeric',
           minute: '2-digit',
@@ -35,4 +39,3 @@ export const formatTransportTime = (
       return lang === 'en' ? 'Invalid time' : '时间无效';
     }
   };
-  

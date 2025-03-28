@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Image, StyleSheet, FlatList, TouchableOpacity, Alert } from 'react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 
 import { HelloWave } from '@/components/HelloWave';
 import ParallaxScrollView from '@/components/ParallaxScrollView';
@@ -9,53 +9,63 @@ import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { FavRouteKMB, FavRouteStation, getFromLocalStorage } from '@/util/favourite';
 import { Route, getAllRoutes, Stop, getAllStops } from '@/util/kmb';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function HomeScreen() {
+  const { t } = useLanguage();
   const [favoriteRoutes, setFavoriteRoutes] = useState<Array<Route & { key: string }>>([]);
   const [favoriteStops, setFavoriteStops] = useState<Stop[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const loadFavorites = async () => {
-      try {
-        // Get favorite routes
-        const routeFavorites = await getFromLocalStorage('kmbFavorites') as FavRouteKMB | null;
-        const stopFavorites = await getFromLocalStorage('stationFavorites') as FavRouteStation | null;
-        
-        if (routeFavorites?.kmbID?.length) {
-          const allRoutes = await getAllRoutes();
-          const routes = routeFavorites.kmbID.map(key => {
-            const [routeId, bound, serviceType] = key.split('-');
-            const route = allRoutes.find(
-              r => r.route === routeId && r.bound === bound && r.service_type === serviceType
-            );
-            
-            if (route) {
-              return { ...route, key };
-            }
-            return null;
-          }).filter((r): r is Route & { key: string } => r !== null);
+  const loadFavorites = useCallback(async () => {
+    try {
+      setLoading(true);
+      // Get favorite routes
+      const routeFavorites = await getFromLocalStorage('kmbFavorites') as FavRouteKMB | null;
+      const stopFavorites = await getFromLocalStorage('stationFavorites') as FavRouteStation | null;
+      
+      if (routeFavorites?.kmbID?.length) {
+        const allRoutes = await getAllRoutes();
+        const routes = routeFavorites.kmbID.map(key => {
+          const [routeId, bound, serviceType] = key.split('-');
+          const route = allRoutes.find(
+            r => r.route === routeId && r.bound === bound && r.service_type === serviceType
+          );
           
-          setFavoriteRoutes(routes);
-        }
+          if (route) {
+            return { ...route, key };
+          }
+          return null;
+        }).filter((r): r is Route & { key: string } => r !== null);
         
-        if (stopFavorites?.stationID?.length) {
-          const allStops = await getAllStops();
-          const stops = stopFavorites.stationID
-            .map(id => allStops.find(s => s.stop === id))
-            .filter((s): s is Stop => s !== undefined);
-          
-          setFavoriteStops(stops);
-        }
-      } catch (error) {
-        console.error('Failed to load favorites:', error);
-      } finally {
-        setLoading(false);
+        setFavoriteRoutes(routes);
+      } else {
+        setFavoriteRoutes([]);
       }
-    };
-    
-    loadFavorites();
+      
+      if (stopFavorites?.stationID?.length) {
+        const allStops = await getAllStops();
+        const stops = stopFavorites.stationID
+          .map(id => allStops.find(s => s.stop === id))
+          .filter((s): s is Stop => s !== undefined);
+        
+        setFavoriteStops(stops);
+      } else {
+        setFavoriteStops([]);
+      }
+    } catch (error) {
+      console.error('Failed to load favorites:', error);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  // Use useFocusEffect to reload favorites when the screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      loadFavorites();
+    }, [loadFavorites])
+  );
 
   const handleRoutePress = (route: Route & { key: string }) => {
     const [routeId, bound, serviceType] = route.key.split('-');
@@ -79,27 +89,32 @@ export default function HomeScreen() {
           style={styles.reactLogo}
         />
       }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Smart KMB App</ThemedText>
-        <HelloWave />
+      <ThemedView style={styles.headerContainer}>
+        <ThemedView style={styles.titleContainer}>
+          <ThemedText type="title">{t('home.title')}</ThemedText>
+          <HelloWave />
+        </ThemedView>
+        <TouchableOpacity onPress={() => router.push('/settings')}>
+          <IconSymbol name="gear.circle.fill" size={24} color="#8B4513" />
+        </TouchableOpacity>
       </ThemedView>
-
+      
       <ThemedView style={styles.section}>
-        <ThemedText type="subtitle">Your Favorites</ThemedText>
+        <ThemedText type="subtitle">{t('home.favorites')}</ThemedText>
         
         {loading ? (
-          <ThemedText style={styles.loadingText}>Loading your favorites...</ThemedText>
+          <ThemedText style={styles.loadingText}>{t('home.loading')}</ThemedText>
         ) : (
           <>
             {favoriteRoutes.length === 0 && favoriteStops.length === 0 ? (
               <ThemedText style={styles.noFavoritesText}>
-                You don't have any favorites yet. Browse bus routes and stops to add favorites.
+                {t('home.no.favorites')}
               </ThemedText>
             ) : (
               <>
                 {favoriteRoutes.length > 0 && (
                   <ThemedView style={styles.subsection}>
-                    <ThemedText style={styles.subsectionTitle}>Favorite Routes</ThemedText>
+                    <ThemedText style={styles.subsectionTitle}>{t('home.favorites.routes')}</ThemedText>
                     <FlatList
                       data={favoriteRoutes}
                       horizontal
@@ -126,7 +141,7 @@ export default function HomeScreen() {
 
                 {favoriteStops.length > 0 && (
                   <ThemedView style={styles.subsection}>
-                    <ThemedText style={styles.subsectionTitle}>Favorite Stops</ThemedText>
+                    <ThemedText style={styles.subsectionTitle}>{t('home.favorites.stops')}</ThemedText>
                     <FlatList
                       data={favoriteStops}
                       horizontal
@@ -154,14 +169,13 @@ export default function HomeScreen() {
         )}
       </ThemedView>
       
-      {/* Add About section */}
       <ThemedView style={styles.aboutSection}>
         <TouchableOpacity 
           style={styles.aboutButton} 
           onPress={navigateToAbout}
         >
           <IconSymbol name="info.circle.fill" size={20} color="#8B4513" />
-          <ThemedText style={styles.aboutButtonText}>About This App</ThemedText>
+          <ThemedText style={styles.aboutButtonText}>{t('home.about')}</ThemedText>
         </TouchableOpacity>
       </ThemedView>
     </ParallaxScrollView>
@@ -169,6 +183,12 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
+  headerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
   titleContainer: {
     flexDirection: 'row',
     alignItems: 'center',

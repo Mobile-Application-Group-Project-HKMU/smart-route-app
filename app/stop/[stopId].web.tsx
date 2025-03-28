@@ -9,8 +9,11 @@ import { IconSymbol } from '@/components/ui/IconSymbol';
 import { classifyStopETAs, getAllStops, type ClassifiedETA, type Stop } from '@/util/kmb';
 import { formatTransportTime } from '@/util/datetime';
 import { FavRouteStation, saveToLocalStorage, getFromLocalStorage } from '@/util/favourite';
+import { useLanguage } from '@/contexts/LanguageContext';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 
 export default function StopETAScreen() {
+  const { t, language } = useLanguage();
   const { stopId } = useLocalSearchParams();
   const [etas, setEtas] = useState<ClassifiedETA[]>([]);
   const [stopInfo, setStopInfo] = useState<Stop | null>(null);
@@ -18,7 +21,6 @@ export default function StopETAScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
 
-  // Check if stop is in favorites
   useEffect(() => {
     const checkFavorite = async () => {
       const favorites = await getFromLocalStorage('stationFavorites') as FavRouteStation | null;
@@ -30,7 +32,6 @@ export default function StopETAScreen() {
     checkFavorite();
   }, [stopId]);
 
-  // Fetch stop information
   useEffect(() => {
     const fetchStopInfo = async () => {
       try {
@@ -47,16 +48,15 @@ export default function StopETAScreen() {
     fetchStopInfo();
   }, [stopId]);
 
-  // Fetch ETAs when screen gains focus
   useFocusEffect(
     useCallback(() => {
       let isMounted = true;
-      
+
       const fetchETAs = async () => {
         try {
           setLoading(true);
           const stopETAs = await classifyStopETAs(stopId as string);
-          
+
           if (isMounted) {
             setEtas(stopETAs);
             setLoading(false);
@@ -65,7 +65,7 @@ export default function StopETAScreen() {
           console.error('Failed to fetch ETAs:', error);
           if (isMounted) {
             setLoading(false);
-            Alert.alert('Error', 'Failed to load arrival times');
+            Alert.alert(t('error.generic'), t('error.load.arrival.times'));
           }
         }
       };
@@ -85,7 +85,7 @@ export default function StopETAScreen() {
       setEtas(stopETAs);
     } catch (error) {
       console.error('Failed to refresh ETAs:', error);
-      Alert.alert('Error', 'Failed to refresh arrival times');
+      Alert.alert(t('error.generic'), t('error.refresh.arrival.times'));
     } finally {
       setRefreshing(false);
     }
@@ -94,33 +94,30 @@ export default function StopETAScreen() {
   const toggleFavorite = async () => {
     try {
       let favorites = await getFromLocalStorage('stationFavorites') as FavRouteStation;
-      
+
       if (!favorites) {
         favorites = { stationID: [] };
       }
 
       if (isFavorite) {
-        // Remove from favorites
         favorites.stationID = favorites.stationID.filter(id => id !== stopId);
       } else {
-        // Add to favorites
         favorites.stationID.push(stopId as string);
       }
 
       await saveToLocalStorage('stationFavorites', favorites);
       setIsFavorite(!isFavorite);
-      
+
       Alert.alert(
-        isFavorite ? 'Removed from Favorites' : 'Added to Favorites',
-        isFavorite ? 'This stop has been removed from your favorites.' : 'This stop has been added to your favorites.'
+        t(isFavorite ? 'favorites.remove' : 'favorites.add'),
+        t(isFavorite ? 'favorites.remove.description' : 'favorites.add.description')
       );
     } catch (error) {
       console.error('Error updating favorites:', error);
-      Alert.alert('Error', 'Failed to update favorites');
+      Alert.alert(t('error.generic'), t('error.update.favorites'));
     }
   };
 
-  // Add this function to open Google Maps in a new tab
   const openInGoogleMaps = () => {
     if (stopInfo) {
       const { lat, long } = stopInfo;
@@ -133,7 +130,7 @@ export default function StopETAScreen() {
     <ThemedView style={styles.container}>
       <Stack.Screen
         options={{
-          title: stopInfo ? stopInfo.name_en : 'Bus Stop',
+          title: stopInfo ? stopInfo.name_en : t('stop.title'),
           headerRight: () => (
             <View style={styles.headerButtons}>
               <TouchableOpacity onPress={refreshETAs} style={styles.refreshButton}>
@@ -161,13 +158,13 @@ export default function StopETAScreen() {
         <>
           <ThemedView style={styles.stopHeader}>
             <ThemedText type="title" style={styles.stopName}>
-              {stopInfo?.name_en || 'Bus Stop'}
+              {stopInfo?.name_en || t('stop.title')}
             </ThemedText>
             <ThemedText style={styles.stopNameChinese}>
-              {stopInfo?.name_tc || '巴士站'}
+              {stopInfo ? (language === 'zh-Hans' ? stopInfo.name_sc : stopInfo.name_tc) : t('stop.title')}
             </ThemedText>
             <ThemedText style={styles.stopId}>
-              Stop ID: {stopId}
+              {t('stop.id')}: {stopId}
             </ThemedText>
           </ThemedView>
 
@@ -175,17 +172,17 @@ export default function StopETAScreen() {
             <ThemedView style={styles.webMapPlaceholder}>
               <IconSymbol name="location.fill" size={48} color="#0a7ea4" />
               <ThemedText style={styles.webMapText}>
-                Stop map is available on mobile devices
+                {t('stop.map.available')}
               </ThemedText>
               <ThemedText style={styles.locationText}>
-                Location: {stopInfo.lat.toFixed(6)}, {stopInfo.long.toFixed(6)}
+                {t('stop.location')}: {stopInfo.lat.toFixed(6)}, {stopInfo.long.toFixed(6)}
               </ThemedText>
               <TouchableOpacity 
                 style={styles.openMapButton}
                 onPress={openInGoogleMaps}
               >
                 <IconSymbol name="map.fill" size={18} color="white" style={styles.openMapIcon} />
-                <ThemedText style={styles.openMapText}>Open in Google Maps</ThemedText>
+                <ThemedText style={styles.openMapText}>{t('stop.open.maps')}</ThemedText>
               </TouchableOpacity>
             </ThemedView>
           )}
@@ -195,13 +192,13 @@ export default function StopETAScreen() {
           )}
 
           <ThemedText type="subtitle" style={styles.arrivalsTitle}>
-            Upcoming Arrivals
+            {t('stop.arrivals')}
           </ThemedText>
 
           {etas.length === 0 ? (
             <ThemedView style={styles.noETAs}>
               <ThemedText style={styles.noETAsText}>
-                No bus arrivals scheduled at this time
+                {t('stop.no.arrivals')}
               </ThemedText>
             </ThemedView>
           ) : (
@@ -215,9 +212,12 @@ export default function StopETAScreen() {
                       <ThemedText style={styles.routeNumber}>{item.route}</ThemedText>
                     </ThemedView>
                     <ThemedView style={styles.routeInfo}>
-                      <ThemedText style={styles.destination}>{item.destination_en}</ThemedText>
+                      <ThemedText style={styles.destination}>
+                        {language === 'en' ? item.destination_en : item.destination_tc}
+                      </ThemedText>
                       <ThemedText style={styles.directionText}>
-                        {item.direction} • Service Type: {item.serviceType}
+                        {t(item.direction === 'Inbound' ? 'stop.direction.inbound' : 'stop.direction.outbound')} • 
+                        {t('stop.service.type')}: {item.serviceType}
                       </ThemedText>
                     </ThemedView>
                   </ThemedView>
@@ -226,10 +226,12 @@ export default function StopETAScreen() {
                     {item.etas.map((eta, index) => (
                       <ThemedView key={index} style={styles.etaItem}>
                         <ThemedText style={styles.etaTime}>
-                          {eta.eta ? formatTransportTime(eta.eta, 'en', 'relative') : 'No data'}
+                          {eta.eta ? formatTransportTime(eta.eta, language === 'en' ? 'en' : 'zh', 'relative') : t('stop.no.data')}
                         </ThemedText>
                         {eta.rmk_en && (
-                          <ThemedText style={styles.etaRemark}>{eta.rmk_en}</ThemedText>
+                          <ThemedText style={styles.etaRemark}>
+                            {language === 'en' ? eta.rmk_en : eta.rmk_tc}
+                          </ThemedText>
                         )}
                       </ThemedView>
                     ))}

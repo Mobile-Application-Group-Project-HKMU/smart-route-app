@@ -23,6 +23,7 @@ const MAPPING = {
   'arrow.triangle.turn.up.right.circle.fill': 'directions',
   'location.circle.fill': 'my-location',
   'info.circle.fill': 'info',
+  'gear.circle.fill': 'settings',
 } as Partial<
   Record<
     import('expo-symbols').SymbolViewProps['name'],

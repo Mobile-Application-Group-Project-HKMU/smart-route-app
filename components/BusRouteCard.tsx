@@ -4,14 +4,26 @@ import { ThemedText } from './ThemedText';
 import { ThemedView } from './ThemedView';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Colors } from '@/constants/Colors';
+import { Language } from '@/contexts/LanguageContext';
 
 interface BusRouteCardProps {
   route: Route;
   onPress: () => void;
+  language?: Language;
 }
 
-export default function BusRouteCard({ route, onPress }: BusRouteCardProps) {
+export default function BusRouteCard({ route, onPress, language = 'en' }: BusRouteCardProps) {
   const colorScheme = useColorScheme() ?? 'light';
+  
+  const getTranslatedOrigin = () => {
+    if (language === 'en') return route.orig_en;
+    return route.orig_tc;
+  };
+  
+  const getTranslatedDestination = () => {
+    if (language === 'en') return route.dest_en;
+    return route.dest_tc;
+  };
   
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.7}>
@@ -31,10 +43,10 @@ export default function BusRouteCard({ route, onPress }: BusRouteCardProps) {
           
           <ThemedView style={styles.destinations}>
             <ThemedText style={styles.destination} numberOfLines={1}>
-              From: {route.orig_en}
+              From: {getTranslatedOrigin()}
             </ThemedText>
             <ThemedText style={styles.destination} numberOfLines={1}>
-              To: {route.dest_en}
+              To: {getTranslatedDestination()}
             </ThemedText>
           </ThemedView>
         </ThemedView>

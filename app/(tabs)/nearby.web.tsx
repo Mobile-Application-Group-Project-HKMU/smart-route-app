@@ -7,6 +7,8 @@ import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { findNearbyStops, type Stop } from '@/util/kmb';
 import ParallaxScrollView from '@/components/ParallaxScrollView';
+import { useLanguage } from '@/contexts/LanguageContext';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 
 export default function NearbyScreenWeb() {
   const [loading, setLoading] = useState(false);
@@ -14,6 +16,7 @@ export default function NearbyScreenWeb() {
   const [userCoordinates, setUserCoordinates] = useState<{latitude: number, longitude: number} | null>(null);
   const [nearbyStops, setNearbyStops] = useState<Stop[]>([]);
   const [radius, setRadius] = useState(500); // Default 500m radius
+  const { t, language } = useLanguage();
 
   const findStopsNearLocation = async (latitude: number, longitude: number, searchRadius: number) => {
     try {
@@ -90,7 +93,7 @@ export default function NearbyScreenWeb() {
         />
       }>
       <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Nearby Stops</ThemedText>
+        <ThemedText type="title">{t('nearby.title')}</ThemedText>
       </ThemedView>
 
       <ThemedView style={styles.radiusSelector}>
@@ -118,13 +121,13 @@ export default function NearbyScreenWeb() {
         <ThemedView style={styles.initialState}>
           <IconSymbol name="location.fill" size={48} color="#0a7ea4" />
           <ThemedText style={styles.initialText}>
-            Tap the location button to find bus stops near you
+            {t('nearby.tap.instruction')}
           </ThemedText>
           <TouchableOpacity 
             style={styles.startButton}
             onPress={requestLocationPermission}
           >
-            <ThemedText style={styles.startButtonText}>Find Nearby Stops</ThemedText>
+            <ThemedText style={styles.startButtonText}>{t('nearby.find.stops')}</ThemedText>
           </TouchableOpacity>
         </ThemedView>
       ) : loading ? (
@@ -142,11 +145,13 @@ export default function NearbyScreenWeb() {
             <ThemedView style={styles.webMapPlaceholder}>
               <IconSymbol name="map.fill" size={48} color="#0a7ea4" />
               <ThemedText style={styles.webMapText}>
-                Interactive map is available on mobile devices
+                {t('nearby.map.mobile.only')}
               </ThemedText>
               {userCoordinates && (
                 <ThemedText style={styles.locationText}>
-                  Your location: {userCoordinates.latitude.toFixed(6)}, {userCoordinates.longitude.toFixed(6)}
+                  {t('nearby.your.location', 
+                    userCoordinates.latitude.toFixed(6), 
+                    userCoordinates.longitude.toFixed(6))}
                 </ThemedText>
               )}
               <TouchableOpacity 
@@ -158,18 +163,18 @@ export default function NearbyScreenWeb() {
                 }}
               >
                 <IconSymbol name="map.fill" size={18} color="white" style={styles.openMapIcon} />
-                <ThemedText style={styles.openMapText}>Open in Google Maps</ThemedText>
+                <ThemedText style={styles.openMapText}>{t('nearby.open.maps')}</ThemedText>
               </TouchableOpacity>
             </ThemedView>
           )}
 
           <ThemedText type="subtitle" style={styles.listTitle}>
-            Nearby Stops ({nearbyStops.length})
+            {t('nearby.stops.count', nearbyStops.length.toString())}
           </ThemedText>
 
           {nearbyStops.length === 0 ? (
             <ThemedText style={styles.noStopsText}>
-              No bus stops found within {radius}m of your location
+              {t('nearby.no.stops').replace('{0}', radius.toString())}
             </ThemedText>
           ) : (
             <View style={styles.listContainer}>
@@ -183,9 +188,12 @@ export default function NearbyScreenWeb() {
                   >
                     <IconSymbol name="location.fill" size={24} color="#0A3161" style={styles.stopIcon} />
                     <ThemedView style={styles.stopInfo}>
-                      <ThemedText style={styles.stopName}>{item.name_en}</ThemedText>
+                      <ThemedText style={styles.stopName}>
+                        {language === 'en' ? item.name_en : 
+                         language === 'zh-Hans' ? item.name_sc : item.name_tc}
+                      </ThemedText>
                       <ThemedText style={styles.stopDistance}>
-                        {Math.round(item.distance)}m away
+                        {t('nearby.meters.away').replace('{0}', Math.round(item.distance).toString())}
                       </ThemedText>
                     </ThemedView>
                     <IconSymbol name="chevron.right" size={20} color="#808080" />
