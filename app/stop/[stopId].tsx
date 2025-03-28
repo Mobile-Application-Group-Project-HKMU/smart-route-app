@@ -343,7 +343,7 @@ export default function StopETAScreen() {
                         <ThemedText style={styles.etaTime}>
                           {eta.eta
                             ? formatTransportTime(eta.eta, language, "relative")
-                            : t("no.data")}
+                            : t("stop.no.data")}
                         </ThemedText>
                         {eta.rmk_en && (
                           <ThemedText style={styles.etaRemark}>
