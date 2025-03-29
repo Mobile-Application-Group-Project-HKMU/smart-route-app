@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import {
   StyleSheet,
   ActivityIndicator,
-  FlatList,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -27,6 +26,8 @@ export default function BusRoutesScreen() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchType, setSearchType] = useState<"routes" | "stations">("routes");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   useEffect(() => {
     const fetchData = async () => {
@@ -76,6 +77,7 @@ export default function BusRoutesScreen() {
         setFilteredStations(filtered);
       }
     }
+    setCurrentPage(1); // Reset to first page on new search
   }, [searchQuery, routes, stations, searchType]);
 
   const handleRoutePress = (route: Route) => {
@@ -86,6 +88,58 @@ export default function BusRoutesScreen() {
 
   const handleStopPress = (stop: Stop) => {
     router.push(`/stop/${stop.stop}`);
+  };
+
+  // Calculate pagination
+  const getDisplayedItems = () => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    if (searchType === "routes") {
+      return filteredRoutes.slice(startIndex, endIndex);
+    } else {
+      return filteredStations.slice(startIndex, endIndex);
+    }
+  };
+
+  const totalPages = Math.ceil(
+    (searchType === "routes"
+      ? filteredRoutes.length
+      : filteredStations.length) / itemsPerPage
+  );
+
+  // Render pagination controls
+  const renderPagination = () => {
+    if (totalPages <= 1) return null;
+
+    return (
+      <ThemedView style={styles.paginationContainer}>
+        <TouchableOpacity
+          style={[
+            styles.paginationButton,
+            currentPage === 1 && styles.disabledButton,
+          ]}
+          onPress={() => setCurrentPage(Math.max(1, currentPage - 1))}
+          disabled={currentPage === 1}
+        >
+          <ThemedText>Previous</ThemedText>
+        </TouchableOpacity>
+
+        <ThemedText style={styles.paginationText}>
+          {currentPage} / {totalPages}
+        </ThemedText>
+
+        <TouchableOpacity
+          style={[
+            styles.paginationButton,
+            currentPage === totalPages && styles.disabledButton,
+          ]}
+          onPress={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+          disabled={currentPage === totalPages}
+        >
+          <ThemedText>Next</ThemedText>
+        </TouchableOpacity>
+      </ThemedView>
+    );
   };
 
   return (
@@ -159,34 +213,33 @@ export default function BusRoutesScreen() {
                 {t("bus.no.results")}
               </ThemedText>
             ) : (
-              <FlatList
-                data={filteredRoutes.slice(0, 20)} // Limit displayed routes for performance
-                keyExtractor={(item, index) =>
-                  `${item.route}-${item.bound}-${item.service_type}-${index}`
-                }
-                renderItem={({ item }) => (
-                  <BusRouteCard
-                    route={item}
-                    onPress={() => handleRoutePress(item)}
-                    language={language}
-                  />
-                )}
-                style={styles.list}
-                contentContainerStyle={styles.listContent}
-              />
+              <ThemedView style={styles.listContainer}>
+                {getDisplayedItems().map((item, index) => {
+                  // Type assertion since we know these are Route objects in this context
+                  const route = item as Route;
+                  return (
+                    <BusRouteCard
+                      key={`${route.route}-${route.bound}-${route.service_type}-${index}`}
+                      route={route}
+                      onPress={() => handleRoutePress(route)}
+                      language={language}
+                    />
+                  );
+                })}
+                {renderPagination()}
+              </ThemedView>
             )
           ) : filteredStations.length === 0 ? (
             <ThemedText style={styles.noResults}>
               {t("bus.no.results")}
             </ThemedText>
           ) : (
-            <FlatList
-              data={filteredStations.slice(0, 20)} // Limit displayed stations for performance
-              keyExtractor={(item) => item.stop}
-              renderItem={({ item }) => (
+            <ThemedView style={styles.listContainer}>
+              {getDisplayedItems().map((item) => (
                 <TouchableOpacity
+                  key={(item as Stop).stop}
                   style={styles.stationItem}
-                  onPress={() => handleStopPress(item)}
+                  onPress={() => handleStopPress(item as Stop)}
                   activeOpacity={0.7}
                 >
                   <ThemedView style={styles.stationContainer}>
@@ -199,13 +252,13 @@ export default function BusRoutesScreen() {
                     <ThemedView style={styles.stationInfo}>
                       <ThemedText style={styles.stationName}>
                         {language === "en"
-                          ? item.name_en
+                          ? (item as Stop).name_en
                           : language === "zh-Hans"
-                          ? item.name_sc
-                          : item.name_tc}
+                          ? (item as Stop).name_sc
+                          : (item as Stop).name_tc}
                       </ThemedText>
                       <ThemedText style={styles.stationId}>
-                        {t("bus.stationId")}: {item.stop}
+                        {t("bus.stationId")}: {(item as Stop).stop}
                       </ThemedText>
                     </ThemedView>
                     <IconSymbol
@@ -215,10 +268,9 @@ export default function BusRoutesScreen() {
                     />
                   </ThemedView>
                 </TouchableOpacity>
-              )}
-              style={styles.list}
-              contentContainerStyle={styles.listContent}
-            />
+              ))}
+              {renderPagination()}
+            </ThemedView>
           )}
         </ThemedView>
       )}
@@ -268,10 +320,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
     fontSize: 16,
   },
-  list: {
-    flex: 1,
-  },
-  listContent: {
+  listContainer: {
     paddingBottom: 100,
   },
   stationItem: {
@@ -302,5 +351,24 @@ const styles = StyleSheet.create({
   stationId: {
     fontSize: 14,
     opacity: 0.7,
+  },
+  paginationContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 16,
+    gap: 12,
+  },
+  paginationButton: {
+    backgroundColor: "#f0f0f0",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  disabledButton: {
+    opacity: 0.5,
+  },
+  paginationText: {
+    fontSize: 16,
   },
 });
