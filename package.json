@@ -3,15 +3,16 @@
   "main": "expo-router/entry",
   "version": "1.0.0",
   "scripts": {
-    "start": "expo start",
+    "start": "expo start --dev-client",
     "reset-project": "node ./scripts/reset-project.js",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
     "web": "expo start --web",
     "test": "jest --watchAll",
     "lint": "expo lint",
     "build": "eas build --platform all",
-    "apk": "eas build --profile preview"
+    "apk": "eas build --profile preview",
+    "prebuild": "expo prebuild --clean"
   },
   "jest": {
     "preset": "jest-expo"
