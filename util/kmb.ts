@@ -1,7 +1,6 @@
-
 import axios, { AxiosError } from 'axios';
 import { ReactNode } from 'react';
-
+import { appConfig } from './config';
 
 export interface Route {
   dest_tc: ReactNode;
@@ -52,7 +51,6 @@ export interface ETA {
   data_timestamp: string;
 }
 
-
 interface ApiResponse<T> {
   type: string;
   version: string;
@@ -60,13 +58,16 @@ interface ApiResponse<T> {
   data: T;
 }
 
-
 const API_BASE = 'https://data.etabus.gov.hk/v1/transport/kmb';
-const CACHE_TTL = 5 * 60 * 1000; 
 
-
+// Cache system with expiration
 const apiCache = new Map<string, { timestamp: number; data: unknown }>();
+const CACHE_TTL = appConfig.apiCacheTTL;
 
+/**
+ * Makes a cached API request - prevents redundant requests to the same URL
+ * within the cache TTL period
+ */
 async function cachedApiGet<T>(url: string): Promise<T> {
   const now = Date.now();
   
@@ -83,16 +84,21 @@ async function cachedApiGet<T>(url: string): Promise<T> {
     return data.data;
   } catch (error) {
     const axiosError = error as AxiosError;
-    throw new Error(`API请求失败: ${axiosError.message}`);
+    console.error(`KMB API request failed: ${url}`, axiosError);
+    throw new Error(`KMB API request failed: ${axiosError.message}`);
   }
 }
 
-
+/**
+ * Gets all KMB bus routes
+ */
 async function getAllRoutes(): Promise<Route[]> {
   return cachedApiGet<Route[]>(`${API_BASE}/route/`);
 }
 
-
+/**
+ * Gets details for a specific route
+ */
 async function getRouteDetails(
   route: string,
   direction: 'inbound' | 'outbound',
@@ -103,19 +109,22 @@ async function getRouteDetails(
   );
 }
 
-
+/**
+ * Gets stops for a specific route
+ */
 async function getRouteStops(
   route: string,
   direction: 'inbound' | 'outbound',
   serviceType: string
 ): Promise<RouteStop[]> {
-  console.log(`${API_BASE}/route-stop/${encodeURIComponent(route)}/${direction}/${serviceType}`);
-  return cachedApiGet<RouteStop[]>(
-    `${API_BASE}/route-stop/${encodeURIComponent(route)}/${direction}/${serviceType}`
-  );
+  const url = `${API_BASE}/route-stop/${encodeURIComponent(route)}/${direction}/${serviceType}`;
+  console.log(`Fetching route stops: ${url}`);
+  return cachedApiGet<RouteStop[]>(url);
 }
 
-
+/**
+ * Gets all KMB bus stops
+ */
 async function getAllStops(): Promise<Stop[]> {
   const stops = await cachedApiGet<Stop[]>(`${API_BASE}/stop`);
   
@@ -131,7 +140,9 @@ async function getAllStops(): Promise<Stop[]> {
   );
 }
 
-
+/**
+ * Gets ETAs for a specific stop with retry mechanism
+ */
 async function getStopETA(stopId: string, retries = 2): Promise<ETA[]> {
   try {
     return await cachedApiGet<ETA[]>(
@@ -139,20 +150,23 @@ async function getStopETA(stopId: string, retries = 2): Promise<ETA[]> {
     );
   } catch (error) {
     if (retries > 0) {
+      console.log(`Retrying ETA for stop ${stopId}, ${retries} retries left`);
       return getStopETA(stopId, retries - 1);
     }
     throw error;
   }
 }
 
-
+/**
+ * Calculates distance between two geographic coordinates
+ */
 function calculateDistance(
   lat1: number,
   lon1: number,
   lat2: number,
   lon2: number
 ): number {
-  const R = 6371e3; // 地球半径（米）
+  const R = 6371e3; // Earth radius in meters
   const φ1 = lat1 * Math.PI / 180;
   const φ2 = lat2 * Math.PI / 180;
   const Δφ = (lat2 - lat1) * Math.PI / 180;
@@ -166,14 +180,16 @@ function calculateDistance(
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
-
+/**
+ * Finds stops near a specified location within a radius
+ */
 async function findNearbyStops(
   targetLat: number,
   targetLon: number,
   radiusMeters = 500
 ): Promise<Array<Stop & { distance: number }>> {
   if (!isValidCoordinate(targetLat, targetLon)) {
-    throw new Error('无效的坐标参数');
+    throw new Error('Invalid coordinate parameters');
   }
 
   const allStops = await getAllStops();
@@ -187,7 +203,9 @@ async function findNearbyStops(
     .sort((a, b) => a.distance - b.distance);
 }
 
-
+/**
+ * Validates geographic coordinates
+ */
 function isValidCoordinate(lat: number, lon: number): boolean {
   return (
     typeof lat === 'number' &&
@@ -202,16 +220,19 @@ function isValidCoordinate(lat: number, lon: number): boolean {
 }
 
 export interface ClassifiedETA {
-    route: string;
-    direction: 'Inbound' | 'Outbound';
-    serviceType: string;
-    destination_en: string;
-    destination_tc: string;
-    etas: ETA[];
-  }
-  
+  route: string;
+  direction: 'Inbound' | 'Outbound';
+  serviceType: string;
+  destination_en: string;
+  destination_tc: string;
+  etas: ETA[];
+}
 
+/**
+ * Organizes ETAs for a stop by routes
+ */
 async function classifyStopETAs(stopId: string): Promise<ClassifiedETA[]> {
+  try {
     const etas = await getStopETA(stopId);
     
     return Object.values(
@@ -233,8 +254,18 @@ async function classifyStopETAs(stopId: string): Promise<ClassifiedETA[]> {
         return acc;
       }, {} as Record<string, ClassifiedETA>)
     );
+  } catch (error) {
+    console.error(`Failed to classify ETAs for stop ${stopId}`, error);
+    return [];
   }
-  
+}
+
+/**
+ * Clears the KMB API cache
+ */
+function clearCache(): void {
+  apiCache.clear();
+}
 
 export {
   classifyStopETAs,
@@ -244,5 +275,9 @@ export {
   getAllStops,
   getStopETA,
   calculateDistance,
-  findNearbyStops, type Stop, type RouteStop
+  findNearbyStops,
+  clearCache,
+  isValidCoordinate,
+  type Stop, 
+  type RouteStop
 };

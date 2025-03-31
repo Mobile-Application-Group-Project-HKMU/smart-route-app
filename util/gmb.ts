@@ -1,5 +1,7 @@
 import { TransportRoute, TransportStop, TransportRouteStop, TransportETA, ClassifiedTransportETA, TransportApiResponse } from '@/types/transport-types';
 import axios, { AxiosError } from 'axios';
+import { isSafari } from './transport';
+import { appConfig } from './config';
 
 export type Route = TransportRoute;
 export type Stop = TransportStop;
@@ -8,7 +10,7 @@ export type ETA = TransportETA;
 export type ClassifiedETA = ClassifiedTransportETA;
 
 const API_BASE = 'https://data.etagmb.gov.hk'; // GMB API base URL
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache TTL
+const CACHE_TTL = appConfig.apiCacheTTL; // Use global cache TTL
 
 const apiCache = new Map<string, { timestamp: number; data: unknown }>();
 
@@ -23,12 +25,18 @@ async function cachedApiGet<T>(url: string): Promise<T> {
   }
 
   try {
-    const { data } = await axios.get<TransportApiResponse<T>>(url);
+    const { data } = await axios.get<TransportApiResponse<T>>(url, {
+      headers: {
+        'Cache-Control': isSafari ? 'max-age=3600' : 'no-cache',
+        'Pragma': isSafari ? 'cache' : 'no-cache',
+      },
+    });
     apiCache.set(url, { timestamp: now, data: data.data });
     return data.data;
   } catch (error) {
     const axiosError = error as AxiosError;
-    throw new Error(`API request failed: ${axiosError.message}`);
+    console.error(`GMB API request failed: ${url}`, axiosError);
+    throw new Error(`GMB API request failed: ${axiosError.message}`);
   }
 }
 
@@ -102,8 +110,7 @@ async function getRouteStops(
 
 // Get all stops
 async function getAllStops(): Promise<Stop[]> {
-  const stops = await cachedApiGet<any>(`${API_BASE}/stop`); // Note: GMB API doesn't provide a direct /stop endpoint for all stops, using individual stop lookup as workaround
-  // This is a limitation; in practice, you'd need to fetch stops via route-stop or stop-route APIs
+  const stops = await cachedApiGet<any>(`${API_BASE}/stop`); // Note: GMB API doesn't provide a direct /stop endpoint for all stops
   return stops.map((stop: any) => ({
     stop: stop.stop_id,
     name_en: stop.name_en || 'Unknown',
@@ -118,28 +125,65 @@ async function getAllStops(): Promise<Stop[]> {
   );
 }
 
-// Get ETA for a specific stop on a route
-async function getStopETA(routeId: string, routeSeq: '1' | '2', stopSeq: string, retries = 2): Promise<ETA[]> {
+/**
+ * Get ETA for a specific stop on a route, updated to match src/gmb.ts implementation
+ * @param {string} gtfsId - Route ID (same as routeId)
+ * @param {string} stopId - Stop ID
+ * @param {string} bound - Direction (O for outbound, I for inbound)
+ * @param {number} seq - Sequence number
+ * @returns {Promise<ETA[]>} Array of ETAs
+ */
+async function getStopETA(
+  gtfsId: string,  
+  stopId: string, 
+  bound: 'O' | 'I' = 'O', 
+  seq: number = 0,
+  retries = 2
+): Promise<ETA[]> {
   try {
-    const response = await cachedApiGet<any>(
-      `${API_BASE}/eta/route-stop/${encodeURIComponent(routeId)}/${routeSeq}/${encodeURIComponent(stopSeq)}`
-    );
-    if (!response.enabled) {
-      return [];
-    }
-    return response.eta.map((eta: any) => ({
-      route: routeId,
-      dir: routeSeq === '1' ? 'O' : 'I', // Mapping route_seq to direction (simplified)
-      eta: eta.timestamp,
-      diff: eta.diff,
-      remarks_en: eta.remarks_en,
-      remarks_tc: eta.remarks_tc,
-    }));
+    // Use route-stop endpoint format from src/gmb.ts
+    const url = `${API_BASE}/eta/route-stop/${encodeURIComponent(gtfsId)}/${encodeURIComponent(stopId)}`;
+    const response = await cachedApiGet<any>(url);
+    
+    return response.data
+      .filter((item: any) => 
+        (bound === 'O' && item.route_seq === 1) || 
+        (bound === 'I' && item.route_seq === 2)
+      )
+      .filter((item: any) => seq === 0 || item.stop_seq === seq + 1)
+      .reduce((acc: ETA[], { enabled, eta, description_tc, description_en }: any) => [
+        ...acc,
+        ...(enabled
+          ? eta.map((data: any) => ({
+              co: 'GMB',
+              route: gtfsId,
+              dir: bound,
+              eta: data.timestamp,
+              diff: data.diff,
+              rmk_en: data.remarks_en || '',
+              rmk_tc: data.remarks_tc || '',
+              remarks_en: data.remarks_en,
+              remarks_tc: data.remarks_tc,
+            }))
+          : [{
+              co: 'GMB',
+              route: gtfsId,
+              dir: bound,
+              eta: null,
+              rmk_en: description_en || '',
+              rmk_tc: description_tc || '',
+              remarks_en: description_en,
+              remarks_tc: description_tc,
+            }]
+        ),
+      ], []);
   } catch (error) {
     if (retries > 0) {
-      return getStopETA(routeId, routeSeq, stopSeq, retries - 1);
+      console.log(`Retrying GMB ETA for route ${gtfsId}, stop ${stopId}, ${retries} retries left`);
+      return getStopETA(gtfsId, stopId, bound, seq, retries - 1);
     }
-    throw error;
+    console.error('GMB ETA fetch error:', error);
+    return [];
   }
 }
 
@@ -198,25 +242,78 @@ function isValidCoordinate(lat: number, lon: number): boolean {
   );
 }
 
-// Classify ETAs for a stop (using stop_id)
-async function classifyStopETAs(stopId: string): Promise<ClassifiedETA[]> {
-  const response = await cachedApiGet<any>(`${API_BASE}/eta/stop/${encodeURIComponent(stopId)}`);
-  return response.map((route: any) => ({
-    route: route.route_id.toString(),
-    direction: route.route_seq === 1 ? 'Outbound' : 'Inbound',
-    serviceType: 'Normal', // GMB doesn't specify service type explicitly
-    destination_en: '', // Need route details for this, simplified here
-    destination_tc: '',
-    etas: route.enabled ? route.eta.map((eta: any) => ({
-      route: route.route_id.toString(),
-      dir: route.route_seq === 1 ? 'O' : 'I',
-      eta: eta.timestamp,
-      diff: eta.diff,
-      remarks_en: eta.remarks_en,
-      remarks_tc: eta.remarks_tc,
-    })) : [],
-    company: 'GMB',
-  }));
+/**
+ * Classify ETAs for a stop, updated to use the same pattern as src/gmb.ts
+ */
+async function classifyStopETAs(stopId: string, routeId?: string): Promise<ClassifiedETA[]> {
+  try {
+    if (!routeId) {
+      // If no routeId is provided, try to get all routes for this stop
+      const response = await cachedApiGet<any>(`${API_BASE}/eta/stop/${encodeURIComponent(stopId)}`);
+      
+      return response.map((route: any) => ({
+        route: route.route_id.toString(),
+        direction: route.route_seq === 1 ? 'Outbound' : 'Inbound',
+        serviceType: 'Normal', // GMB doesn't specify service type explicitly
+        destination_en: '', // Need route details for this, simplified here
+        destination_tc: '',
+        etas: route.enabled ? route.eta.map((eta: any) => ({
+          route: route.route_id.toString(),
+          dir: route.route_seq === 1 ? 'O' : 'I',
+          eta: eta.timestamp,
+          diff: eta.diff,
+          rmk_en: eta.remarks_en || '',
+          rmk_tc: eta.remarks_tc || '',
+          remarks_en: eta.remarks_en,
+          remarks_tc: eta.remarks_tc,
+          co: 'GMB',
+        })) : [],
+        company: 'GMB',
+      }));
+    } else {
+      // Fetch ETAs for specific route-stop combination (both outbound and inbound)
+      const outboundETAs = await getStopETA(routeId, stopId, 'O');
+      const inboundETAs = await getStopETA(routeId, stopId, 'I');
+      
+      const results: ClassifiedETA[] = [];
+      
+      if (outboundETAs.length > 0) {
+        results.push({
+          route: routeId,
+          direction: 'Outbound',
+          serviceType: 'Normal',
+          destination_en: '',
+          destination_tc: '',
+          etas: outboundETAs,
+          company: 'GMB',
+        });
+      }
+      
+      if (inboundETAs.length > 0) {
+        results.push({
+          route: routeId,
+          direction: 'Inbound',
+          serviceType: 'Normal',
+          destination_en: '',
+          destination_tc: '',
+          etas: inboundETAs,
+          company: 'GMB',
+        });
+      }
+      
+      return results;
+    }
+  } catch (error) {
+    console.error('Failed to classify GMB ETAs:', error);
+    return [];
+  }
+}
+
+/**
+ * Clears the GMB API cache
+ */
+function clearCache(): void {
+  apiCache.clear();
 }
 
 export {
@@ -229,4 +326,5 @@ export {
   calculateDistance,
   findNearbyStops,
   isValidCoordinate,
+  clearCache,
 };

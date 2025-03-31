@@ -10,17 +10,25 @@ import { router } from "expo-router";
 import ParallaxScrollView from "@/components/ParallaxScrollView";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
-import BusRouteCard from "@/components/BusRouteCard";
-import SearchBox from "@/components/SearchBox";
 import { IconSymbol } from "@/components/ui/IconSymbol";
-import { getAllRoutes, Route, getAllStops, Stop } from "@/util/kmb";
+import SearchBox from "@/components/SearchBox";
 import { useLanguage } from "@/contexts/LanguageContext";
-import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { 
+  KmbRouteCard, 
+  CtbRouteCard, 
+  HkkfRouteCard, 
+  NlbRouteCard, 
+  GmbRouteCard 
+} from "@/components/transport";
+
+// Import utilities
+import { getAllRoutes, Route, getAllStops, Stop } from "@/util/kmb";
+import { TransportRoute, TransportCompany } from "@/types/transport-types";
 
 export default function BusRoutesScreen() {
   const { t, language } = useLanguage();
-  const [routes, setRoutes] = useState<Route[]>([]);
-  const [filteredRoutes, setFilteredRoutes] = useState<Route[]>([]);
+  const [routes, setRoutes] = useState<TransportRoute[]>([]);
+  const [filteredRoutes, setFilteredRoutes] = useState<TransportRoute[]>([]);
   const [stations, setStations] = useState<Stop[]>([]);
   const [filteredStations, setFilteredStations] = useState<Stop[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,9 +43,16 @@ export default function BusRoutesScreen() {
         setLoading(true);
         const allRoutes = await getAllRoutes();
         const allStops = await getAllStops();
+        
+        // Convert Route[] to TransportRoute[] by ensuring correct types
+        const transformedRoutes = allRoutes.map(route => ({
+          ...route,
+          orig_tc: route.orig_tc ? String(route.orig_tc) : undefined,
+          dest_tc: route.dest_tc ? String(route.dest_tc) : undefined
+        })) as TransportRoute[];
 
-        setRoutes(allRoutes);
-        setFilteredRoutes(allRoutes);
+        setRoutes(transformedRoutes);
+        setFilteredRoutes(transformedRoutes);
         setStations(allStops);
         setFilteredStations(allStops);
       } catch (error) {
@@ -61,10 +76,10 @@ export default function BusRoutesScreen() {
         const filtered = routes.filter(
           (route) =>
             route.route.toLowerCase().includes(query) ||
-            route.orig_en.toLowerCase().includes(query) ||
-            route.dest_en.toLowerCase().includes(query) ||
-            (route.orig_tc as string)?.includes(query) ||
-            (route.dest_tc as string)?.includes(query)
+            (route.orig_en || '').toLowerCase().includes(query) ||
+            (route.dest_en || '').toLowerCase().includes(query) ||
+            (route.orig_tc || '').includes(query) ||
+            (route.dest_tc || '').includes(query)
         );
         setFilteredRoutes(filtered);
       } else {
@@ -80,7 +95,7 @@ export default function BusRoutesScreen() {
     setCurrentPage(1); // Reset to first page on new search
   }, [searchQuery, routes, stations, searchType]);
 
-  const handleRoutePress = (route: Route) => {
+  const handleRoutePress = (route: TransportRoute) => {
     router.push(
       `/bus/${route.route}?bound=${route.bound}&serviceType=${route.service_type}`
     );
@@ -88,6 +103,69 @@ export default function BusRoutesScreen() {
 
   const handleStopPress = (stop: Stop) => {
     router.push(`/stop/${stop.stop}`);
+  };
+
+  // Return appropriate route card based on company
+  const getRouteCard = (route: TransportRoute, index: number) => {
+    const company = (route.co || 'KMB').toUpperCase() as TransportCompany;
+    const key = `${route.route}-${route.bound}-${route.service_type}-${index}`;
+    
+    switch (company) {
+      case 'KMB':
+        return (
+          <KmbRouteCard
+            key={key}
+            route={route as Route}
+            onPress={() => handleRoutePress(route)}
+            language={language}
+          />
+        );
+      case 'CTB':
+        return (
+          <CtbRouteCard
+            key={key}
+            route={route}
+            onPress={() => handleRoutePress(route)}
+            language={language}
+          />
+        );
+      case 'HKKF':
+        return (
+          <HkkfRouteCard
+            key={key}
+            route={route}
+            onPress={() => handleRoutePress(route)}
+            language={language}
+          />
+        );
+      case 'NLB':
+        return (
+          <NlbRouteCard
+            key={key}
+            route={route}
+            onPress={() => handleRoutePress(route)}
+            language={language}
+          />
+        );
+      case 'GMB':
+        return (
+          <GmbRouteCard
+            key={key}
+            route={route}
+            onPress={() => handleRoutePress(route)}
+            language={language}
+          />
+        );
+      default:
+        return (
+          <KmbRouteCard
+            key={key}
+            route={route as Route}
+            onPress={() => handleRoutePress(route)}
+            language={language}
+          />
+        );
+    }
   };
 
   // Calculate pagination
@@ -215,16 +293,7 @@ export default function BusRoutesScreen() {
             ) : (
               <ThemedView style={styles.listContainer}>
                 {getDisplayedItems().map((item, index) => {
-                  // Type assertion since we know these are Route objects in this context
-                  const route = item as Route;
-                  return (
-                    <BusRouteCard
-                      key={`${route.route}-${route.bound}-${route.service_type}-${index}`}
-                      route={route}
-                      onPress={() => handleRoutePress(route)}
-                      language={language}
-                    />
-                  );
+                  return getRouteCard(item as TransportRoute, index);
                 })}
                 {renderPagination()}
               </ThemedView>
