@@ -1,11 +1,5 @@
-import { useEffect, useState, useCallback } from "react";
-import {
-  Image,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
-  Alert,
-} from "react-native";
+import { useState, useCallback } from "react";
+import { Image, StyleSheet, FlatList, TouchableOpacity } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 
 import { HelloWave } from "@/components/HelloWave";
@@ -28,7 +22,9 @@ export default function HomeScreen() {
     Array<Route & { key: string }>
   >([]);
   const [favoriteStops, setFavoriteStops] = useState<Stop[]>([]);
-  const [favoriteMtrStations, setFavoriteMtrStations] = useState<MtrStation[]>([]);
+  const [favoriteMtrStations, setFavoriteMtrStations] = useState<MtrStation[]>(
+    []
+  );
   const [loading, setLoading] = useState(true);
 
   const loadFavorites = useCallback(async () => {
@@ -70,16 +66,20 @@ export default function HomeScreen() {
       // Load KMB stop and MTR station favorites
       if (stopFavorites?.stationID?.length) {
         // Split station IDs into KMB and MTR based on their format
-        const mtrStationIds = stopFavorites.stationID.filter(id => id.length === 3);
-        const kmbStopIds = stopFavorites.stationID.filter(id => id.length !== 3);
-        
+        const mtrStationIds = stopFavorites.stationID.filter(
+          (id) => id.length === 3
+        );
+        const kmbStopIds = stopFavorites.stationID.filter(
+          (id) => id.length !== 3
+        );
+
         // Load KMB stops
         const allStops = await getAllStops();
         const stops = kmbStopIds
           .map((id) => allStops.find((s) => s.stop === id))
           .filter((s): s is Stop => s !== undefined);
         setFavoriteStops(stops);
-        
+
         // Load MTR stations
         const allMtrStations = await getAllMtrStops();
         const mtrStations = mtrStationIds
@@ -111,11 +111,11 @@ export default function HomeScreen() {
   const handleStopPress = (stop: Stop) => {
     router.push(`/stop/${stop.stop}`);
   };
-  
+
   const handleMtrStationPress = (station: MtrStation) => {
     router.push({
       pathname: "/mtr/[stationId]",
-      params: { stationId: station.stop }
+      params: { stationId: station.stop },
     });
   };
 
@@ -152,7 +152,9 @@ export default function HomeScreen() {
           </ThemedText>
         ) : (
           <>
-            {favoriteRoutes.length === 0 && favoriteStops.length === 0 && favoriteMtrStations.length === 0 ? (
+            {favoriteRoutes.length === 0 &&
+            favoriteStops.length === 0 &&
+            favoriteMtrStations.length === 0 ? (
               <ThemedText style={styles.noFavoritesText}>
                 {t("home.no.favorites")}
               </ThemedText>
@@ -239,7 +241,7 @@ export default function HomeScreen() {
                     />
                   </ThemedView>
                 )}
-                
+
                 {/* MTR stations section */}
                 {favoriteMtrStations.length > 0 && (
                   <ThemedView style={styles.subsection}>
@@ -258,12 +260,17 @@ export default function HomeScreen() {
                         >
                           <ThemedView style={styles.favoriteCardContent}>
                             <ThemedView style={styles.mtrLineContainer}>
-                              {item.line_codes.slice(0, 2).map(line => (
-                                <ThemedView 
+                              {item.line_codes.slice(0, 2).map((line) => (
+                                <ThemedView
                                   key={line}
-                                  style={[styles.mtrLine, { backgroundColor: '#0075C2' }]}
+                                  style={[
+                                    styles.mtrLine,
+                                    { backgroundColor: "#0075C2" },
+                                  ]}
                                 >
-                                  <ThemedText style={styles.mtrLineText}>{line}</ThemedText>
+                                  <ThemedText style={styles.mtrLineText}>
+                                    {line}
+                                  </ThemedText>
                                 </ThemedView>
                               ))}
                             </ThemedView>
@@ -423,7 +430,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#DCF0FF",
   },
   mtrLineContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 4,
     marginBottom: 8,
   },
@@ -433,8 +440,8 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   mtrLineText: {
-    color: 'white',
-    fontWeight: 'bold',
+    color: "white",
+    fontWeight: "bold",
     fontSize: 12,
   },
 });

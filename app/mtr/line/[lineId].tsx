@@ -20,8 +20,6 @@ import { MTR_COLORS, MtrStation, getAllRoutes, getAllStops } from "@/util/mtr";
 import { TransportRoute } from "@/types/transport-types";
 import { useLanguage } from "@/contexts/LanguageContext";
 
-const { width } = Dimensions.get("window");
-
 export default function MtrLineScreen() {
   const { lineId } = useLocalSearchParams();
   const [loading, setLoading] = useState(true);
@@ -253,9 +251,8 @@ export default function MtrLineScreen() {
                               styles.miniLineChip,
                               {
                                 backgroundColor:
-                                  MTR_COLORS[
-                                    line as keyof typeof MTR_COLORS
-                                  ] || "#666666",
+                                  MTR_COLORS[line as keyof typeof MTR_COLORS] ||
+                                  "#666666",
                               },
                             ]}
                           >

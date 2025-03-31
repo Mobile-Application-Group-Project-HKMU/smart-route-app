@@ -3,7 +3,6 @@ import {
   StyleSheet,
   ActivityIndicator,
   TouchableOpacity,
-  View,
   ScrollView,
 } from "react-native";
 import { router } from "expo-router";
@@ -14,28 +13,33 @@ import { ThemedView } from "@/components/ThemedView";
 import { IconSymbol } from "@/components/ui/IconSymbol";
 import SearchBox from "@/components/SearchBox";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { 
-  KmbRouteCard, 
-  CtbRouteCard, 
-  HkkfRouteCard, 
-  NlbRouteCard, 
+import {
+  KmbRouteCard,
+  CtbRouteCard,
+  HkkfRouteCard,
+  NlbRouteCard,
   GmbRouteCard,
-  MtrRouteCard 
+  MtrRouteCard,
 } from "@/components/transport";
 
 // Import unified transport utilities with correct names
-import { 
-  getAllKmbRoutes, 
+import {
+  getAllKmbRoutes,
   getAllKmbStops,
   getAllGmbRoutes,
   getAllGmbStops,
-  getAllMtrRoutes,  // Corrected import name
-  getAllMtrStops    // Corrected import name
-} from '@/util/transport';
-import { TransportRoute, TransportCompany, TransportStop, TransportMode } from "@/types/transport-types";
+  getAllMtrRoutes, // Corrected import name
+  getAllMtrStops, // Corrected import name
+} from "@/util/transport";
+import {
+  TransportRoute,
+  TransportCompany,
+  TransportStop,
+  TransportMode,
+} from "@/types/transport-types";
 
 // Transport company types for tab selection
-type TransportFilter = 'ALL' | TransportCompany;
+type TransportFilter = "ALL" | TransportCompany;
 
 export default function BusRoutesScreen() {
   const { t, language } = useLanguage();
@@ -47,23 +51,27 @@ export default function BusRoutesScreen() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchType, setSearchType] = useState<"routes" | "stations">("routes");
   const [currentPage, setCurrentPage] = useState(1);
-  const [transportFilter, setTransportFilter] = useState<TransportFilter>("ALL");
+  const [transportFilter, setTransportFilter] =
+    useState<TransportFilter>("ALL");
   const itemsPerPage = 10;
 
   // Transport company colors for tabs
-  const transportColors: Record<TransportFilter, { light: string, dark: string, text: string }> = {
+  const transportColors: Record<
+    TransportFilter,
+    { light: string; dark: string; text: string }
+  > = {
     ALL: { light: "#8B4513", dark: "#8B4513", text: "#FFFFFF" },
     KMB: { light: "#FF5151", dark: "#B30000", text: "#FFFFFF" },
     CTB: { light: "#FFDD00", dark: "#CC9900", text: "#000000" },
     GMB: { light: "#66CC66", dark: "#009900", text: "#FFFFFF" },
-    NLB: { light: "#00CCCC", dark: "#008888", text: "#FFFFFF" }, 
+    NLB: { light: "#00CCCC", dark: "#008888", text: "#FFFFFF" },
     HKKF: { light: "#4D94FF", dark: "#0066CC", text: "#FFFFFF" },
     MTR: { light: "#E60012", dark: "#B30000", text: "#FFFFFF" },
     LR: { light: "#95CA3E", dark: "#6B9130", text: "#FFFFFF" },
     LRF: { light: "#FF9900", dark: "#CC7A00", text: "#FFFFFF" },
     SF: { light: "#8959A8", dark: "#5F3E73", text: "#FFFFFF" },
     FF: { light: "#4078C0", dark: "#2C5499", text: "#FFFFFF" },
-    NWFB: { light: "#9370DB", dark: "#6A3CA0", text: "#FFFFFF" }
+    NWFB: { light: "#9370DB", dark: "#6A3CA0", text: "#FFFFFF" },
   };
 
   useEffect(() => {
@@ -72,24 +80,24 @@ export default function BusRoutesScreen() {
         setLoading(true);
         let allRoutes: TransportRoute[] = [];
         let allStations: TransportStop[] = [];
-        
+
         // Fetch KMB routes and stops
         const kmbRoutes = await getAllKmbRoutes();
         const kmbStops = await getAllKmbStops();
-        
+
         // Convert KMB Route[] to TransportRoute[]
-        const kmbTransportRoutes = kmbRoutes.map(route => ({
+        const kmbTransportRoutes = kmbRoutes.map((route) => ({
           ...route,
           orig_tc: route.orig_tc ? String(route.orig_tc) : undefined,
           dest_tc: route.dest_tc ? String(route.dest_tc) : undefined,
-          co: 'KMB', // Ensure company is set
-          mode: 'BUS' as TransportMode // Set mode for KMB
+          co: "KMB", // Ensure company is set
+          mode: "BUS" as TransportMode, // Set mode for KMB
         })) as TransportRoute[];
-        
+
         allRoutes.push(...kmbTransportRoutes);
-        
+
         // Convert KMB stops to TransportStop[]
-        const kmbTransportStops = kmbStops.map(stop => ({
+        const kmbTransportStops = kmbStops.map((stop) => ({
           stop: stop.stop,
           name_en: stop.name_en,
           name_tc: stop.name_tc,
@@ -97,56 +105,66 @@ export default function BusRoutesScreen() {
           lat: stop.lat,
           long: stop.long,
           data_timestamp: stop.data_timestamp,
-          company: 'KMB',
-          mode: 'BUS' as TransportMode
+          company: "KMB",
+          mode: "BUS" as TransportMode,
         })) as TransportStop[];
-        
+
         allStations.push(...kmbTransportStops);
-        
+
         // Try to fetch GMB routes and stops
         try {
           const gmbRoutes = await getAllGmbRoutes();
           if (gmbRoutes && gmbRoutes.length > 0) {
-            allRoutes.push(...gmbRoutes.map(route => ({
-              ...route,
-              mode: 'BUS' as TransportMode
-            })));
+            allRoutes.push(
+              ...gmbRoutes.map((route) => ({
+                ...route,
+                mode: "BUS" as TransportMode,
+              }))
+            );
           }
-          
+
           const gmbStops = await getAllGmbStops();
           if (gmbStops && gmbStops.length > 0) {
-            allStations.push(...gmbStops.map(stop => ({
-              ...stop,
-              company: 'GMB',
-              mode: 'BUS' as TransportMode
-            })));
+            allStations.push(
+              ...gmbStops.map((stop) => ({
+                ...stop,
+                company: "GMB",
+                mode: "BUS" as TransportMode,
+              }))
+            );
           }
         } catch (error) {
-          console.warn('Failed to fetch GMB data:', error);
+          console.warn("Failed to fetch GMB data:", error);
         }
-        
+
         // Try to fetch MTR routes and stops with correct language
         try {
-          const mtrRoutes = await getAllMtrRoutes(language as 'en' | 'zh-Hant' | 'zh-Hans');
+          const mtrRoutes = await getAllMtrRoutes(
+            language as "en" | "zh-Hant" | "zh-Hans"
+          );
           if (mtrRoutes && mtrRoutes.length > 0) {
-            allRoutes.push(...mtrRoutes.map(route => ({
-              ...route,
-              mode: 'MTR' as TransportMode
-            })));
+            allRoutes.push(
+              ...mtrRoutes.map((route) => ({
+                ...route,
+                mode: "MTR" as TransportMode,
+              }))
+            );
           }
-          
+
           const mtrStops = await getAllMtrStops();
           if (mtrStops && mtrStops.length > 0) {
-            allStations.push(...mtrStops.map(stop => ({
-              ...stop,
-              company: 'MTR',
-              mode: 'MTR' as TransportMode
-            })));
+            allStations.push(
+              ...mtrStops.map((stop) => ({
+                ...stop,
+                company: "MTR",
+                mode: "MTR" as TransportMode,
+              }))
+            );
           }
         } catch (error) {
-          console.warn('Failed to fetch MTR data:', error);
+          console.warn("Failed to fetch MTR data:", error);
         }
-        
+
         // We can add more transport providers here later
 
         setRoutes(allRoutes);
@@ -171,90 +189,93 @@ export default function BusRoutesScreen() {
   const applyFilters = () => {
     if (searchType === "routes") {
       let filtered = routes;
-      
+
       // First filter by transport company if not "ALL"
       if (transportFilter !== "ALL") {
         filtered = filtered.filter(
-          route => (route.co || '').toUpperCase() === transportFilter
+          (route) => (route.co || "").toUpperCase() === transportFilter
         );
       }
-      
+
       // Then filter by search query if any
       if (searchQuery.trim() !== "") {
         const query = searchQuery.toLowerCase();
         filtered = filtered.filter(
           (route) =>
             route.route.toLowerCase().includes(query) ||
-            (route.orig_en || '').toLowerCase().includes(query) ||
-            (route.dest_en || '').toLowerCase().includes(query) ||
-            (route.orig_tc || '').includes(query) ||
-            (route.dest_tc || '').includes(query)
+            (route.orig_en || "").toLowerCase().includes(query) ||
+            (route.dest_en || "").toLowerCase().includes(query) ||
+            (route.orig_tc || "").includes(query) ||
+            (route.dest_tc || "").includes(query)
         );
       }
-      
+
       setFilteredRoutes(filtered);
     } else {
       // For stations, apply both company filter and search query filter
       let filtered = stations;
-      
+
       // First filter by transport company if not "ALL"
       if (transportFilter !== "ALL") {
         filtered = filtered.filter(
-          station => (station.company || 'KMB').toUpperCase() === transportFilter
+          (station) =>
+            (station.company || "KMB").toUpperCase() === transportFilter
         );
       }
-      
+
       // Then apply search query filter if any
       if (searchQuery.trim() !== "") {
         const query = searchQuery.toLowerCase();
         filtered = filtered.filter(
           (station) =>
-            (String(station.name_en || '').toLowerCase()).includes(query) ||
-            (String(station.name_tc || '')).includes(query) ||
-            (String(station.stop || '')).includes(query)
+            String(station.name_en || "")
+              .toLowerCase()
+              .includes(query) ||
+            String(station.name_tc || "").includes(query) ||
+            String(station.stop || "").includes(query)
         );
       }
-      
+
       setFilteredStations(filtered);
     }
-    
+
     setCurrentPage(1); // Reset to first page on filter change
   };
 
   const handleRoutePress = (route: TransportRoute) => {
-    const company = (route.co || 'KMB').toUpperCase();
-    
+    const company = (route.co || "KMB").toUpperCase();
+
     // Route navigation may need to be different based on company
-    if (company === 'KMB') {
+    if (company === "KMB") {
       router.push(
         `/bus/${route.route}?bound=${route.bound}&serviceType=${route.service_type}`
       );
-    } else if (company === 'GMB') {
+    } else if (company === "GMB") {
       // For GMB routes, we might need different parameters
       router.push(
         `/bus/${route.route}?company=GMB&region=${route.region}&routeId=${route.route_id}`
       );
-    } else if (company === 'MTR') {
+    } else if (company === "MTR") {
       // Navigate to MTR line details
       router.push({
         pathname: "/mtr/line/[lineId]",
-        params: { lineId: route.route }
+        params: { lineId: route.route },
       });
     } else {
       // Generic handling for other companies
       router.push(
-        `/bus/${route.route}?company=${company}&bound=${route.bound || 'O'}`
+        `/bus/${route.route}?company=${company}&bound=${route.bound || "O"}`
       );
     }
   };
 
   const handleStopPress = (stop: TransportStop) => {
-    const company = (stop.company || 'KMB').toUpperCase();
-    
-    if (company === 'MTR') {
+    const company = (stop.company || "KMB").toUpperCase();
+
+    if (company === "MTR") {
       router.push({
         pathname: "/mtr/[stationId]",
-        params: { stationId: stop.stop }
+        params: { stationId: stop.stop },
       });
     } else {
       router.push(`/stop/${stop.stop}?company=${company}`);
@@ -263,11 +284,11 @@ export default function BusRoutesScreen() {
 
   // Return appropriate route card based on company
   const getRouteCard = (route: TransportRoute, index: number) => {
-    const company = (route.co || 'KMB').toUpperCase() as TransportCompany;
+    const company = (route.co || "KMB").toUpperCase() as TransportCompany;
     const key = `${route.route}-${route.bound}-${route.service_type}-${index}`;
-    
+
     switch (company) {
-      case 'KMB':
+      case "KMB":
         return (
           <KmbRouteCard
             key={key}
@@ -276,7 +297,7 @@ export default function BusRoutesScreen() {
             language={language}
           />
         );
-      case 'CTB':
+      case "CTB":
         return (
           <CtbRouteCard
             key={key}
@@ -285,7 +306,7 @@ export default function BusRoutesScreen() {
             language={language}
           />
         );
-      case 'HKKF':
+      case "HKKF":
         return (
           <HkkfRouteCard
             key={key}
@@ -294,7 +315,7 @@ export default function BusRoutesScreen() {
             language={language}
           />
         );
-      case 'NLB':
+      case "NLB":
         return (
           <NlbRouteCard
             key={key}
@@ -303,7 +324,7 @@ export default function BusRoutesScreen() {
             language={language}
           />
         );
-      case 'GMB':
+      case "GMB":
         return (
           <GmbRouteCard
             key={key}
@@ -312,7 +333,7 @@ export default function BusRoutesScreen() {
             language={language}
           />
         );
-      case 'MTR':
+      case "MTR":
         return (
           <MtrRouteCard
             key={key}
@@ -389,46 +410,48 @@ export default function BusRoutesScreen() {
   const renderTransportTabs = () => {
     // Show only transport companies that have routes or stations
     const availableCompanies = new Set(
-      searchType === "routes" 
-        ? routes.map(route => (route.co || 'KMB').toUpperCase())
-        : stations.map(station => (station.company || 'KMB').toUpperCase())
+      searchType === "routes"
+        ? routes.map((route) => (route.co || "KMB").toUpperCase())
+        : stations.map((station) => (station.company || "KMB").toUpperCase())
     );
-    
-    const transportModes: TransportFilter[] = ['ALL'];
-    
+
+    const transportModes: TransportFilter[] = ["ALL"];
+
     // Add available transport companies to the tabs
-    ['KMB', 'CTB', 'GMB', 'NLB', 'HKKF', 'MTR'].forEach(company => {
+    ["KMB", "CTB", "GMB", "NLB", "HKKF", "MTR"].forEach((company) => {
       if (availableCompanies.has(company as TransportCompany)) {
         transportModes.push(company as TransportCompany);
       }
     });
-    
+
     return (
-      <ScrollView 
-        horizontal 
+      <ScrollView
+        horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.transportTabsContainer}
       >
         {transportModes.map((mode) => {
           const colors = transportColors[mode];
           const isActive = transportFilter === mode;
-          
+
           return (
             <TouchableOpacity
               key={mode}
               style={[
                 styles.transportTab,
-                { backgroundColor: isActive ? colors.light : '#f0f0f0' },
+                { backgroundColor: isActive ? colors.light : "#f0f0f0" },
               ]}
               onPress={() => setTransportFilter(mode)}
             >
               <ThemedText
                 style={[
                   styles.transportTabText,
-                  { color: isActive ? colors.text : '#333333' },
+                  { color: isActive ? colors.text : "#333333" },
                 ]}
               >
-                {mode === 'ALL' ? t('bus.transport.all') : t(`bus.transport.${mode.toLowerCase()}`)}
+                {mode === "ALL"
+                  ? t("bus.transport.all")
+                  : t(`bus.transport.${mode.toLowerCase()}`)}
               </ThemedText>
             </TouchableOpacity>
           );
@@ -439,19 +462,19 @@ export default function BusRoutesScreen() {
 
   // Render station count by company
   const renderStationCounts = () => {
-    if (searchType !== 'stations') return null;
-    
+    if (searchType !== "stations") return null;
+
     // Count stations by company
     const companyCounts: Record<string, number> = {};
-    stations.forEach(station => {
-      const company = station.company || 'KMB';
+    stations.forEach((station) => {
+      const company = station.company || "KMB";
       companyCounts[company] = (companyCounts[company] || 0) + 1;
     });
-    
+
     return (
       <ThemedView style={styles.stationCountsContainer}>
         <ThemedText style={styles.stationCountsTitle}>
-          {t('bus.available.stations')}:
+          {t("bus.available.stations")}:
         </ThemedText>
         {Object.entries(companyCounts).map(([company, count]) => (
           <ThemedText key={company} style={styles.stationCount}>
@@ -525,7 +548,7 @@ export default function BusRoutesScreen() {
 
       {/* Transport company tabs - show for both routes and stations */}
       {renderTransportTabs()}
-      
+
       {/* Show station counts by company when in station mode */}
       {searchType === "stations" && renderStationCounts()}
 
@@ -563,7 +586,9 @@ export default function BusRoutesScreen() {
                     <IconSymbol
                       name="location.fill"
                       size={24}
-                      color={getStationIconColor((item as TransportStop).company)}
+                      color={getStationIconColor(
+                        (item as TransportStop).company
+                      )}
                       style={styles.stationIcon}
                     />
                     <ThemedView style={styles.stationInfo}>
@@ -571,11 +596,13 @@ export default function BusRoutesScreen() {
                         {language === "en"
                           ? (item as TransportStop).name_en
                           : language === "zh-Hans"
-                          ? (item as TransportStop).name_sc || (item as TransportStop).name_tc
+                          ? (item as TransportStop).name_sc ||
+                            (item as TransportStop).name_tc
                           : (item as TransportStop).name_tc}
                       </ThemedText>
                       <ThemedText style={styles.stationId}>
-                        {(item as TransportStop).company || 'KMB'} • {t("bus.stationId")}: {(item as TransportStop).stop}
+                        {(item as TransportStop).company || "KMB"} •{" "}
+                        {t("bus.stationId")}: {(item as TransportStop).stop}
                       </ThemedText>
                     </ThemedView>
                     <IconSymbol
@@ -597,13 +624,20 @@ export default function BusRoutesScreen() {
   // Helper function to get station icon color based on company
   function getStationIconColor(company: string | undefined): string {
     switch (company?.toUpperCase()) {
-      case 'KMB': return '#B30000'; // Red
-      case 'CTB': return '#CC9900'; // Yellow
-      case 'GMB': return '#009900'; // Green
-      case 'NLB': return '#008888'; // Cyan
-      case 'HKKF': return '#0066CC'; // Blue
-      case 'MTR': return '#E60012'; // MTR Red
-      default: return '#8B4513'; // Default brown
+      case "KMB":
+        return "#B30000"; // Red
+      case "CTB":
+        return "#CC9900"; // Yellow
+      case "GMB":
+        return "#009900"; // Green
+      case "NLB":
+        return "#008888"; // Cyan
+      case "HKKF":
+        return "#0066CC"; // Blue
+      case "MTR":
+        return "#E60012"; // MTR Red
+      default:
+        return "#8B4513"; // Default brown
     }
   }
 }
@@ -645,19 +679,19 @@ const styles = StyleSheet.create({
   transportTabsContainer: {
     paddingHorizontal: 8,
     marginBottom: 12,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
   transportTab: {
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
     marginHorizontal: 4,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: "#f0f0f0",
     marginVertical: 4,
   },
   transportTabText: {
-    fontWeight: '500',
+    fontWeight: "500",
     fontSize: 14,
   },
   loader: {
@@ -722,10 +756,10 @@ const styles = StyleSheet.create({
   stationCountsContainer: {
     marginTop: 8,
     marginBottom: 16,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 8,
   },
   stationCountsTitle: {
@@ -734,7 +768,7 @@ const styles = StyleSheet.create({
   },
   stationCount: {
     fontSize: 14,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: "#f0f0f0",
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,

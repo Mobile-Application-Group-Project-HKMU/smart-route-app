@@ -31,8 +31,6 @@ import {
 } from "@/util/favourite";
 import { useLanguage } from "@/contexts/LanguageContext";
 
-const { width } = Dimensions.get("window");
-
 export default function StopETAScreen() {
   const { t, language } = useLanguage();
   const { stopId } = useLocalSearchParams();

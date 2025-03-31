@@ -1,9 +1,7 @@
-import { useEffect, useState, useRef } from "react";
+import { useState, useRef } from "react";
 import {
   StyleSheet,
-  FlatList,
   TouchableOpacity,
-  Alert,
   View,
   ActivityIndicator,
   Dimensions,
@@ -17,7 +15,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { IconSymbol } from "@/components/ui/IconSymbol";
 import { findNearbyStops, type Stop } from "@/util/kmb";
-import { findNearbyStops as findNearbyMtrStops, MtrStation, MTR_COLORS } from "@/util/mtr";
+import { findNearbyStops as findNearbyMtrStops } from "@/util/mtr";
 import ParallaxScrollView from "@/components/ParallaxScrollView";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -35,7 +33,7 @@ type CombinedStop = {
   long: number;
   distance: number;
   company: string;
-  type: 'KMB' | 'MTR';
+  type: "KMB" | "MTR";
 };
 
 export default function NearbyScreen() {
@@ -59,18 +57,22 @@ export default function NearbyScreen() {
     try {
       setLoading(true);
       setError(null);
-      
+
       // Get nearby KMB stops
       const kmbStops = await findNearbyStops(latitude, longitude, searchRadius);
-      const kmbFormatted: CombinedStop[] = kmbStops.map(stop => ({
+      const kmbFormatted: CombinedStop[] = kmbStops.map((stop) => ({
         ...stop,
-        type: 'KMB',
-        company: 'KMB',
+        type: "KMB",
+        company: "KMB",
       }));
-      
+
       // Get nearby MTR stations
-      const mtrStations = await findNearbyMtrStops(latitude, longitude, searchRadius);
-      const mtrFormatted: CombinedStop[] = mtrStations.map(station => ({
+      const mtrStations = await findNearbyMtrStops(
+        latitude,
+        longitude,
+        searchRadius
+      );
+      const mtrFormatted: CombinedStop[] = mtrStations.map((station) => ({
         stop: station.stop,
         name_en: station.name_en,
         name_tc: station.name_tc,
@@ -78,12 +80,14 @@ export default function NearbyScreen() {
         lat: station.lat,
         long: station.long,
         distance: station.distance,
-        company: 'MTR',
-        type: 'MTR'
+        company: "MTR",
+        type: "MTR",
       }));
-      
+
       // Combine and sort by distance
-      const combined = [...kmbFormatted, ...mtrFormatted].sort((a, b) => a.distance - b.distance);
+      const combined = [...kmbFormatted, ...mtrFormatted].sort(
+        (a, b) => a.distance - b.distance
+      );
       setNearbyStops(combined);
     } catch (err) {
       setError("Failed to find nearby stops. Please try again.");
@@ -139,15 +143,15 @@ export default function NearbyScreen() {
   };
 
   const handleStopPress = (stop: CombinedStop) => {
-    if (stop.type === 'MTR') {
+    if (stop.type === "MTR") {
       router.push({
         pathname: "/mtr/[stationId]",
-        params: { stationId: stop.stop }
+        params: { stationId: stop.stop },
       });
     } else {
       router.push({
         pathname: "/stop/[stopId]",
-        params: { stopId: stop.stop }
+        params: { stopId: stop.stop },
       });
     }
   };
@@ -163,8 +167,9 @@ export default function NearbyScreen() {
     }
   };
 
-  const filteredStops = nearbyStops.filter(stop => 
-    (showMTR && stop.type === 'MTR') || (showBus && stop.type === 'KMB')
+  const filteredStops = nearbyStops.filter(
+    (stop) =>
+      (showMTR && stop.type === "MTR") || (showBus && stop.type === "KMB")
   );
 
   return (
@@ -219,7 +224,7 @@ export default function NearbyScreen() {
                   coordinate={{ latitude: stop.lat, longitude: stop.long }}
                   title={stop.name_en}
                   description={`${Math.round(stop.distance)}m away`}
-                  pinColor={stop.type === 'MTR' ? '#0075C2' : '#B5A45D'}
+                  pinColor={stop.type === "MTR" ? "#0075C2" : "#B5A45D"}
                   onCalloutPress={() => handleStopPress(stop)}
                 />
               ))}
@@ -274,8 +279,16 @@ export default function NearbyScreen() {
             ]}
             onPress={() => setShowBus(!showBus)}
           >
-            <IconSymbol name="bus.fill" size={16} color={showBus ? "white" : "#666"} />
-            <ThemedText style={showBus ? styles.activeFilterText : styles.inactiveFilterText}>
+            <IconSymbol
+              name="bus.fill"
+              size={16}
+              color={showBus ? "white" : "#666"}
+            />
+            <ThemedText
+              style={
+                showBus ? styles.activeFilterText : styles.inactiveFilterText
+              }
+            >
               {t("nearby.filter.bus")}
             </ThemedText>
           </TouchableOpacity>
@@ -286,8 +299,16 @@ export default function NearbyScreen() {
             ]}
             onPress={() => setShowMTR(!showMTR)}
           >
-            <IconSymbol name="tram.fill" size={16} color={showMTR ? "white" : "#666"} />
-            <ThemedText style={showMTR ? styles.activeFilterText : styles.inactiveFilterText}>
+            <IconSymbol
+              name="tram.fill"
+              size={16}
+              color={showMTR ? "white" : "#666"}
+            />
+            <ThemedText
+              style={
+                showMTR ? styles.activeFilterText : styles.inactiveFilterText
+              }
+            >
               {t("nearby.filter.mtr")}
             </ThemedText>
           </TouchableOpacity>
@@ -341,14 +362,14 @@ export default function NearbyScreen() {
                       key={`${item.type}-${item.stop}`}
                       style={[
                         styles.stopItem,
-                        item.type === 'MTR' ? styles.mtrItem : {}
+                        item.type === "MTR" ? styles.mtrItem : {},
                       ]}
                       onPress={() => handleStopPress(item)}
                     >
                       <IconSymbol
-                        name={item.type === 'MTR' ? "tram.fill" : "bus.fill"}
+                        name={item.type === "MTR" ? "tram.fill" : "bus.fill"}
                         size={24}
-                        color={item.type === 'MTR' ? "#0A3161" : "#B5A45D"}
+                        color={item.type === "MTR" ? "#0A3161" : "#B5A45D"}
                         style={styles.stopIcon}
                       />
                       <ThemedView style={styles.stopInfo}>
@@ -363,7 +384,8 @@ export default function NearbyScreen() {
                           {t("nearby.meters.away").replace(
                             "{0}",
                             Math.round(item.distance).toString()
-                          )} • {item.type}
+                          )}{" "}
+                          • {item.type}
                         </ThemedText>
                       </ThemedView>
                       <TouchableOpacity
@@ -539,34 +561,34 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   transportFilter: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
     marginVertical: 8,
     gap: 12,
   },
   filterButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 16,
     gap: 6,
   },
   activeFilterButton: {
-    backgroundColor: '#0A3161',
+    backgroundColor: "#0A3161",
   },
   inactiveFilterButton: {
-    backgroundColor: '#e0e0e0',
+    backgroundColor: "#e0e0e0",
   },
   activeFilterText: {
-    color: 'white',
-    fontWeight: '500',
+    color: "white",
+    fontWeight: "500",
   },
   inactiveFilterText: {
-    color: '#666',
+    color: "#666",
   },
   mtrItem: {
     borderLeftWidth: 4,
-    borderLeftColor: '#0075C2',
+    borderLeftColor: "#0075C2",
   },
 });

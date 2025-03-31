@@ -1,12 +1,16 @@
-import { useEffect } from 'react';
-import { StyleSheet, Pressable, Linking, useColorScheme, ScrollView } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useEffect } from "react";
+import {
+  StyleSheet,
+  Pressable,
+  Linking,
+  useColorScheme,
+  ScrollView,
+} from "react-native";
+import { router, useLocalSearchParams } from "expo-router";
 
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
-import { IconSymbol } from '@/components/ui/IconSymbol';
-import { useLanguage } from '@/contexts/LanguageContext';
-
+import { ThemedText } from "@/components/ThemedText";
+import { ThemedView } from "@/components/ThemedView";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const CONTENT = {
   en: {
@@ -48,7 +52,7 @@ const CONTENT = {
       ],
     },
   },
-  'zh-Hant': {
+  "zh-Hant": {
     title: "項目概況",
     teamTitle: "技術團隊構成",
     termsTitle: "使用條款與政策",
@@ -59,7 +63,8 @@ const CONTENT = {
       academicPeriod: "2025年春季學期",
       projectType: "課程小組項目",
     },
-    description: "本學術項目作為現代移動開發範式的綜合實踐，整合了前沿技術方案與行業最佳實踐。",
+    description:
+      "本學術項目作為現代移動開發範式的綜合實踐，整合了前沿技術方案與行業最佳實踐。",
     keyFeatures: {
       title: "核心功能體系",
       items: [
@@ -86,7 +91,7 @@ const CONTENT = {
       ],
     },
   },
-  'zh-Hans': {
+  "zh-Hans": {
     title: "项目概况",
     teamTitle: "技术团队构成",
     termsTitle: "使用条款与政策",
@@ -97,7 +102,8 @@ const CONTENT = {
       academicPeriod: "2025年春季学期",
       projectType: "课程小组项目",
     },
-    description: "本学术项目作为现代移动开发范式的综合实践，整合了前沿技术方案与行业最佳实践。",
+    description:
+      "本学术项目作为现代移动开发范式的综合实践，整合了前沿技术方案与行业最佳实践。",
     keyFeatures: {
       title: "核心功能体系",
       items: [
@@ -131,37 +137,37 @@ const TEAM_MEMBERS = [
     name: "Li Yanpei",
     role: "Frontend Development / Server Deploy",
     studentId: "13522245",
-    href: "https://hiko.dev"
+    href: "https://hiko.dev",
   },
   {
     name: "Li Yuan",
     role: "Group Member",
     studentId: "13549915",
-    href: ""
+    href: "",
   },
   {
     name: "LEE Meng Hin",
     role: "Group Member",
     studentId: "13799930",
-    href: "https://github.com/menghinnn"
+    href: "https://github.com/menghinnn",
   },
   {
     name: "Chan Antony",
     role: "Group Member",
     studentId: "13830346",
-    href: "https://github.com/ac0915"
+    href: "https://github.com/ac0915",
   },
   {
     name: "Sze Tsz Yam",
     role: "Group Member",
     studentId: "13852523",
-    href: "https://github.com/BryantSzeTY"
+    href: "https://github.com/BryantSzeTY",
   },
   {
     name: "Poon Chun Him",
     role: "Group Member",
     studentId: "13810488",
-    href: ""
+    href: "",
   },
 ];
 
@@ -170,11 +176,11 @@ export default function AboutScreen() {
   const { language } = useLanguage();
   const content = CONTENT[language];
   const colorScheme = useColorScheme();
-  
+
   useEffect(() => {
     // Prevent direct navigation to this page
-    if (fromIndex !== 'true') {
-      router.replace('/');
+    if (fromIndex !== "true") {
+      router.replace("/");
     }
   }, [fromIndex]);
 
@@ -183,56 +189,82 @@ export default function AboutScreen() {
       Linking.openURL(url);
     }
   };
-  
+
   return (
     <ThemedView style={styles.container}>
       <ScrollView style={styles.scrollView}>
         <ThemedView style={styles.section}>
           <ThemedText style={styles.schoolName}>{content.school}</ThemedText>
           <ThemedView style={styles.contextBox}>
-            <ThemedText style={styles.contextItem}>{content.projectContext.department}</ThemedText>
-            <ThemedText style={styles.contextItem}>{content.projectContext.course}</ThemedText>
-            <ThemedText style={styles.contextItem}>{content.projectContext.academicPeriod}</ThemedText>
-            <ThemedText style={styles.contextItem}>{content.projectContext.projectType}</ThemedText>
+            <ThemedText style={styles.contextItem}>
+              {content.projectContext.department}
+            </ThemedText>
+            <ThemedText style={styles.contextItem}>
+              {content.projectContext.course}
+            </ThemedText>
+            <ThemedText style={styles.contextItem}>
+              {content.projectContext.academicPeriod}
+            </ThemedText>
+            <ThemedText style={styles.contextItem}>
+              {content.projectContext.projectType}
+            </ThemedText>
           </ThemedView>
-          <ThemedText style={styles.description}>{content.description}</ThemedText>
+          <ThemedText style={styles.description}>
+            {content.description}
+          </ThemedText>
         </ThemedView>
-        
+
         <ThemedView style={styles.section}>
-          <ThemedText style={styles.sectionTitle}>{content.keyFeatures.title}</ThemedText>
+          <ThemedText style={styles.sectionTitle}>
+            {content.keyFeatures.title}
+          </ThemedText>
           {content.keyFeatures.items.map((item, index) => (
-            <ThemedText key={index} style={styles.listItem}>• {item}</ThemedText>
+            <ThemedText key={index} style={styles.listItem}>
+              • {item}
+            </ThemedText>
           ))}
         </ThemedView>
-        
+
         <ThemedView style={styles.section}>
-          <ThemedText style={styles.sectionTitle}>{content.technicalSpecifications.title}</ThemedText>
+          <ThemedText style={styles.sectionTitle}>
+            {content.technicalSpecifications.title}
+          </ThemedText>
           {content.technicalSpecifications.stack.map((item, index) => (
-            <ThemedText key={index} style={styles.listItem}>• {item}</ThemedText>
+            <ThemedText key={index} style={styles.listItem}>
+              • {item}
+            </ThemedText>
           ))}
         </ThemedView>
-        
+
         <ThemedView style={styles.section}>
-          <ThemedText style={styles.sectionTitle}>{content.teamTitle}</ThemedText>
+          <ThemedText style={styles.sectionTitle}>
+            {content.teamTitle}
+          </ThemedText>
           <ThemedView style={styles.teamList}>
             {TEAM_MEMBERS.map((member, index) => (
-              <Pressable 
-                key={index} 
+              <Pressable
+                key={index}
                 style={styles.teamMember}
                 onPress={() => member.href && openLink(member.href)}
               >
                 <ThemedText style={styles.memberName}>{member.name}</ThemedText>
                 <ThemedText style={styles.memberRole}>{member.role}</ThemedText>
-                <ThemedText style={styles.memberId}>ID: {member.studentId}</ThemedText>
+                <ThemedText style={styles.memberId}>
+                  ID: {member.studentId}
+                </ThemedText>
               </Pressable>
             ))}
           </ThemedView>
         </ThemedView>
-        
+
         <ThemedView style={[styles.section, styles.policySection]}>
-          <ThemedText style={styles.sectionTitle}>{content.termsTitle}</ThemedText>
+          <ThemedText style={styles.sectionTitle}>
+            {content.termsTitle}
+          </ThemedText>
           {content.policy.clauses.map((clause, index) => (
-            <ThemedText key={index} style={styles.policyItem}>{clause}</ThemedText>
+            <ThemedText key={index} style={styles.policyItem}>
+              {clause}
+            </ThemedText>
           ))}
         </ThemedView>
       </ScrollView>
@@ -246,9 +278,9 @@ const styles = StyleSheet.create({
     paddingTop: 50,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingBottom: 16,
   },
@@ -267,11 +299,11 @@ const styles = StyleSheet.create({
   },
   schoolName: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 8,
   },
   contextBox: {
-    backgroundColor: 'rgba(161, 206, 220, 0.2)',
+    backgroundColor: "rgba(161, 206, 220, 0.2)",
     padding: 12,
     borderRadius: 8,
     marginBottom: 16,
@@ -286,7 +318,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 12,
   },
   listItem: {
@@ -295,19 +327,19 @@ const styles = StyleSheet.create({
     paddingLeft: 8,
   },
   teamList: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
   },
   teamMember: {
-    width: '48%',
-    backgroundColor: 'rgba(161, 206, 220, 0.2)',
+    width: "48%",
+    backgroundColor: "rgba(161, 206, 220, 0.2)",
     padding: 12,
     borderRadius: 8,
     marginBottom: 12,
   },
   memberName: {
-    fontWeight: 'bold',
+    fontWeight: "bold",
     fontSize: 15,
   },
   memberRole: {
@@ -320,7 +352,7 @@ const styles = StyleSheet.create({
     opacity: 0.8,
   },
   policySection: {
-    backgroundColor: 'rgba(255, 213, 128, 0.2)',
+    backgroundColor: "rgba(255, 213, 128, 0.2)",
     borderRadius: 8,
   },
   policyItem: {

@@ -10,10 +10,9 @@ import { formatTransportTime } from './datetime';
 import { 
   TransportRoute, 
   TransportStop, 
-  TransportRouteStop, 
-  TransportETA, 
+
   ClassifiedTransportETA, 
-  TransportApiResponse,
+
   TransportCompany,
   TransportMode
 } from '@/types/transport-types';

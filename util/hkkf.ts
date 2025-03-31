@@ -1,5 +1,5 @@
-import axios, { AxiosError } from 'axios';
-import { appConfig } from './config';
+import axios from 'axios';
+
 import { isSafari } from './transport';
 import { ClassifiedTransportETA } from '@/types/transport-types';
 

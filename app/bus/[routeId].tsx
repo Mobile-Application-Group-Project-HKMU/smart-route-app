@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   Alert,
   View,
-  Dimensions,
   Platform,
 } from "react-native";
 import * as Location from "expo-location";
@@ -215,9 +214,7 @@ export default function RouteDetailScreen() {
 
       Alert.alert(
         isFavorite ? t("removedFromFavorites") : t("addedToFavorites"),
-        isFavorite
-          ? t("routeRemovedFromFavorites")
-          : t("routeAddedToFavorites")
+        isFavorite ? t("routeRemovedFromFavorites") : t("routeAddedToFavorites")
       );
     } catch (error) {
       console.error("Error updating favorites:", error);
@@ -388,11 +385,7 @@ export default function RouteDetailScreen() {
                 </ThemedView>
                 <ThemedView style={styles.stopInfo}>
                   <ThemedText style={styles.stopName}>
-                    {getLocalizedText(
-                      item.name_en,
-                      item.name_tc,
-                      item.name_sc
-                    )}
+                    {getLocalizedText(item.name_en, item.name_tc, item.name_sc)}
                   </ThemedText>
                   {language === "en" && (
                     <ThemedText style={styles.stopNameChinese}>

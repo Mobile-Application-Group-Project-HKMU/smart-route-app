@@ -28,8 +28,6 @@ import {
 } from "@/util/favourite";
 import { useLanguage } from "@/contexts/LanguageContext";
 
-const { width } = Dimensions.get("window");
-
 export default function MtrStationScreen() {
   const { stationId } = useLocalSearchParams();
   const [station, setStation] = useState<MtrStation | null>(null);
@@ -87,7 +85,7 @@ export default function MtrStationScreen() {
       let favorites = (await getFromLocalStorage(
         "stationFavorites"
       )) as FavRouteStation;
-      
+
       if (!favorites) {
         favorites = { stationID: [] };
       }
@@ -104,7 +102,7 @@ export default function MtrStationScreen() {
 
       await saveToLocalStorage("stationFavorites", favorites);
       setIsFavorite(!isFavorite);
-      
+
       Alert.alert(
         isFavorite ? "Removed from Favorites" : "Added to Favorites",
         isFavorite
@@ -119,26 +117,26 @@ export default function MtrStationScreen() {
 
   const loadStationData = async () => {
     if (!stationId) return;
-    
+
     try {
       setLoading(true);
-      
+
       // Fetch station details
       const stations = await getAllStops();
-      const stationData = stations.find(s => s.stop === stationId);
-      
+      const stationData = stations.find((s) => s.stop === stationId);
+
       if (!stationData) {
         Alert.alert("Error", "Station not found");
         router.back();
         return;
       }
-      
+
       setStation(stationData);
-      
+
       // Fetch ETAs for this station
       const stationEtas = await classifyStopETAs(stationId as string);
       setEtas(stationEtas);
-      
+
       // Check favorite status
       await checkFavorite();
     } catch (error) {
@@ -148,7 +146,7 @@ export default function MtrStationScreen() {
       setLoading(false);
     }
   };
-  
+
   useFocusEffect(
     useCallback(() => {
       loadStationData();
@@ -157,46 +155,46 @@ export default function MtrStationScreen() {
       };
     }, [stationId])
   );
-  
+
   const openInMaps = () => {
     if (!station) return;
-    
+
     const { lat, long } = station;
-    const label = language === 'en' ? station.name_en : station.name_tc;
-    
+    const label = language === "en" ? station.name_en : station.name_tc;
+
     const scheme = Platform.select({
-      ios: 'maps:0,0?q=',
-      android: 'geo:0,0?q='
+      ios: "maps:0,0?q=",
+      android: "geo:0,0?q=",
     });
-    
+
     const latLng = `${lat},${long}`;
     const url = Platform.select({
       ios: `${scheme}${label}@${latLng}`,
-      android: `${scheme}${latLng}(${label})`
+      android: `${scheme}${latLng}(${label})`,
     });
-    
+
     if (url) {
       Linking.openURL(url).catch(() => {
         Alert.alert(t("error.navigation"), t("error.open.maps"));
       });
     }
   };
-  
+
   // Navigate to a line's route details
   const navigateToLine = (lineCode: string) => {
     router.push({
       pathname: "/mtr/line/[lineId]",
-      params: { lineId: lineCode }
+      params: { lineId: lineCode },
     });
   };
-  
+
   const getStationName = () => {
     if (!station) return "";
-    return language === 'en' 
-      ? station.name_en 
-      : language === 'zh-Hans' 
-        ? station.name_sc || station.name_tc 
-        : station.name_tc;
+    return language === "en"
+      ? station.name_en
+      : language === "zh-Hans"
+      ? station.name_sc || station.name_tc
+      : station.name_tc;
   };
 
   return (
@@ -236,14 +234,18 @@ export default function MtrStationScreen() {
             <ThemedText style={styles.stationId}>
               {t("transport.station.id")}: {stationId}
             </ThemedText>
-            
+
             <View style={styles.lineChips}>
               {station.line_codes.map((line) => (
-                <TouchableOpacity 
-                  key={line} 
+                <TouchableOpacity
+                  key={line}
                   style={[
-                    styles.lineChip, 
-                    { backgroundColor: MTR_COLORS[line as keyof typeof MTR_COLORS] || '#666666' }
+                    styles.lineChip,
+                    {
+                      backgroundColor:
+                        MTR_COLORS[line as keyof typeof MTR_COLORS] ||
+                        "#666666",
+                    },
                   ]}
                   onPress={() => navigateToLine(line)}
                 >
@@ -251,7 +253,7 @@ export default function MtrStationScreen() {
                 </TouchableOpacity>
               ))}
             </View>
-            
+
             {station.is_interchange && (
               <ThemedText style={styles.interchangeNote}>
                 {t("transport.station.interchange")}
@@ -260,12 +262,14 @@ export default function MtrStationScreen() {
           </ThemedView>
 
           {/* Map section */}
-          {Platform.OS !== 'web' && (
+          {Platform.OS !== "web" && (
             <View style={styles.mapContainer}>
               <MapView
                 ref={mapRef}
                 style={styles.map}
-                provider={Platform.OS === "android" ? PROVIDER_GOOGLE : undefined}
+                provider={
+                  Platform.OS === "android" ? PROVIDER_GOOGLE : undefined
+                }
                 initialRegion={{
                   latitude: station.lat,
                   longitude: station.long,
@@ -282,27 +286,27 @@ export default function MtrStationScreen() {
                   pinColor="#0075C2"
                 />
               </MapView>
-                            <TouchableOpacity
-                              style={styles.navigationButton}
-                              onPress={openNavigation}
-                            >
-                              <IconSymbol
-                                name="arrow.triangle.turn.up.right.circle.fill"
-                                size={20}
-                                color="white"
-                              />
-                              <ThemedText style={styles.navigationButtonText}>
-                                {t("navigate")}
-                              </ThemedText>
-                            </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.navigationButton}
+                onPress={openNavigation}
+              >
+                <IconSymbol
+                  name="arrow.triangle.turn.up.right.circle.fill"
+                  size={20}
+                  color="white"
+                />
+                <ThemedText style={styles.navigationButtonText}>
+                  {t("navigate")}
+                </ThemedText>
+              </TouchableOpacity>
             </View>
           )}
-          
+
           {/* ETAs section */}
           <ThemedText style={styles.sectionTitle}>
             {t("transport.station.arrivals")}
           </ThemedText>
-          
+
           {etas.length === 0 ? (
             <ThemedText style={styles.noEtasText}>
               {t("transport.station.no.arrivals")}
@@ -310,34 +314,46 @@ export default function MtrStationScreen() {
           ) : (
             <FlatList
               data={etas}
-              keyExtractor={(item) => `${item.route}-${item.direction}-${item.destination_en}`}
+              keyExtractor={(item) =>
+                `${item.route}-${item.direction}-${item.destination_en}`
+              }
               style={styles.etasList}
               renderItem={({ item }) => (
                 <ThemedView style={styles.etaCard}>
                   <View style={styles.etaHeader}>
-                    <ThemedView 
+                    <ThemedView
                       style={[
-                        styles.lineChip, 
-                        { 
-                          backgroundColor: MTR_COLORS[item.route as keyof typeof MTR_COLORS] || '#666666',
+                        styles.lineChip,
+                        {
+                          backgroundColor:
+                            MTR_COLORS[item.route as keyof typeof MTR_COLORS] ||
+                            "#666666",
                           height: 28,
                           width: 60,
-                        }
+                        },
                       ]}
                     >
-                      <ThemedText style={styles.lineCode}>{item.route}</ThemedText>
+                      <ThemedText style={styles.lineCode}>
+                        {item.route}
+                      </ThemedText>
                     </ThemedView>
                     <ThemedText style={styles.destination}>
-                      {language === 'en' ? item.destination_en : item.destination_tc}
+                      {language === "en"
+                        ? item.destination_en
+                        : item.destination_tc}
                     </ThemedText>
                   </View>
-                  
+
                   <View style={styles.etaTimes}>
                     {item.etas.map((eta, etaIndex) => (
                       <ThemedView key={etaIndex} style={styles.etaTimeItem}>
                         <ThemedText style={styles.etaTime}>
-                          {eta.eta 
-                            ? formatTransportTime(eta.eta, language as 'en' | 'zh-Hant' | 'zh-Hans', 'relative')
+                          {eta.eta
+                            ? formatTransportTime(
+                                eta.eta,
+                                language as "en" | "zh-Hant" | "zh-Hans",
+                                "relative"
+                              )
                             : t("stop.no.data")}
                         </ThemedText>
                         {eta.platform && (
@@ -347,7 +363,7 @@ export default function MtrStationScreen() {
                         )}
                         {eta.rmk_en && (
                           <ThemedText style={styles.etaRemark}>
-                            {language === 'en' ? eta.rmk_en : eta.rmk_tc}
+                            {language === "en" ? eta.rmk_en : eta.rmk_tc}
                           </ThemedText>
                         )}
                       </ThemedView>
@@ -357,7 +373,6 @@ export default function MtrStationScreen() {
               )}
             />
           )}
-          
         </>
       ) : (
         <ThemedText style={styles.errorText}>
@@ -443,7 +458,7 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
   },
   facilityItem: {
-    width: '50%',
+    width: "50%",
     paddingVertical: 4,
   },
   exitsList: {

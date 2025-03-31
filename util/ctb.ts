@@ -1,7 +1,7 @@
 import axios, { AxiosError } from 'axios';
 import { appConfig } from './config';
 import { isSafari } from './transport';
-import { TransportETA, ClassifiedTransportETA } from '@/types/transport-types';
+import { ClassifiedTransportETA } from '@/types/transport-types';
 
 export interface Route {
   route: string;
