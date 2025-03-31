@@ -53,7 +53,35 @@ export default function MtrStationScreen() {
       console.error("Error checking favorite status:", error);
     }
   };
+  const openNavigation = () => {
+    if (!station) return;
 
+    const { lat, long } = station;
+    const label = encodeURI(
+      language === "en"
+        ? station.name_en
+        : language === "zh-Hans"
+        ? station.name_sc || station.name_tc
+        : station.name_tc
+    );
+
+    let url = "";
+    if (Platform.OS === "ios") {
+      // Apple Maps on iOS
+      url = `maps:?q=${label}&ll=${lat},${long}`;
+    } else {
+      // Google Maps on Android and others
+      url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${long}&destination_place_id=${label}`;
+    }
+
+    Linking.canOpenURL(url).then((supported) => {
+      if (supported) {
+        Linking.openURL(url);
+      } else {
+        Alert.alert(t("error.navigation"), t("error.open.maps"));
+      }
+    });
+  };
   const toggleFavorite = async () => {
     try {
       let favorites = (await getFromLocalStorage(
@@ -235,6 +263,7 @@ export default function MtrStationScreen() {
           {Platform.OS !== 'web' && (
             <View style={styles.mapContainer}>
               <MapView
+              onPress={openNavigation}
                 ref={mapRef}
                 style={styles.map}
                 provider={Platform.OS === "android" ? PROVIDER_GOOGLE : undefined}
