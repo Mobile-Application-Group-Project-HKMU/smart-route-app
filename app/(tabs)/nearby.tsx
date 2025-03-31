@@ -43,6 +43,7 @@ export default function NearbyScreen() {
     try {
       setLoading(true);
       setError(null);
+      // This utility can fetch stops for KMB, GMB, CTB, etc.
       const stops = await findNearbyStops(latitude, longitude, searchRadius);
       setNearbyStops(stops);
     } catch (err) {

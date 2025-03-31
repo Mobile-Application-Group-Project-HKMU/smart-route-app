@@ -8,12 +8,24 @@ export interface FavRouteStation {
   stationID: string[];
 }
 
+export interface FavRouteCTB {
+  ctbID: string[];
+}
+
+export interface FavRouteNLB {
+  nlbID: string[];
+}
+
+export interface FavRouteHKKF {
+  hkkfID: string[];
+}
+
 export const FavRouteExampleKMBData: FavRouteKMB = {
-  kmbID: ["1", "2", "3"],
+  kmbID: [],
 };
 
 export const FavStationExampleData: FavRouteStation = {
-  stationID: ["4", "5", "6"],
+  stationID: [],
 };
 
 // Initialize storage with empty arrays
