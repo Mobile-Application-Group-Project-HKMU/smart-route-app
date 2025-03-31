@@ -51,6 +51,7 @@ export interface TransportStop {
   long: number;
   data_timestamp?: string;
   distance?: number;
+  company?: TransportCompany | string; // Add company property
 }
 
 // Route-stop mapping

@@ -76,6 +76,27 @@ const busTranslations: Record<string, Record<Language, string>> = {
     'en': 'HKKF',
     'zh-Hant': '港九小輪',
     'zh-Hans': '港九小轮'
+  },
+  // Additional necessary translations
+  'bus.available.stations': {
+    'en': 'Available stations',
+    'zh-Hant': '可用站點',
+    'zh-Hans': '可用站点'
+  },
+  'bus.station.company': {
+    'en': 'Company',
+    'zh-Hant': '營運商',
+    'zh-Hans': '营运商'
+  },
+  'bus.no.routes.company': {
+    'en': 'No routes found for this company',
+    'zh-Hant': '找不到此營運商的路線',
+    'zh-Hans': '找不到此营运商的路线'
+  },
+  'bus.no.stations.company': {
+    'en': 'No stations found for this company',
+    'zh-Hant': '找不到此營運商的站點',
+    'zh-Hans': '找不到此营运商的站点'
   }
 };
 

@@ -22,9 +22,14 @@ import {
   GmbRouteCard 
 } from "@/components/transport";
 
-// Import utilities
-import { getAllRoutes, Route, getAllStops, Stop } from "@/util/kmb";
-import { TransportRoute, TransportCompany } from "@/types/transport-types";
+// Import unified transport utilities instead of just KMB
+import { 
+  getAllKmbRoutes, 
+  getAllKmbStops,
+  getAllGmbRoutes,
+  getAllGmbStops
+} from '@/util/transport';
+import { TransportRoute, TransportCompany, TransportStop } from "@/types/transport-types";
 
 // Transport company types for tab selection
 type TransportFilter = 'ALL' | TransportCompany;
@@ -33,8 +38,8 @@ export default function BusRoutesScreen() {
   const { t, language } = useLanguage();
   const [routes, setRoutes] = useState<TransportRoute[]>([]);
   const [filteredRoutes, setFilteredRoutes] = useState<TransportRoute[]>([]);
-  const [stations, setStations] = useState<Stop[]>([]);
-  const [filteredStations, setFilteredStations] = useState<Stop[]>([]);
+  const [stations, setStations] = useState<TransportStop[]>([]);
+  const [filteredStations, setFilteredStations] = useState<TransportStop[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchType, setSearchType] = useState<"routes" | "stations">("routes");
@@ -61,20 +66,61 @@ export default function BusRoutesScreen() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const allRoutes = await getAllRoutes();
-        const allStops = await getAllStops();
+        let allRoutes: TransportRoute[] = [];
+        let allStations: TransportStop[] = [];
         
-        // Convert Route[] to TransportRoute[] by ensuring correct types
-        const transformedRoutes = allRoutes.map(route => ({
+        // Fetch KMB routes and stops
+        const kmbRoutes = await getAllKmbRoutes();
+        const kmbStops = await getAllKmbStops();
+        
+        // Convert KMB Route[] to TransportRoute[]
+        const kmbTransportRoutes = kmbRoutes.map(route => ({
           ...route,
           orig_tc: route.orig_tc ? String(route.orig_tc) : undefined,
-          dest_tc: route.dest_tc ? String(route.dest_tc) : undefined
+          dest_tc: route.dest_tc ? String(route.dest_tc) : undefined,
+          co: 'KMB' // Ensure company is set
         })) as TransportRoute[];
+        
+        allRoutes.push(...kmbTransportRoutes);
+        
+        // Convert KMB stops to TransportStop[]
+        const kmbTransportStops = kmbStops.map(stop => ({
+          stop: stop.stop,
+          name_en: stop.name_en,
+          name_tc: stop.name_tc,
+          name_sc: stop.name_sc,
+          lat: stop.lat,
+          long: stop.long,
+          data_timestamp: stop.data_timestamp,
+          company: 'KMB'
+        })) as TransportStop[];
+        
+        allStations.push(...kmbTransportStops);
+        
+        // Try to fetch GMB routes and stops
+        try {
+          const gmbRoutes = await getAllGmbRoutes();
+          if (gmbRoutes && gmbRoutes.length > 0) {
+            allRoutes.push(...gmbRoutes);
+          }
+          
+          const gmbStops = await getAllGmbStops();
+          if (gmbStops && gmbStops.length > 0) {
+            allStations.push(...gmbStops.map(stop => ({
+              ...stop,
+              company: 'GMB'
+            })));
+          }
+        } catch (error) {
+          console.warn('Failed to fetch GMB data:', error);
+        }
+        
+        // We can add more transport providers here later
 
-        setRoutes(transformedRoutes);
-        setFilteredRoutes(transformedRoutes);
-        setStations(allStops);
-        setFilteredStations(allStops);
+        setRoutes(allRoutes);
+        setFilteredRoutes(allRoutes);
+        setStations(allStations);
+        setFilteredStations(allStations);
       } catch (error) {
         console.error("Failed to fetch data:", error);
       } finally {
@@ -135,13 +181,28 @@ export default function BusRoutesScreen() {
   };
 
   const handleRoutePress = (route: TransportRoute) => {
-    router.push(
-      `/bus/${route.route}?bound=${route.bound}&serviceType=${route.service_type}`
-    );
+    const company = (route.co || 'KMB').toUpperCase();
+    
+    // Route navigation may need to be different based on company
+    if (company === 'KMB') {
+      router.push(
+        `/bus/${route.route}?bound=${route.bound}&serviceType=${route.service_type}`
+      );
+    } else if (company === 'GMB') {
+      // For GMB routes, we might need different parameters
+      router.push(
+        `/bus/${route.route}?company=GMB&region=${route.region}&routeId=${route.route_id}`
+      );
+    } else {
+      // Generic handling for other companies
+      router.push(
+        `/bus/${route.route}?company=${company}&bound=${route.bound || 'O'}`
+      );
+    }
   };
 
-  const handleStopPress = (stop: Stop) => {
-    router.push(`/stop/${stop.stop}`);
+  const handleStopPress = (stop: TransportStop) => {
+    router.push(`/stop/${stop.stop}?company=${stop.company || 'KMB'}`);
   };
 
   // Return appropriate route card based on company
@@ -154,7 +215,7 @@ export default function BusRoutesScreen() {
         return (
           <KmbRouteCard
             key={key}
-            route={route as Route}
+            route={route}
             onPress={() => handleRoutePress(route)}
             language={language}
           />
@@ -199,7 +260,7 @@ export default function BusRoutesScreen() {
         return (
           <KmbRouteCard
             key={key}
-            route={route as Route}
+            route={route}
             onPress={() => handleRoutePress(route)}
             language={language}
           />
@@ -261,7 +322,16 @@ export default function BusRoutesScreen() {
 
   // Render transport mode tabs
   const renderTransportTabs = () => {
-    const transportModes: TransportFilter[] = ['ALL', 'KMB', 'CTB', 'GMB', 'NLB', 'HKKF'];
+    // Show only transport companies that have routes
+    const availableCompanies = new Set(routes.map(route => (route.co || 'KMB').toUpperCase()));
+    const transportModes: TransportFilter[] = ['ALL'];
+    
+    // Add available transport companies to the tabs
+    ['KMB', 'CTB', 'GMB', 'NLB', 'HKKF'].forEach(company => {
+      if (availableCompanies.has(company as TransportCompany)) {
+        transportModes.push(company as TransportCompany);
+      }
+    });
     
     return (
       <ScrollView 
@@ -288,12 +358,37 @@ export default function BusRoutesScreen() {
                   { color: isActive ? colors.text : '#333333' },
                 ]}
               >
-                {mode === 'ALL' ? t('bus.transport.all') : mode}
+                {mode === 'ALL' ? t('bus.transport.all') : t(`bus.transport.${mode.toLowerCase()}`)}
               </ThemedText>
             </TouchableOpacity>
           );
         })}
       </ScrollView>
+    );
+  };
+
+  // Render station count by company
+  const renderStationCounts = () => {
+    if (searchType !== 'stations') return null;
+    
+    // Count stations by company
+    const companyCounts: Record<string, number> = {};
+    stations.forEach(station => {
+      const company = station.company || 'KMB';
+      companyCounts[company] = (companyCounts[company] || 0) + 1;
+    });
+    
+    return (
+      <ThemedView style={styles.stationCountsContainer}>
+        <ThemedText style={styles.stationCountsTitle}>
+          {t('bus.available.stations')}:
+        </ThemedText>
+        {Object.entries(companyCounts).map(([company, count]) => (
+          <ThemedText key={company} style={styles.stationCount}>
+            {company}: {count}
+          </ThemedText>
+        ))}
+      </ThemedView>
     );
   };
 
@@ -360,6 +455,9 @@ export default function BusRoutesScreen() {
 
       {/* Transport company tabs - only show for routes */}
       {searchType === "routes" && renderTransportTabs()}
+      
+      {/* Show station counts by company when in station mode */}
+      {searchType === "stations" && renderStationCounts()}
 
       {loading ? (
         <ActivityIndicator size="large" style={styles.loader} />
@@ -386,28 +484,28 @@ export default function BusRoutesScreen() {
             <ThemedView style={styles.listContainer}>
               {getDisplayedItems().map((item) => (
                 <TouchableOpacity
-                  key={(item as Stop).stop}
+                  key={(item as TransportStop).stop}
                   style={styles.stationItem}
-                  onPress={() => handleStopPress(item as Stop)}
+                  onPress={() => handleStopPress(item as TransportStop)}
                   activeOpacity={0.7}
                 >
                   <ThemedView style={styles.stationContainer}>
                     <IconSymbol
                       name="location.fill"
                       size={24}
-                      color="#8B4513"
+                      color={getStationIconColor((item as TransportStop).company)}
                       style={styles.stationIcon}
                     />
                     <ThemedView style={styles.stationInfo}>
                       <ThemedText style={styles.stationName}>
                         {language === "en"
-                          ? (item as Stop).name_en
+                          ? (item as TransportStop).name_en
                           : language === "zh-Hans"
-                          ? (item as Stop).name_sc
-                          : (item as Stop).name_tc}
+                          ? (item as TransportStop).name_sc || (item as TransportStop).name_tc
+                          : (item as TransportStop).name_tc}
                       </ThemedText>
                       <ThemedText style={styles.stationId}>
-                        {t("bus.stationId")}: {(item as Stop).stop}
+                        {(item as TransportStop).company || 'KMB'} • {t("bus.stationId")}: {(item as TransportStop).stop}
                       </ThemedText>
                     </ThemedView>
                     <IconSymbol
@@ -425,6 +523,18 @@ export default function BusRoutesScreen() {
       )}
     </ParallaxScrollView>
   );
+
+  // Helper function to get station icon color based on company
+  function getStationIconColor(company: string | undefined): string {
+    switch (company?.toUpperCase()) {
+      case 'KMB': return '#B30000'; // Red
+      case 'CTB': return '#CC9900'; // Yellow
+      case 'GMB': return '#009900'; // Green
+      case 'NLB': return '#008888'; // Cyan
+      case 'HKKF': return '#0066CC'; // Blue
+      default: return '#8B4513'; // Default brown
+    }
+  }
 }
 
 const styles = StyleSheet.create({
@@ -537,5 +647,25 @@ const styles = StyleSheet.create({
   },
   paginationText: {
     fontSize: 16,
+  },
+  stationCountsContainer: {
+    marginTop: 8,
+    marginBottom: 16,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  stationCountsTitle: {
+    fontSize: 14,
+    opacity: 0.8,
+  },
+  stationCount: {
+    fontSize: 14,
+    backgroundColor: '#f0f0f0',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
   },
 });

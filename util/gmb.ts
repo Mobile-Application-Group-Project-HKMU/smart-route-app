@@ -110,19 +110,65 @@ async function getRouteStops(
 
 // Get all stops
 async function getAllStops(): Promise<Stop[]> {
-  const stops = await cachedApiGet<any>(`${API_BASE}/stop`); // Note: GMB API doesn't provide a direct /stop endpoint for all stops
-  return stops.map((stop: any) => ({
-    stop: stop.stop_id,
-    name_en: stop.name_en || 'Unknown',
-    name_tc: stop.name_tc || '未知',
-    lat: stop.coordinates.wgs84.latitude,
-    long: stop.coordinates.wgs84.longitude,
-  })).filter((stop: Stop) =>
-    !isNaN(stop.lat) &&
-    !isNaN(stop.long) &&
-    stop.lat >= 22.1 && stop.lat <= 22.6 &&
-    stop.long >= 113.8 && stop.long <= 114.4
-  );
+  try {
+    // The GMB API doesn't have a direct /stop endpoint like KMB
+    // Instead, we need to fetch stops by region
+    const regions: ('HKI' | 'KLN' | 'NT')[] = ['HKI', 'KLN', 'NT'];
+    let allStops: Stop[] = [];
+    
+    for (const region of regions) {
+      try {
+        // First get routes for the region
+        const routes = await getAllRoutes(region);
+        
+        // Then for each route, get the route details which contain stop information
+        for (const route of routes.slice(0, 5)) { // Limit to 5 routes per region to avoid too many requests
+          try {
+            const routeDetails = await getRouteDetails(region, route.route);
+            
+            if (routeDetails.route_id) {
+              // Get stops for both directions (outbound and inbound)
+              try {
+                const outboundStops = await getRouteStops(routeDetails.route_id, '1');
+                const inboundStops = await getRouteStops(routeDetails.route_id, '2');
+                
+                // Combine stops and remove duplicates
+                const routeStops = [...outboundStops, ...inboundStops];
+                
+                // Add each unique stop
+                for (const routeStop of routeStops) {
+                  // Skip if we already have this stop
+                  if (allStops.some(s => s.stop === routeStop.stop)) continue;
+                  
+                  // Add stop with location data if available
+                  allStops.push({
+                    stop: routeStop.stop,
+                    name_en: routeStop.name_en || 'Unknown',
+                    name_tc: routeStop.name_tc || '未知',
+                    lat: 0, // We don't have lat/long from route stops
+                    long: 0, // We would need another API call to get this
+                    company: 'GMB'
+                  });
+                }
+              } catch (error) {
+                console.warn(`Failed to get stops for GMB route ${route.route} in ${region}:`, error);
+              }
+            }
+          } catch (error) {
+            console.warn(`Failed to get details for GMB route ${route.route} in ${region}:`, error);
+          }
+        }
+      } catch (error) {
+        console.warn(`Failed to get GMB routes for region ${region}:`, error);
+      }
+    }
+    
+    console.log(`Retrieved ${allStops.length} GMB stops`);
+    return allStops;
+  } catch (error) {
+    console.error('Error fetching GMB stops:', error);
+    return [];
+  }
 }
 
 /**
