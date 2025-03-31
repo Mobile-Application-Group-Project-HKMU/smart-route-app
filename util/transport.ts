@@ -2,10 +2,10 @@ import axios, { AxiosError } from 'axios';
 import { Platform } from 'react-native';
 import { appConfig } from './config';
 import * as kmbUtil from './kmb';
+import { getAllRoutes as getAllKmbRoutes } from './kmb';
 import * as gmbUtil from './gmb';
 import * as ctbUtil from './ctb';
-import * as nlbUtil from './nlb';
-import * as hkkfUtil from './hkkf';
+import * as mtrUtil from './mtr';
 import { formatTransportTime } from './datetime';
 import { 
   TransportRoute, 
@@ -14,7 +14,8 @@ import {
   TransportETA, 
   ClassifiedTransportETA, 
   TransportApiResponse,
-  TransportCompany
+  TransportCompany,
+  TransportMode
 } from '@/types/transport-types';
 
 // Cache management
@@ -202,6 +203,138 @@ export async function getStopETAs(
 }
 
 /**
+ * Get CTB routes
+ */
+async function getCtbRoutes(): Promise<TransportRoute[]> {
+  // Placeholder implementation - replace with actual CTB API call
+  return [];
+}
+
+/**
+ * Get MTR routes
+ */
+async function getMtrRoutes(): Promise<TransportRoute[]> {
+  try {
+    const mtrLines = await mtrUtil.getAllRoutes();
+    return mtrLines.map(line => ({
+      ...line,
+      mode: 'MTR' as TransportMode
+    }));
+  } catch (error) {
+    console.error('Failed to get MTR routes:', error);
+    return [];
+  }
+}
+
+/**
+ * Find nearby KMB stops
+ */
+async function findNearbyKmbStops(
+  latitude: number,
+  longitude: number,
+  radiusMeters = 500
+): Promise<Array<TransportStop & { distance: number }>> {
+  const stops = await kmbUtil.findNearbyStops(latitude, longitude, radiusMeters);
+  return stops.map(stop => ({
+    ...stop,
+    mode: 'BUS' as TransportMode
+  }));
+}
+
+/**
+ * Find nearby MTR stations
+ */
+async function findNearbyMtrStations(
+  latitude: number,
+  longitude: number,
+  radiusMeters = 500
+): Promise<Array<TransportStop & { distance: number }>> {
+  try {
+    const mtrStations = await mtrUtil.findNearbyStops(latitude, longitude, radiusMeters);
+    return mtrStations.map(station => ({
+      ...station,
+      mode: 'MTR' as TransportMode
+    }));
+  } catch (error) {
+    console.error('Failed to find nearby MTR stations:', error);
+    return [];
+  }
+}
+
+/**
+ * Get combined transport data from multiple providers
+ */
+export async function getUnifiedTransportData(
+  modes: TransportMode[] = ['BUS'], 
+  companies?: TransportCompany[]
+): Promise<TransportRoute[]> {
+  const results: TransportRoute[] = [];
+  
+  for (const mode of modes) {
+    switch (mode) {
+      case 'BUS':
+        if (!companies || companies.includes('KMB')) {
+          const kmbRoutes = await getAllKmbRoutes();
+          results.push(...kmbRoutes.map(route => ({
+            ...route, 
+            mode: 'BUS' as TransportMode,
+            orig_tc: route.orig_tc ? String(route.orig_tc) : undefined,
+            dest_tc: route.dest_tc ? String(route.dest_tc) : undefined
+          })));
+        }
+        if (!companies || companies.includes('CTB')) {
+          const ctbRoutes = await getCtbRoutes();
+          results.push(...ctbRoutes.map(route => ({...route, mode: 'BUS' as TransportMode })));
+        }
+        break;
+        
+      case 'MTR':
+        if (!companies || companies.includes('MTR')) {
+          const mtrRoutes = await getMtrRoutes();
+          results.push(...mtrRoutes.map(route => ({...route, mode: 'MTR' as TransportMode })));
+        }
+        break;
+    }
+  }
+  
+  return results;
+}
+
+/**
+ * Enhanced nearby stops search
+ */
+export async function findUnifiedNearbyStops(
+  latitude: number,
+  longitude: number,
+  radiusMeters = 500,
+  modes: TransportMode[] = ['BUS']
+): Promise<Array<TransportStop & { distance: number }>> {
+  const results: Array<TransportStop & { distance: number }> = [];
+  
+  for (const mode of modes) {
+    switch (mode) {
+      case 'BUS':
+        const kmbStops = await findNearbyKmbStops(latitude, longitude, radiusMeters);
+        results.push(...kmbStops.map(stop => ({
+          ...stop, 
+          mode: 'BUS' as TransportMode 
+        })));
+        break;
+        
+      case 'MTR':
+        const mtrStops = await findNearbyMtrStations(latitude, longitude, radiusMeters);
+        results.push(...mtrStops.map(stop => ({
+          ...stop, 
+          mode: 'MTR' as TransportMode 
+        })));
+        break;
+    }
+  }
+  
+  return results.sort((a, b) => a.distance - b.distance);
+}
+
+/**
  * Export existing transport utilities
  */
 export { 
@@ -241,3 +374,11 @@ export {
   getScheduledDepartures as getHkkfScheduledDepartures,
   classifyScheduledDepartures as classifyHkkfScheduledDepartures,
 } from './hkkf';
+
+// Re-export from MTR utilities using proper naming 
+export {
+  getAllRoutes as getAllMtrRoutes,
+  getAllStops as getAllMtrStops,
+  getStopETA as getMtrStopETA,
+  classifyStopETAs as classifyMtrStopETAs,
+} from './mtr';

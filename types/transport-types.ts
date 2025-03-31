@@ -4,20 +4,24 @@
  * Common interfaces for all transport providers
  */
 
-// The type of transport company
+// Transport mode type
+export type TransportMode = 'BUS' | 'MINIBUS' | 'MTR' | 'FERRY';
+
+// Enhanced TransportCompany type
 export type TransportCompany = 
   | 'KMB' 
   | 'CTB' 
-  | 'NLB' 
+  | 'NWFB'
   | 'GMB' 
   | 'MTR' 
-  | 'LR' // Light Rail
-  | 'LRF' // Light Rail Feeder
-  | 'SF' // Sun Ferry
-  | 'FF' // Fortune Ferry
-  | 'HKKF'; // Hong Kong & Kowloon Ferry
+  | 'LR'
+  | 'LRF'
+  | 'HKKF'
+  | 'SF'
+  | 'FF'
+  | 'NLB'; // Add NLB to the valid transport companies
 
-// Basic route information
+// Enhanced TransportRoute
 export interface TransportRoute {
   route: string;
   co: TransportCompany | string;
@@ -39,9 +43,15 @@ export interface TransportRoute {
     dest_en: string;
     dest_tc: string;
   }[];
+  mode?: TransportMode;
+  fares?: number[];
+  frequency?: string;
+  platform?: string;
+  interchange?: boolean;
+  color?: string; // For MTR lines
 }
 
-// Stop information
+// Enhanced TransportStop
 export interface TransportStop {
   stop: string;
   name_en: string;
@@ -52,6 +62,13 @@ export interface TransportStop {
   data_timestamp?: string;
   distance?: number;
   company?: TransportCompany | string; // Add company property
+  mode: TransportMode;
+  facilities?: string[];
+  exitInfo?: {
+    exit: string;
+    destination: string;
+  }[];
+  interchange?: string[];
 }
 
 // Route-stop mapping
@@ -67,7 +84,7 @@ export interface TransportRouteStop {
   data_timestamp?: string;
 }
 
-// ETA (Estimated Time of Arrival) information
+// Enhanced TransportETA
 export interface TransportETA {
   co?: TransportCompany | string;
   route?: string;
@@ -85,6 +102,10 @@ export interface TransportETA {
   remarks_tc?: string;
   data_timestamp?: string;
   diff?: number;
+  platform?: string;
+  trainLength?: number;
+  firstCar?: string;
+  lastCar?: string;
 }
 
 // Classified ETAs grouped by route

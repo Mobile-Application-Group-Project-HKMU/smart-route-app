@@ -147,7 +147,8 @@ async function getAllStops(): Promise<Stop[]> {
                     name_tc: routeStop.name_tc || '未知',
                     lat: 0, // We don't have lat/long from route stops
                     long: 0, // We would need another API call to get this
-                    company: 'GMB'
+                    company: 'GMB',
+                    mode: 'BUS'
                   });
                 }
               } catch (error) {

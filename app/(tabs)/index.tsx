@@ -19,6 +19,7 @@ import {
   getFromLocalStorage,
 } from "@/util/favourite";
 import { Route, getAllRoutes, Stop, getAllStops } from "@/util/kmb";
+import { MtrStation, getAllStops as getAllMtrStops } from "@/util/mtr";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function HomeScreen() {
@@ -27,6 +28,7 @@ export default function HomeScreen() {
     Array<Route & { key: string }>
   >([]);
   const [favoriteStops, setFavoriteStops] = useState<Stop[]>([]);
+  const [favoriteMtrStations, setFavoriteMtrStations] = useState<MtrStation[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadFavorites = useCallback(async () => {
@@ -40,6 +42,7 @@ export default function HomeScreen() {
         "stationFavorites"
       )) as FavRouteStation | null;
 
+      // Load KMB route favorites
       if (routeFavorites?.kmbID?.length) {
         const allRoutes = await getAllRoutes();
         const routes = routeFavorites.kmbID
@@ -64,15 +67,28 @@ export default function HomeScreen() {
         setFavoriteRoutes([]);
       }
 
+      // Load KMB stop and MTR station favorites
       if (stopFavorites?.stationID?.length) {
+        // Split station IDs into KMB and MTR based on their format
+        const mtrStationIds = stopFavorites.stationID.filter(id => id.length === 3);
+        const kmbStopIds = stopFavorites.stationID.filter(id => id.length !== 3);
+        
+        // Load KMB stops
         const allStops = await getAllStops();
-        const stops = stopFavorites.stationID
+        const stops = kmbStopIds
           .map((id) => allStops.find((s) => s.stop === id))
           .filter((s): s is Stop => s !== undefined);
-
         setFavoriteStops(stops);
+        
+        // Load MTR stations
+        const allMtrStations = await getAllMtrStops();
+        const mtrStations = mtrStationIds
+          .map((id) => allMtrStations.find((s) => s.stop === id))
+          .filter((s): s is MtrStation => s !== undefined);
+        setFavoriteMtrStations(mtrStations);
       } else {
         setFavoriteStops([]);
+        setFavoriteMtrStations([]);
       }
     } catch (error) {
       console.error("Failed to load favorites:", error);
@@ -94,6 +110,13 @@ export default function HomeScreen() {
 
   const handleStopPress = (stop: Stop) => {
     router.push(`/stop/${stop.stop}`);
+  };
+  
+  const handleMtrStationPress = (station: MtrStation) => {
+    router.push({
+      pathname: "/mtr/[stationId]",
+      params: { stationId: station.stop }
+    });
   };
 
   const navigateToAbout = () => {
@@ -129,12 +152,13 @@ export default function HomeScreen() {
           </ThemedText>
         ) : (
           <>
-            {favoriteRoutes.length === 0 && favoriteStops.length === 0 ? (
+            {favoriteRoutes.length === 0 && favoriteStops.length === 0 && favoriteMtrStations.length === 0 ? (
               <ThemedText style={styles.noFavoritesText}>
                 {t("home.no.favorites")}
               </ThemedText>
             ) : (
               <>
+                {/* Routes section */}
                 {favoriteRoutes.length > 0 && (
                   <ThemedView style={styles.subsection}>
                     <ThemedText style={styles.subsectionTitle}>
@@ -177,6 +201,7 @@ export default function HomeScreen() {
                   </ThemedView>
                 )}
 
+                {/* Bus stops section */}
                 {favoriteStops.length > 0 && (
                   <ThemedView style={styles.subsection}>
                     <ThemedText style={styles.subsectionTitle}>
@@ -194,7 +219,7 @@ export default function HomeScreen() {
                         >
                           <ThemedView style={styles.favoriteCardContent}>
                             <IconSymbol
-                              name="location.fill"
+                              name="bus.fill"
                               size={24}
                               color="#8B4513"
                             />
@@ -206,6 +231,50 @@ export default function HomeScreen() {
                                 ? item.name_en
                                 : language === "zh-Hans"
                                 ? item.name_sc
+                                : item.name_tc}
+                            </ThemedText>
+                          </ThemedView>
+                        </TouchableOpacity>
+                      )}
+                    />
+                  </ThemedView>
+                )}
+                
+                {/* MTR stations section */}
+                {favoriteMtrStations.length > 0 && (
+                  <ThemedView style={styles.subsection}>
+                    <ThemedText style={styles.subsectionTitle}>
+                      {t("home.favorites.mtr.stations")}
+                    </ThemedText>
+                    <FlatList
+                      data={favoriteMtrStations}
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      keyExtractor={(item) => item.stop}
+                      renderItem={({ item }) => (
+                        <TouchableOpacity
+                          style={[styles.favoriteCard, styles.mtrCard]}
+                          onPress={() => handleMtrStationPress(item)}
+                        >
+                          <ThemedView style={styles.favoriteCardContent}>
+                            <ThemedView style={styles.mtrLineContainer}>
+                              {item.line_codes.slice(0, 2).map(line => (
+                                <ThemedView 
+                                  key={line}
+                                  style={[styles.mtrLine, { backgroundColor: '#0075C2' }]}
+                                >
+                                  <ThemedText style={styles.mtrLineText}>{line}</ThemedText>
+                                </ThemedView>
+                              ))}
+                            </ThemedView>
+                            <ThemedText
+                              style={styles.stopName}
+                              numberOfLines={2}
+                            >
+                              {language === "en"
+                                ? item.name_en
+                                : language === "zh-Hans"
+                                ? item.name_sc || item.name_tc
                                 : item.name_tc}
                             </ThemedText>
                           </ThemedView>
@@ -349,5 +418,23 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     position: "absolute",
+  },
+  mtrCard: {
+    backgroundColor: "#DCF0FF",
+  },
+  mtrLineContainer: {
+    flexDirection: 'row',
+    gap: 4,
+    marginBottom: 8,
+  },
+  mtrLine: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  mtrLineText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 12,
   },
 });

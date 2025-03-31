@@ -80,6 +80,16 @@ const nearbyTranslations: Record<string, Record<Language, string>> = {
     'en': '1km',
     'zh-Hant': '1公里',
     'zh-Hans': '1公里'
+  },
+  'nearby.filter.bus': {
+    'en': 'Bus Stops',
+    'zh-Hant': '巴士站',
+    'zh-Hans': '巴士站'
+  },
+  'nearby.filter.mtr': {
+    'en': 'MTR Stops',
+    'zh-Hant': '港铁站',
+    'zh-Hans': '港铁站'
   }
 };
 

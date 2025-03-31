@@ -19,17 +19,20 @@ import {
   CtbRouteCard, 
   HkkfRouteCard, 
   NlbRouteCard, 
-  GmbRouteCard 
+  GmbRouteCard,
+  MtrRouteCard 
 } from "@/components/transport";
 
-// Import unified transport utilities instead of just KMB
+// Import unified transport utilities with correct names
 import { 
   getAllKmbRoutes, 
   getAllKmbStops,
   getAllGmbRoutes,
-  getAllGmbStops
+  getAllGmbStops,
+  getAllMtrRoutes,  // Corrected import name
+  getAllMtrStops    // Corrected import name
 } from '@/util/transport';
-import { TransportRoute, TransportCompany, TransportStop } from "@/types/transport-types";
+import { TransportRoute, TransportCompany, TransportStop, TransportMode } from "@/types/transport-types";
 
 // Transport company types for tab selection
 type TransportFilter = 'ALL' | TransportCompany;
@@ -53,13 +56,14 @@ export default function BusRoutesScreen() {
     KMB: { light: "#FF5151", dark: "#B30000", text: "#FFFFFF" },
     CTB: { light: "#FFDD00", dark: "#CC9900", text: "#000000" },
     GMB: { light: "#66CC66", dark: "#009900", text: "#FFFFFF" },
-    NLB: { light: "#00CCCC", dark: "#008888", text: "#FFFFFF" },
+    NLB: { light: "#00CCCC", dark: "#008888", text: "#FFFFFF" }, // Now valid
     HKKF: { light: "#4D94FF", dark: "#0066CC", text: "#FFFFFF" },
     MTR: { light: "#E60012", dark: "#B30000", text: "#FFFFFF" },
     LR: { light: "#95CA3E", dark: "#6B9130", text: "#FFFFFF" },
     LRF: { light: "#FF9900", dark: "#CC7A00", text: "#FFFFFF" },
     SF: { light: "#8959A8", dark: "#5F3E73", text: "#FFFFFF" },
     FF: { light: "#4078C0", dark: "#2C5499", text: "#FFFFFF" },
+    NWFB: { light: "#9370DB", dark: "#6A3CA0", text: "#FFFFFF" }
   };
 
   useEffect(() => {
@@ -78,7 +82,8 @@ export default function BusRoutesScreen() {
           ...route,
           orig_tc: route.orig_tc ? String(route.orig_tc) : undefined,
           dest_tc: route.dest_tc ? String(route.dest_tc) : undefined,
-          co: 'KMB' // Ensure company is set
+          co: 'KMB', // Ensure company is set
+          mode: 'BUS' as TransportMode // Set mode for KMB
         })) as TransportRoute[];
         
         allRoutes.push(...kmbTransportRoutes);
@@ -92,7 +97,8 @@ export default function BusRoutesScreen() {
           lat: stop.lat,
           long: stop.long,
           data_timestamp: stop.data_timestamp,
-          company: 'KMB'
+          company: 'KMB',
+          mode: 'BUS' as TransportMode
         })) as TransportStop[];
         
         allStations.push(...kmbTransportStops);
@@ -101,18 +107,44 @@ export default function BusRoutesScreen() {
         try {
           const gmbRoutes = await getAllGmbRoutes();
           if (gmbRoutes && gmbRoutes.length > 0) {
-            allRoutes.push(...gmbRoutes);
+            allRoutes.push(...gmbRoutes.map(route => ({
+              ...route,
+              mode: 'BUS' as TransportMode
+            })));
           }
           
           const gmbStops = await getAllGmbStops();
           if (gmbStops && gmbStops.length > 0) {
             allStations.push(...gmbStops.map(stop => ({
               ...stop,
-              company: 'GMB'
+              company: 'GMB',
+              mode: 'BUS' as TransportMode
             })));
           }
         } catch (error) {
           console.warn('Failed to fetch GMB data:', error);
+        }
+        
+        // Try to fetch MTR routes and stops
+        try {
+          const mtrRoutes = await getAllMtrRoutes(); // Fixed function name
+          if (mtrRoutes && mtrRoutes.length > 0) {
+            allRoutes.push(...mtrRoutes.map(route => ({
+              ...route,
+              mode: 'MTR' as TransportMode
+            })));
+          }
+          
+          const mtrStops = await getAllMtrStops(); // Fixed function name
+          if (mtrStops && mtrStops.length > 0) {
+            allStations.push(...mtrStops.map(stop => ({
+              ...stop,
+              company: 'MTR',
+              mode: 'MTR' as TransportMode
+            })));
+          }
+        } catch (error) {
+          console.warn('Failed to fetch MTR data:', error);
         }
         
         // We can add more transport providers here later
@@ -202,6 +234,12 @@ export default function BusRoutesScreen() {
       router.push(
         `/bus/${route.route}?company=GMB&region=${route.region}&routeId=${route.route_id}`
       );
+    } else if (company === 'MTR') {
+      // Navigate to MTR line details
+      router.push({
+        pathname: "/mtr/line/[lineId]",
+        params: { lineId: route.route }
+      });
     } else {
       // Generic handling for other companies
       router.push(
@@ -211,7 +249,16 @@ export default function BusRoutesScreen() {
   };
 
   const handleStopPress = (stop: TransportStop) => {
-    router.push(`/stop/${stop.stop}?company=${stop.company || 'KMB'}`);
+    const company = (stop.company || 'KMB').toUpperCase();
+    
+    if (company === 'MTR') {
+      router.push({
+        pathname: "/mtr/[stationId]",
+        params: { stationId: stop.stop }
+      });
+    } else {
+      router.push(`/stop/${stop.stop}?company=${company}`);
+    }
   };
 
   // Return appropriate route card based on company
@@ -259,6 +306,15 @@ export default function BusRoutesScreen() {
       case 'GMB':
         return (
           <GmbRouteCard
+            key={key}
+            route={route}
+            onPress={() => handleRoutePress(route)}
+            language={language}
+          />
+        );
+      case 'MTR':
+        return (
+          <MtrRouteCard
             key={key}
             route={route}
             onPress={() => handleRoutePress(route)}
@@ -341,7 +397,7 @@ export default function BusRoutesScreen() {
     const transportModes: TransportFilter[] = ['ALL'];
     
     // Add available transport companies to the tabs
-    ['KMB', 'CTB', 'GMB', 'NLB', 'HKKF'].forEach(company => {
+    ['KMB', 'CTB', 'GMB', 'NLB', 'HKKF', 'MTR'].forEach(company => {
       if (availableCompanies.has(company as TransportCompany)) {
         transportModes.push(company as TransportCompany);
       }
@@ -546,6 +602,7 @@ export default function BusRoutesScreen() {
       case 'GMB': return '#009900'; // Green
       case 'NLB': return '#008888'; // Cyan
       case 'HKKF': return '#0066CC'; // Blue
+      case 'MTR': return '#E60012'; // MTR Red
       default: return '#8B4513'; // Default brown
     }
   }

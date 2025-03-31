@@ -17,6 +17,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { IconSymbol } from "@/components/ui/IconSymbol";
 import { findNearbyStops, type Stop } from "@/util/kmb";
+import { findNearbyStops as findNearbyMtrStops, MtrStation, MTR_COLORS } from "@/util/mtr";
 import ParallaxScrollView from "@/components/ParallaxScrollView";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -24,14 +25,29 @@ const { width, height } = Dimensions.get("window");
 const LATITUDE_DELTA = 0.01;
 const LONGITUDE_DELTA = LATITUDE_DELTA * (width / height);
 
+// Combined stop type for both KMB and MTR
+type CombinedStop = {
+  stop: string;
+  name_en: string;
+  name_tc: string;
+  name_sc: string;
+  lat: number;
+  long: number;
+  distance: number;
+  company: string;
+  type: 'KMB' | 'MTR';
+};
+
 export default function NearbyScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [location, setLocation] = useState<Location.LocationObject | null>(
     null
   );
-  const [nearbyStops, setNearbyStops] = useState<Stop[]>([]);
+  const [nearbyStops, setNearbyStops] = useState<CombinedStop[]>([]);
   const [radius, setRadius] = useState(500); // Default 500m radius
+  const [showMTR, setShowMTR] = useState(true);
+  const [showBus, setShowBus] = useState(true);
   const mapRef = useRef<MapView | null>(null);
   const { t, language } = useLanguage();
 
@@ -43,9 +59,32 @@ export default function NearbyScreen() {
     try {
       setLoading(true);
       setError(null);
-      // This utility can fetch stops for KMB, GMB, CTB, etc.
-      const stops = await findNearbyStops(latitude, longitude, searchRadius);
-      setNearbyStops(stops);
+      
+      // Get nearby KMB stops
+      const kmbStops = await findNearbyStops(latitude, longitude, searchRadius);
+      const kmbFormatted: CombinedStop[] = kmbStops.map(stop => ({
+        ...stop,
+        type: 'KMB',
+        company: 'KMB',
+      }));
+      
+      // Get nearby MTR stations
+      const mtrStations = await findNearbyMtrStops(latitude, longitude, searchRadius);
+      const mtrFormatted: CombinedStop[] = mtrStations.map(station => ({
+        stop: station.stop,
+        name_en: station.name_en,
+        name_tc: station.name_tc,
+        name_sc: station.name_sc || station.name_tc,
+        lat: station.lat,
+        long: station.long,
+        distance: station.distance,
+        company: 'MTR',
+        type: 'MTR'
+      }));
+      
+      // Combine and sort by distance
+      const combined = [...kmbFormatted, ...mtrFormatted].sort((a, b) => a.distance - b.distance);
+      setNearbyStops(combined);
     } catch (err) {
       setError("Failed to find nearby stops. Please try again.");
       console.error("Error fetching nearby stops:", err);
@@ -99,11 +138,21 @@ export default function NearbyScreen() {
     }
   };
 
-  const handleStopPress = (stop: Stop) => {
-    router.push(`/stop/${stop.stop}`);
+  const handleStopPress = (stop: CombinedStop) => {
+    if (stop.type === 'MTR') {
+      router.push({
+        pathname: "/mtr/[stationId]",
+        params: { stationId: stop.stop }
+      });
+    } else {
+      router.push({
+        pathname: "/stop/[stopId]",
+        params: { stopId: stop.stop }
+      });
+    }
   };
 
-  const goToStop = (stop: Stop) => {
+  const goToStop = (stop: CombinedStop) => {
     if (mapRef.current && location) {
       mapRef.current.animateToRegion({
         latitude: stop.lat,
@@ -113,6 +162,10 @@ export default function NearbyScreen() {
       });
     }
   };
+
+  const filteredStops = nearbyStops.filter(stop => 
+    (showMTR && stop.type === 'MTR') || (showBus && stop.type === 'KMB')
+  );
 
   return (
     <ThemedView style={styles.container}>
@@ -159,13 +212,14 @@ export default function NearbyScreen() {
                 title="Your Location"
               />
 
-              {/* Bus stop markers */}
-              {nearbyStops.map((stop) => (
+              {/* Stops markers */}
+              {filteredStops.map((stop) => (
                 <Marker
-                  key={stop.stop}
+                  key={`${stop.type}-${stop.stop}`}
                   coordinate={{ latitude: stop.lat, longitude: stop.long }}
                   title={stop.name_en}
                   description={`${Math.round(stop.distance)}m away`}
+                  pinColor={stop.type === 'MTR' ? '#0075C2' : '#B5A45D'}
                   onCalloutPress={() => handleStopPress(stop)}
                 />
               ))}
@@ -211,6 +265,34 @@ export default function NearbyScreen() {
           </TouchableOpacity>
         </ThemedView>
 
+        {/* Transport type filter */}
+        <ThemedView style={styles.transportFilter}>
+          <TouchableOpacity
+            style={[
+              styles.filterButton,
+              showBus ? styles.activeFilterButton : styles.inactiveFilterButton,
+            ]}
+            onPress={() => setShowBus(!showBus)}
+          >
+            <IconSymbol name="bus.fill" size={16} color={showBus ? "white" : "#666"} />
+            <ThemedText style={showBus ? styles.activeFilterText : styles.inactiveFilterText}>
+              {t("nearby.filter.bus")}
+            </ThemedText>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.filterButton,
+              showMTR ? styles.activeFilterButton : styles.inactiveFilterButton,
+            ]}
+            onPress={() => setShowMTR(!showMTR)}
+          >
+            <IconSymbol name="tram.fill" size={16} color={showMTR ? "white" : "#666"} />
+            <ThemedText style={showMTR ? styles.activeFilterText : styles.inactiveFilterText}>
+              {t("nearby.filter.mtr")}
+            </ThemedText>
+          </TouchableOpacity>
+        </ThemedView>
+
         {!location && !error && !loading ? (
           <ThemedView style={styles.initialState}>
             <IconSymbol name="location.fill" size={48} color="#0a7ea4" />
@@ -243,27 +325,30 @@ export default function NearbyScreen() {
             <ThemedText type="subtitle" style={styles.listTitle}>
               {t("nearby.stops.count").replace(
                 "{0}",
-                nearbyStops.length.toString()
+                filteredStops.length.toString()
               )}
             </ThemedText>
 
-            {nearbyStops.length === 0 ? (
-              <ThemedText style={styles.noStopsText}>{/*  */}
+            {filteredStops.length === 0 ? (
+              <ThemedText style={styles.noStopsText}>
                 {t("nearby.no.stops").replace("{0}", radius.toString())}
               </ThemedText>
             ) : (
               <View style={styles.listContainer}>
                 <View style={styles.list}>
-                  {nearbyStops.map((item) => (
+                  {filteredStops.map((item) => (
                     <TouchableOpacity
-                      key={item.stop}
-                      style={styles.stopItem}
+                      key={`${item.type}-${item.stop}`}
+                      style={[
+                        styles.stopItem,
+                        item.type === 'MTR' ? styles.mtrItem : {}
+                      ]}
                       onPress={() => handleStopPress(item)}
                     >
                       <IconSymbol
-                        name="location.fill"
+                        name={item.type === 'MTR' ? "tram.fill" : "bus.fill"}
                         size={24}
-                        color="#0A3161"
+                        color={item.type === 'MTR' ? "#0A3161" : "#B5A45D"}
                         style={styles.stopIcon}
                       />
                       <ThemedView style={styles.stopInfo}>
@@ -278,7 +363,7 @@ export default function NearbyScreen() {
                           {t("nearby.meters.away").replace(
                             "{0}",
                             Math.round(item.distance).toString()
-                          )}
+                          )} • {item.type}
                         </ThemedText>
                       </ThemedView>
                       <TouchableOpacity
@@ -452,5 +537,36 @@ const styles = StyleSheet.create({
   },
   mapButton: {
     padding: 8,
+  },
+  transportFilter: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginVertical: 8,
+    gap: 12,
+  },
+  filterButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 16,
+    gap: 6,
+  },
+  activeFilterButton: {
+    backgroundColor: '#0A3161',
+  },
+  inactiveFilterButton: {
+    backgroundColor: '#e0e0e0',
+  },
+  activeFilterText: {
+    color: 'white',
+    fontWeight: '500',
+  },
+  inactiveFilterText: {
+    color: '#666',
+  },
+  mtrItem: {
+    borderLeftWidth: 4,
+    borderLeftColor: '#0075C2',
   },
 });

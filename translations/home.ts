@@ -31,6 +31,11 @@ const homeTranslations: Record<string, Record<Language, string>> = {
     'zh-Hant': '收藏站點',
     'zh-Hans': '收藏站点'
   },
+  'home.favorites.mtr.stations': {
+    'en': 'Favorite MTR Stations',
+    'zh-Hant': '收藏地鐵站',
+    'zh-Hans': '收藏地铁站'
+  },
   'home.about': {
     'en': 'About This App',
     'zh-Hant': '關於此應用',

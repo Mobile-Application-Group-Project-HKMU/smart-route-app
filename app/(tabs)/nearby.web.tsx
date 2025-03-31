@@ -6,24 +6,63 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { findNearbyStops, type Stop } from '@/util/kmb';
+import { findNearbyStops as findNearbyMtrStops } from '@/util/mtr';
 import ParallaxScrollView from '@/components/ParallaxScrollView';
 import { useLanguage } from '@/contexts/LanguageContext';
-import LanguageSwitcher from '@/components/LanguageSwitcher';
+
+// Combined stop type for both KMB and MTR
+type CombinedStop = {
+  stop: string;
+  name_en: string;
+  name_tc: string;
+  name_sc: string;
+  lat: number;
+  long: number;
+  distance: number;
+  company: string;
+  type: 'KMB' | 'MTR';
+};
 
 export default function NearbyScreenWeb() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [userCoordinates, setUserCoordinates] = useState<{latitude: number, longitude: number} | null>(null);
-  const [nearbyStops, setNearbyStops] = useState<Stop[]>([]);
+  const [nearbyStops, setNearbyStops] = useState<CombinedStop[]>([]);
   const [radius, setRadius] = useState(500); // Default 500m radius
+  const [showMTR, setShowMTR] = useState(true);
+  const [showBus, setShowBus] = useState(true);
   const { t, language } = useLanguage();
 
   const findStopsNearLocation = async (latitude: number, longitude: number, searchRadius: number) => {
     try {
       setLoading(true);
       setError(null);
-      const stops = await findNearbyStops(latitude, longitude, searchRadius);
-      setNearbyStops(stops);
+      
+      // Get nearby KMB stops
+      const kmbStops = await findNearbyStops(latitude, longitude, searchRadius);
+      const kmbFormatted: CombinedStop[] = kmbStops.map(stop => ({
+        ...stop,
+        type: 'KMB',
+        company: 'KMB',
+      }));
+      
+      // Get nearby MTR stations
+      const mtrStations = await findNearbyMtrStops(latitude, longitude, searchRadius);
+      const mtrFormatted: CombinedStop[] = mtrStations.map(station => ({
+        stop: station.stop,
+        name_en: station.name_en,
+        name_tc: station.name_tc,
+        name_sc: station.name_sc || station.name_tc,
+        lat: station.lat,
+        long: station.long,
+        distance: station.distance,
+        company: 'MTR',
+        type: 'MTR'
+      }));
+      
+      // Combine and sort by distance
+      const combined = [...kmbFormatted, ...mtrFormatted].sort((a, b) => a.distance - b.distance);
+      setNearbyStops(combined);
     } catch (err) {
       setError("Failed to find nearby stops. Please try again.");
       console.error("Error fetching nearby stops:", err);
@@ -77,9 +116,23 @@ export default function NearbyScreenWeb() {
     }
   };
 
-  const handleStopPress = (stop: Stop) => {
-    router.push(`/stop/${stop.stop}`);
+  const handleStopPress = (stop: CombinedStop) => {
+    if (stop.type === 'MTR') {
+      router.push({
+        pathname: "/mtr/[stationId]",
+        params: { stationId: stop.stop }
+      });
+    } else {
+      router.push({
+        pathname: "/stop/[stopId]",
+        params: { stopId: stop.stop }
+      });
+    }
   };
+
+  const filteredStops = nearbyStops.filter(stop => 
+    (showMTR && stop.type === 'MTR') || (showBus && stop.type === 'KMB')
+  );
 
   return (
     <ParallaxScrollView
@@ -114,6 +167,34 @@ export default function NearbyScreenWeb() {
           onPress={() => changeRadius(1000)}
         >
           <ThemedText style={radius === 1000 ? styles.activeRadiusText : null}>1km</ThemedText>
+        </TouchableOpacity>
+      </ThemedView>
+      
+      {/* Transport type filter */}
+      <ThemedView style={styles.transportFilter}>
+        <TouchableOpacity
+          style={[
+            styles.filterButton,
+            showBus ? styles.activeFilterButton : styles.inactiveFilterButton,
+          ]}
+          onPress={() => setShowBus(!showBus)}
+        >
+          <IconSymbol name="bus.fill" size={16} color={showBus ? "white" : "#666"} />
+          <ThemedText style={showBus ? styles.activeFilterText : styles.inactiveFilterText}>
+            {t("nearby.filter.bus")}
+          </ThemedText>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            styles.filterButton,
+            showMTR ? styles.activeFilterButton : styles.inactiveFilterButton,
+          ]}
+          onPress={() => setShowMTR(!showMTR)}
+        >
+          <IconSymbol name="tram.fill" size={16} color={showMTR ? "white" : "#666"} />
+          <ThemedText style={showMTR ? styles.activeFilterText : styles.inactiveFilterText}>
+            {t("nearby.filter.mtr")}
+          </ThemedText>
         </TouchableOpacity>
       </ThemedView>
 
@@ -169,31 +250,39 @@ export default function NearbyScreenWeb() {
           )}
 
           <ThemedText type="subtitle" style={styles.listTitle}>
-            {t('nearby.stops.count', nearbyStops.length.toString())}
+            {t('nearby.stops.count', filteredStops.length.toString())}
           </ThemedText>
 
-          {nearbyStops.length === 0 ? (
+          {filteredStops.length === 0 ? (
             <ThemedText style={styles.noStopsText}>
               {t('nearby.no.stops').replace('{0}', radius.toString())}
             </ThemedText>
           ) : (
             <View style={styles.listContainer}>
               <FlatList
-                data={nearbyStops}
-                keyExtractor={(item) => item.stop}
+                data={filteredStops}
+                keyExtractor={(item) => `${item.type}-${item.stop}`}
                 renderItem={({ item }) => (
                   <TouchableOpacity
-                    style={styles.stopItem}
+                    style={[
+                      styles.stopItem, 
+                      item.type === 'MTR' ? styles.mtrItem : {}
+                    ]}
                     onPress={() => handleStopPress(item)}
                   >
-                    <IconSymbol name="location.fill" size={24} color="#0A3161" style={styles.stopIcon} />
+                    <IconSymbol 
+                      name={item.type === 'MTR' ? "tram.fill" : "bus.fill"} 
+                      size={24} 
+                      color={item.type === 'MTR' ? "#0A3161" : "#B5A45D"} 
+                      style={styles.stopIcon} 
+                    />
                     <ThemedView style={styles.stopInfo}>
                       <ThemedText style={styles.stopName}>
                         {language === 'en' ? item.name_en : 
                          language === 'zh-Hans' ? item.name_sc : item.name_tc}
                       </ThemedText>
                       <ThemedText style={styles.stopDistance}>
-                        {t('nearby.meters.away').replace('{0}', Math.round(item.distance).toString())}
+                        {t('nearby.meters.away').replace('{0}', Math.round(item.distance).toString())} • {item.type}
                       </ThemedText>
                     </ThemedView>
                     <IconSymbol name="chevron.right" size={20} color="#808080" />
@@ -386,5 +475,36 @@ const styles = StyleSheet.create({
   stopDistance: {
     fontSize: 14,
     opacity: 0.7,
+  },
+  transportFilter: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginVertical: 8,
+    gap: 12,
+  },
+  filterButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 16,
+    gap: 6,
+  },
+  activeFilterButton: {
+    backgroundColor: '#0A3161',
+  },
+  inactiveFilterButton: {
+    backgroundColor: '#e0e0e0',
+  },
+  activeFilterText: {
+    color: 'white',
+    fontWeight: '500',
+  },
+  inactiveFilterText: {
+    color: '#666',
+  },
+  mtrItem: {
+    borderLeftWidth: 4,
+    borderLeftColor: '#0075C2',
   },
 });

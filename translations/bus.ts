@@ -77,6 +77,11 @@ const busTranslations: Record<string, Record<Language, string>> = {
     'zh-Hant': '港九小輪',
     'zh-Hans': '港九小轮'
   },
+  'bus.transport.mtr': {
+    'en': 'MTR',
+    'zh-Hant': '港鐵',
+    'zh-Hans': '港铁'
+  },
   // Additional necessary translations
   'bus.available.stations': {
     'en': 'Available stations',
