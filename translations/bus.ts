@@ -45,6 +45,37 @@ const busTranslations: Record<string, Record<Language, string>> = {
     'en': 'No routes found',
     'zh-Hant': '未找到路線',
     'zh-Hans': '未找到路线'
+  },
+  // New translations for transport companies tabs
+  'bus.transport.all': {
+    'en': 'ALL',
+    'zh-Hant': '全部',
+    'zh-Hans': '全部'
+  },
+  'bus.transport.kmb': {
+    'en': 'KMB',
+    'zh-Hant': '九巴',
+    'zh-Hans': '九巴'
+  },
+  'bus.transport.ctb': {
+    'en': 'CTB',
+    'zh-Hant': '城巴',
+    'zh-Hans': '城巴'
+  },
+  'bus.transport.gmb': {
+    'en': 'GMB',
+    'zh-Hant': '專線小巴',
+    'zh-Hans': '专线小巴'
+  },
+  'bus.transport.nlb': {
+    'en': 'NLB',
+    'zh-Hant': '新大嶼山巴士',
+    'zh-Hans': '新大屿山巴士'
+  },
+  'bus.transport.hkkf': {
+    'en': 'HKKF',
+    'zh-Hant': '港九小輪',
+    'zh-Hans': '港九小轮'
   }
 };
 

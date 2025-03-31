@@ -4,6 +4,7 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   View,
+  ScrollView,
 } from "react-native";
 import { router } from "expo-router";
 
@@ -25,6 +26,9 @@ import {
 import { getAllRoutes, Route, getAllStops, Stop } from "@/util/kmb";
 import { TransportRoute, TransportCompany } from "@/types/transport-types";
 
+// Transport company types for tab selection
+type TransportFilter = 'ALL' | TransportCompany;
+
 export default function BusRoutesScreen() {
   const { t, language } = useLanguage();
   const [routes, setRoutes] = useState<TransportRoute[]>([]);
@@ -35,7 +39,23 @@ export default function BusRoutesScreen() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchType, setSearchType] = useState<"routes" | "stations">("routes");
   const [currentPage, setCurrentPage] = useState(1);
+  const [transportFilter, setTransportFilter] = useState<TransportFilter>("ALL");
   const itemsPerPage = 10;
+
+  // Transport company colors for tabs
+  const transportColors: Record<TransportFilter, { light: string, dark: string, text: string }> = {
+    ALL: { light: "#8B4513", dark: "#8B4513", text: "#FFFFFF" },
+    KMB: { light: "#FF5151", dark: "#B30000", text: "#FFFFFF" },
+    CTB: { light: "#FFDD00", dark: "#CC9900", text: "#000000" },
+    GMB: { light: "#66CC66", dark: "#009900", text: "#FFFFFF" },
+    NLB: { light: "#00CCCC", dark: "#008888", text: "#FFFFFF" },
+    HKKF: { light: "#4D94FF", dark: "#0066CC", text: "#FFFFFF" },
+    MTR: { light: "#E60012", dark: "#B30000", text: "#FFFFFF" },
+    LR: { light: "#95CA3E", dark: "#6B9130", text: "#FFFFFF" },
+    LRF: { light: "#FF9900", dark: "#CC7A00", text: "#FFFFFF" },
+    SF: { light: "#8959A8", dark: "#5F3E73", text: "#FFFFFF" },
+    FF: { light: "#4078C0", dark: "#2C5499", text: "#FFFFFF" },
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -66,14 +86,25 @@ export default function BusRoutesScreen() {
   }, []);
 
   useEffect(() => {
-    if (searchQuery.trim() === "") {
-      setFilteredRoutes(routes);
-      setFilteredStations(stations);
-    } else {
-      const query = searchQuery.toLowerCase();
+    // Apply filters when search query or transport filter changes
+    applyFilters();
+  }, [searchQuery, routes, stations, searchType, transportFilter]);
 
-      if (searchType === "routes") {
-        const filtered = routes.filter(
+  const applyFilters = () => {
+    if (searchType === "routes") {
+      let filtered = routes;
+      
+      // First filter by transport company if not "ALL"
+      if (transportFilter !== "ALL") {
+        filtered = filtered.filter(
+          route => (route.co || '').toUpperCase() === transportFilter
+        );
+      }
+      
+      // Then filter by search query if any
+      if (searchQuery.trim() !== "") {
+        const query = searchQuery.toLowerCase();
+        filtered = filtered.filter(
           (route) =>
             route.route.toLowerCase().includes(query) ||
             (route.orig_en || '').toLowerCase().includes(query) ||
@@ -81,8 +112,15 @@ export default function BusRoutesScreen() {
             (route.orig_tc || '').includes(query) ||
             (route.dest_tc || '').includes(query)
         );
-        setFilteredRoutes(filtered);
+      }
+      
+      setFilteredRoutes(filtered);
+    } else {
+      // For stations, only apply search query filter
+      if (searchQuery.trim() === "") {
+        setFilteredStations(stations);
       } else {
+        const query = searchQuery.toLowerCase();
         const filtered = stations.filter(
           (station) =>
             station.name_en.toLowerCase().includes(query) ||
@@ -92,8 +130,9 @@ export default function BusRoutesScreen() {
         setFilteredStations(filtered);
       }
     }
-    setCurrentPage(1); // Reset to first page on new search
-  }, [searchQuery, routes, stations, searchType]);
+    
+    setCurrentPage(1); // Reset to first page on filter change
+  };
 
   const handleRoutePress = (route: TransportRoute) => {
     router.push(
@@ -220,6 +259,44 @@ export default function BusRoutesScreen() {
     );
   };
 
+  // Render transport mode tabs
+  const renderTransportTabs = () => {
+    const transportModes: TransportFilter[] = ['ALL', 'KMB', 'CTB', 'GMB', 'NLB', 'HKKF'];
+    
+    return (
+      <ScrollView 
+        horizontal 
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.transportTabsContainer}
+      >
+        {transportModes.map((mode) => {
+          const colors = transportColors[mode];
+          const isActive = transportFilter === mode;
+          
+          return (
+            <TouchableOpacity
+              key={mode}
+              style={[
+                styles.transportTab,
+                { backgroundColor: isActive ? colors.light : '#f0f0f0' },
+              ]}
+              onPress={() => setTransportFilter(mode)}
+            >
+              <ThemedText
+                style={[
+                  styles.transportTabText,
+                  { color: isActive ? colors.text : '#333333' },
+                ]}
+              >
+                {mode === 'ALL' ? t('bus.transport.all') : mode}
+              </ThemedText>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+    );
+  };
+
   return (
     <ParallaxScrollView
       headerBackgroundColor={{ light: "#FFD580", dark: "#8B4513" }}
@@ -280,6 +357,9 @@ export default function BusRoutesScreen() {
           </ThemedText>
         </TouchableOpacity>
       </ThemedView>
+
+      {/* Transport company tabs - only show for routes */}
+      {searchType === "routes" && renderTransportTabs()}
 
       {loading ? (
         <ActivityIndicator size="large" style={styles.loader} />
@@ -380,6 +460,24 @@ const styles = StyleSheet.create({
   },
   activeSearchTypeText: {
     color: "white",
+  },
+  transportTabsContainer: {
+    paddingHorizontal: 8,
+    marginBottom: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  transportTab: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginHorizontal: 4,
+    backgroundColor: '#f0f0f0',
+    marginVertical: 4,
+  },
+  transportTabText: {
+    fontWeight: '500',
+    fontSize: 14,
   },
   loader: {
     marginTop: 20,
