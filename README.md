@@ -1,256 +1,404 @@
-# Smart KMB App
-
 ## Project Overview
 
-The Smart KMB App is a comprehensive mobile application developed as part of the COMP S313F Mobile Application Programming course at Hong Kong Metropolitan University. This cross-platform application provides real-time bus information for Kowloon Motor Bus (KMB) services in Hong Kong, designed to help users efficiently navigate public transportation.
-
-This academic initiative serves as a practical implementation of modern mobile development paradigms, integrating cutting-edge technologies and industry best practices. The app delivers a seamless experience across iOS, Android, and web platforms through a unified codebase.
-
-## Features
-
-### Core Functionalities
-
-- **Real-time Bus Arrival Information**: View accurate ETAs for all KMB bus routes and stops
-- **Route Search**: Find bus routes by number, origin, or destination
-- **Stop Locator**: Search for bus stops by name or ID
-- **Favorites System**: Save frequently used routes and stops for quick access
-- **Nearby Stops**: Discover bus stops within customizable proximity to current location
-- **Map Integration**: Visualize bus stops and routes on interactive maps
-- **Navigation Support**: Open directions to bus stops in Google Maps or Apple Maps
-- **Multi-language Support**: Full localization in English, Traditional Chinese, and Simplified Chinese
-- **Responsive Design**: Optimized for various screen sizes and orientations
-- **Dark Mode Support**: Enhanced visual comfort in low-light environments
+The **Smart KMB App** is a comprehensive public transportation application developed for the COMP S313F Mobile Application Programming course at Hong Kong Metropolitan University. This cross-platform application provides real-time information for Kowloon Motor Bus (KMB) services in Hong Kong, helping users efficiently navigate the public transportation system through a modern, responsive interface.
 
 ## Technology Stack
 
-### Development Environment
-
-- **Framework**: React Native with Expo (SDK 52)
-- **Language**: TypeScript
-- **Routing**: Expo Router v4 (file-based routing)
+### Core Framework & Languages
+- **Frontend Framework**: React Native with Expo (SDK 52)
+- **Programming Language**: TypeScript
+- **Routing**: Expo Router v4 with file-based routing
 - **State Management**: React Context API
-- **Platform Support**: iOS, Android, and Web
 
-### Key Libraries and APIs
-
-- **UI Components**: Custom themed components with platform-specific adaptations
-- **Maps Integration**: react-native-maps (with Google Maps integration)
+### Key Libraries & Dependencies
+- **Maps**: react-native-maps with Google Maps integration
 - **Location Services**: expo-location
-- **Storage**: AsyncStorage for persistent data
-- **Networking**: Axios for API requests
-- **Animations**: react-native-reanimated
+- **UI Components**: Custom themed components
 - **Internationalization**: Custom language context
-- **Navigation**: expo-router with Stack and Tab navigators
+- **Data Fetching**: API utilities for consistent data access
 
-### Data Sources
+## Architecture Overview
 
-- KMB Open Data API for real-time bus information
-- Device location services for proximity-based features
+The application follows a modular architecture with clearly separated concerns:
+
+1. **Routing System**: File-based routing through Expo Router
+2. **UI Component Library**: Themeable components that adapt to platform and appearance mode
+3. **Data Services Layer**: API integration for various transit providers
+4. **Context Providers**: Global state management for features like language and favorites
+5. **Platform-Specific Adaptations**: Specialized implementations for web and native platforms
 
 ## Implementation Details
 
-### Architecture
+### 1. Location-Based Features Implementation
 
-The application follows a modular architecture with the following key components:
+The core of the app's functionality revolves around location-based services, prominently featured in the nearby.tsx component. This screen allows users to discover bus stops within customizable proximity to their current location.
 
-1. **Routing System**: Leverages Expo Router's file-based routing for intuitive navigation
-2. **Component Library**: Custom themed components that adapt to platform and appearance mode
-3. **Data Fetching Layer**: Centralized API utilities for consistent data access
-4. **Context Providers**: Global state management for language, theme, and favorites
-5. **Platform-Specific Adaptations**: Specialized implementations for web (.web.tsx) and native platforms
+#### Location Permission Handling
 
-### Key Implementation Highlights
-
-#### Adaptive UI System
-
-The app features a sophisticated UI system with ThemedView and ThemedText components that automatically adjust to the system's color scheme. This approach ensures visual consistency while respecting user preferences for light/dark mode.
+The app implements a comprehensive permission flow:
 
 ```typescript
-<ThemedView style={styles.container}>
-  <ThemedText type="title">{t("home.title")}</ThemedText>
-  <HelloWave />
-</ThemedView>
-```
-
-#### Multi-platform Maps Integration
-
-The mapping functionality is implemented with platform-specific considerations:
-
-- On iOS: Integrates with Apple Maps
-- On Android: Uses Google Maps via react-native-maps
-- On Web: Provides a graceful fallback with direct Google Maps links
-
-This approach ensures optimal performance and user experience across all supported platforms.
-
-#### Location-Based Services
-
-The nearby stops feature demonstrates sophisticated use of device location capabilities:
-
-```typescript
-const findNearbyStops = async () => {
+const requestLocationPermission = async () => {
   try {
-    const location = await Location.getCurrentPositionAsync({
+    setLoading(true);
+    setError(null);
+
+    const { status } = await Location.requestForegroundPermissionsAsync();
+
+    if (status !== "granted") {
+      setError("Location permission is required to find nearby stops");
+      setLoading(false);
+      return;
+    }
+
+    const currentLocation = await Location.getCurrentPositionAsync({
       accuracy: Location.Accuracy.Balanced,
     });
 
-    const stops = await findNearbyStops(
-      location.coords.latitude,
-      location.coords.longitude,
-      selectedRadius
+    setLocation(currentLocation);
+    fetchNearbyStops(
+      currentLocation.coords.latitude,
+      currentLocation.coords.longitude,
+      radius
     );
-
-    setNearbyStops(stops);
-  } catch (error) {
-    // Error handling
+  } catch (err) {
+    setError("Failed to get your location. Please try again.");
+    console.error("Error getting location:", err);
+    setLoading(false);
   }
 };
 ```
 
-#### Internationalization System
+This function:
+1. Requests foreground location permission from the user
+2. Handles rejection gracefully with user-friendly error messages
+3. Retrieves the current location with balanced accuracy (optimizing for battery life)
+4. Initiates the nearby stops search based on the retrieved coordinates
 
-The application implements a comprehensive language system that supports English, Traditional Chinese, and Simplified Chinese through a custom context provider:
+#### Nearby Stops Discovery Logic
 
-```typescript
-<LanguageProvider>
-  <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-    <Stack>{/* Application routes */}</Stack>
-  </ThemeProvider>
-</LanguageProvider>
-```
-
-#### Real-time Data Processing
-
-ETAs and bus information are processed and categorized efficiently to provide users with clear, organized data:
+Once location permissions are granted, the app fetches nearby stops using:
 
 ```typescript
-const classifiedETAs = useMemo(() => {
-  if (!etas) return [];
-  return classifyStopETAs(etas);
-}, [etas]);
+const fetchNearbyStops = async (
+  latitude: number,
+  longitude: number,
+  searchRadius: number
+) => {
+  try {
+    setLoading(true);
+    setError(null);
+    // This utility can fetch stops for KMB, GMB, CTB, etc.
+    const stops = await findNearbyStops(latitude, longitude, searchRadius);
+    setNearbyStops(stops);
+  } catch (err) {
+    setError("Failed to find nearby stops. Please try again.");
+    console.error("Error fetching nearby stops:", err);
+  } finally {
+    setLoading(false);
+  }
+};
 ```
 
-### Performance Optimizations
+The function makes a call to the `findNearbyStops` utility, which:
+1. Takes the user's coordinates and search radius as parameters
+2. Calculates distances to all stops in the database
+3. Filters stops within the specified radius
+4. Returns a sorted array with the closest stops first
 
-1. **Memoization**: Strategic use of useMemo and useCallback to prevent unnecessary re-renders
-2. **Lazy Loading**: Components are loaded only when needed
-3. **Platform-Specific Code Splitting**: Separate implementations for web and native platforms
-4. **Efficient List Rendering**: FlatList with optimized rendering for long lists
-5. **Web-specific Optimizations**: Custom webpack configuration for web performance
+#### Radius Selection Implementation
+
+A user-friendly radius selector allows customization of the search area:
+
+```typescript
+const changeRadius = (newRadius: number) => {
+  setRadius(newRadius);
+  if (location) {
+    fetchNearbyStops(
+      location.coords.latitude,
+      location.coords.longitude,
+      newRadius
+    );
+  }
+};
+```
+
+This provides three preset options (250m, 500m, 1km) that trigger an immediate re-fetch of nearby stops based on the new radius.
+
+### 2. User Interface Components
+
+#### Responsive Map Integration
+
+The app integrates an interactive map showing both the user's location and nearby stops:
+
+```tsx
+<MapView
+  ref={mapRef}
+  style={styles.map}
+  provider={Platform.OS === "android" ? PROVIDER_GOOGLE : undefined}
+  initialRegion={{
+    latitude: location.coords.latitude,
+    longitude: location.coords.longitude,
+    latitudeDelta: LATITUDE_DELTA,
+    longitudeDelta: LONGITUDE_DELTA,
+  }}
+>
+  {/* User location marker */}
+  <Marker
+    coordinate={{
+      latitude: location.coords.latitude,
+      longitude: location.coords.longitude,
+    }}
+    pinColor="blue"
+    title="Your Location"
+  />
+
+  {/* Bus stop markers */}
+  {nearbyStops.map((stop) => (
+    <Marker
+      key={stop.stop}
+      coordinate={{ latitude: stop.lat, longitude: stop.long }}
+      title={stop.name_en}
+      description={`${Math.round(stop.distance)}m away`}
+      onCalloutPress={() => handleStopPress(stop)}
+    />
+  ))}
+</MapView>
+```
+
+This implementation:
+1. Uses platform-specific map providers (Google Maps on Android, Apple Maps on iOS)
+2. Centers the map on the user's current location
+3. Displays the user's position with a distinctive blue marker
+4. Plots all nearby stops with interactive callouts
+5. Enables direct navigation to stop details via callout press
+
+#### Adaptive List Rendering
+
+The stops list utilizes conditional rendering to handle different states:
+
+```tsx
+{!location && !error && !loading ? (
+  <ThemedView style={styles.initialState}>
+    <IconSymbol name="location.fill" size={48} color="#0a7ea4" />
+    <ThemedText style={styles.initialText}>
+      {t("nearby.tap.instruction")}
+    </ThemedText>
+    <TouchableOpacity
+      style={styles.startButton}
+      onPress={requestLocationPermission}
+    >
+      <ThemedText style={styles.startButtonText}>
+        {t("nearby.find.stops")}
+      </ThemedText>
+    </TouchableOpacity>
+  </ThemedView>
+) : loading ? (
+  <ActivityIndicator size="large" style={styles.loader} />
+) : error ? (
+  <ThemedView style={styles.errorContainer}>
+    <ThemedText style={styles.errorText}>{error}</ThemedText>
+    <TouchableOpacity
+      style={styles.retryButton}
+      onPress={refreshLocation}
+    >
+      <ThemedText style={styles.retryButtonText}>Retry</ThemedText>
+    </TouchableOpacity>
+  </ThemedView>
+) : (
+  // Stops list rendering
+)}
+```
+
+This pattern elegantly handles four distinct states:
+1. **Initial state**: Prompts user to enable location
+2. **Loading state**: Shows activity indicator
+3. **Error state**: Displays error message with retry option
+4. **Data state**: Renders the list of nearby stops
+
+### 3. Internationalization System
+
+The app implements a comprehensive multilingual system through a custom language context:
+
+```tsx
+const { t, language } = useLanguage();
+
+// Usage in JSX
+<ThemedText>
+  {language === "en" 
+    ? item.name_en 
+    : language === "zh-Hans" 
+    ? item.name_sc 
+    : item.name_tc}
+</ThemedText>
+
+// For formatted strings with parameters
+{t("nearby.stops.count").replace("{0}", nearbyStops.length.toString())}
+```
+
+This implementation:
+1. Provides a consistent translation mechanism through the `t()` function
+2. Supports dynamic text replacement for parameterized strings
+3. Allows direct access to the current language for conditional rendering
+4. Supports three languages: English, Traditional Chinese, and Simplified Chinese
+
+### 4. Navigation and Routing
+
+The app uses Expo Router for navigation between screens:
+
+```typescript
+const handleStopPress = (stop: Stop) => {
+  router.push(`/stop/${stop.stop}`);
+};
+```
+
+This approach:
+1. Creates a type-safe navigation system
+2. Enables deep-linking capabilities
+3. Maintains a clean separation of routing logic from UI components
+
+### 5. State Management
+
+The app uses React's built-in state management with `useState` for local component state:
+
+```typescript
+const [loading, setLoading] = useState(false);
+const [error, setError] = useState<string | null>(null);
+const [location, setLocation] = useState<Location.LocationObject | null>(null);
+const [nearbyStops, setNearbyStops] = useState<Stop[]>([]);
+const [radius, setRadius] = useState(500); // Default 500m radius
+```
+
+This approach:
+1. Keeps state management simple and predictable
+2. Localizes state to the components that need it
+3. Uses typed state for improved type safety and developer experience
+
+## Technical Challenges and Solutions
+
+### Challenge 1: Cross-Platform Map Implementation
+
+**Problem**: Maps have different native implementations across platforms.
+
+**Solution**: The app uses conditional rendering based on platform:
+
+```typescript
+provider={Platform.OS === "android" ? PROVIDER_GOOGLE : undefined}
+```
+
+This ensures optimal performance on each platform by using:
+- Google Maps on Android
+- Apple Maps on iOS
+- A graceful web implementation for browser users
+
+### Challenge 2: Location Permission Flow
+
+**Problem**: Location permissions are critical but can be rejected by users.
+
+**Solution**: A comprehensive permission flow with clear user guidance:
+1. Explicit permission request with context
+2. Graceful error handling when permissions are denied
+3. Persistent UI state that reflects permission status
+4. Easy retry mechanism for users who change their mind
+
+### Challenge 3: Efficient Stops Data Processing
+
+**Problem**: Calculating distances to potentially thousands of stops could cause performance issues.
+
+**Solution**: The `findNearbyStops` utility uses efficient algorithms:
+1. Haversine formula for accurate distance calculation
+2. Early filtering to reduce the dataset size
+3. Memoization techniques to prevent redundant calculations
+
+## Performance Optimizations
+
+1. **Map Reference Management**: The app uses the `useRef` hook to maintain a reference to the map component, allowing direct manipulation without re-renders:
+
+```typescript
+const mapRef = useRef<MapView | null>(null);
+
+// Later used to animate the map
+const goToStop = (stop: Stop) => {
+  if (mapRef.current && location) {
+    mapRef.current.animateToRegion({
+      latitude: stop.lat,
+      longitude: stop.long,
+      latitudeDelta: LATITUDE_DELTA / 2,
+      longitudeDelta: LONGITUDE_DELTA / 2,
+    });
+  }
+};
+```
+
+2. **Conditional Loading**: Map and heavy components are only rendered when needed:
+
+```tsx
+{location && (
+  <View style={styles.fixedMapContainer}>
+    <MapView
+      // Map implementation
+    />
+  </View>
+)}
+```
+
+3. **Efficient List Rendering**: Stop items are rendered directly in the component rather than using FlatList for smaller datasets, reducing rendering complexity.
+
+4. **Balanced Location Accuracy**: The location service uses balanced accuracy to optimize battery life:
+
+```typescript
+const currentLocation = await Location.getCurrentPositionAsync({
+  accuracy: Location.Accuracy.Balanced,
+});
+```
+
+## User Experience Considerations
+
+### Progressive Disclosure
+
+The app implements a progressive disclosure pattern:
+1. Initial screen is simple with a prominent "Find Nearby Stops" button
+2. Location permission is requested only when the user initiates the action
+3. Map and detailed stop list only appear after location is acquired
+
+### Visual Feedback
+
+Multiple visual indicators keep users informed:
+1. Loading indicators during data fetching
+2. Error messages with clear retry options
+3. Active state styling for the selected radius button
+4. Animated map transitions when focusing on stops
 
 ### Accessibility Considerations
 
-- Semantic markup for screen readers
-- Sufficient color contrast for all UI elements
-- Touch targets sized appropriately for all users
+The app implements several accessibility features:
+1. Adequate color contrast for text elements
+2. Sufficiently sized touch targets (minimum 44x44 points)
+3. Semantic component structure
+4. Responsive layouts that adapt to different screen sizes
 
-## Installation and Setup
+## Future Enhancements
 
-### Prerequisites
+Based on requirements in the re.txt file, future enhancements will include:
 
-- Node.js (v18 or later)
-- Yarn or npm
-- Expo CLI
-- iOS/Android development environment (for native testing)
+1. **Expanded Transport Provider Support**:
+   - Integration of additional bus companies (New World First Bus, Citybus)
+   - Green Minibus information integration
+   - MTR (metro) station and schedule data
 
-### Installation Steps
+2. **Enhanced Multilingual Capabilities**:
+   - Complete coverage of all UI elements in three languages
+   - Dynamic language switching without app restart
 
-1. Clone the repository:
+3. **Cross-Transport Integration**:
+   - Combined searches across transport types
+   - Integrated journey planning across multiple transport providers
+   - MTR stations near bus stops and vice versa
 
-   ```bash
-   git clone https://github.com/yourusername/smart-kmb-app.git
-   cd smart-kmb-app
-   ```
+## Conclusion
 
-2. Install dependencies:
+The Smart KMB App demonstrates successful implementation of modern mobile development practices to create a useful public transportation tool. By focusing on user experience, performance, and extensibility, the app provides a solid foundation for future enhancements.
 
-   ```bash
-   yarn install
-   # or
-   npm install
-   ```
+The location-based nearby stops feature showcases the app's core functionality, combining device location capabilities, map visualization, and real-time data fetching to help users efficiently navigate Hong Kong's public transportation system.
 
-3. Start the development server:
-
-   ```bash
-   yarn start
-   # or
-   npm start
-   ```
-
-4. Run on specific platforms:
-
-   ```bash
-   # For iOS
-   yarn ios
-
-   # For Android
-   yarn android
-
-   # For Web
-   yarn web
-   ```
-
-### Building for Production
-
-```bash
-# Build for all platforms
-yarn build
-
-# Build APK for Android
-yarn apk
-```
-
-## Project Structure
-
-```
-smart-kmb-app/
-├── app/                      # Main application screens and routing
-│   ├── (tabs)/               # Tab-based navigation screens
-│   │   ├── index.tsx         # Home screen
-│   │   ├── bus.tsx           # Bus routes screen
-│   │   └── nearby.tsx        # Nearby stops screen
-│   ├── bus/                  # Bus route details
-│   │   └── [routeId].tsx     # Dynamic route for bus details
-│   ├── stop/                 # Bus stop details
-│   │   └── [stopId].tsx      # Dynamic route for stop details
-│   ├── about.tsx             # About screen
-│   ├── settings.tsx          # Settings screen
-│   └── _layout.tsx           # Root layout component
-├── assets/                   # Static assets (images, fonts)
-├── components/               # Reusable UI components
-│   ├── ui/                   # Basic UI building blocks
-│   └── mocks/                # Mock components for web platform
-├── contexts/                 # React Context providers
-├── hooks/                    # Custom React hooks
-├── util/                     # Utility functions and API clients
-└── constants/                # Global constants and configuration
-```
-
-## Team Members
-
-- **Li Yanpei** - Frontend Development / Server Deploy (13522245)
-- **Li Yuan** - Group Member (13549915)
-- **LEE Meng Hin** - Group Member (13799930)
-- **Chan Antony** - Group Member (13830346)
-- **Sze Tsz Yam** - Group Member (13852523)
-- **Poon Chun Him** - Group Member (13810488)
-
-## Academic Context
-
-- **Institution**: Hong Kong Metropolitan University
-- **Department**: Department of Computer Engineering
-- **Course**: COMP S313F Mobile Application Programming
-- **Academic Period**: Spring Term 2025
-- **Project Type**: Course Group Project
-
-## License and Terms
-
-This project is intended for non-commercial, academic purposes only. The application is provided under the MIT License with the following considerations:
-
-- Data integrity disclaimer - independent verification recommended for mission-critical applications
-- Limited liability clause for system-derived decisions
-- All code contributions remain the intellectual property of their respective authors
-
----
-
-© 2025 Hong Kong Metropolitan University - Department of Computer Engineering
+The modular architecture and clean code organization make the codebase maintainable and extensible, providing a path for implementing the additional features outlined in the project requirements.
