@@ -28,21 +28,7 @@ import {
   saveToLocalStorage,
   getFromLocalStorage,
 } from "@/util/favourite";
-
-const { width } = Dimensions.get("window");
-
-type Language = "en" | "tc" | "sc";
-
-const getText = (en: string, tc: string, sc: string, lang: Language): string => {
-  switch (lang) {
-    case "tc":
-      return tc;
-    case "sc":
-      return sc;
-    default:
-      return en;
-  }
-};
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function RouteDetailScreen() {
   const { routeId, bound, serviceType } = useLocalSearchParams();
@@ -68,10 +54,17 @@ export default function RouteDetailScreen() {
     useState<Location.LocationObject | null>(null);
   const [nearestStopIndex, setNearestStopIndex] = useState<number | null>(null);
   const mapRef = useRef<MapView>(null);
-  const [language, setLanguage] = useState<Language>("en");
+
+  const { t, language } = useLanguage();
 
   const direction = bound === "I" ? "inbound" : "outbound";
   const routeKey = `${routeId}-${bound}-${serviceType}`;
+
+  const getLocalizedText = (en: string, tc: string, sc: string): string => {
+    if (language === "zh-Hant") return tc;
+    if (language === "zh-Hans") return sc;
+    return en;
+  };
 
   useEffect(() => {
     const checkFavorite = async () => {
@@ -110,8 +103,8 @@ export default function RouteDetailScreen() {
           destination: details.dest_en,
           orig_tc: String(details.orig_tc || details.orig_en),
           dest_tc: String(details.dest_tc || details.dest_en),
-          orig_sc: String(details.orig_tc || details.orig_en), // Use orig_tc as fallback
-          dest_sc: String(details.dest_tc || details.dest_en), // Use dest_tc as fallback
+          orig_sc: String(details.orig_tc || details.orig_en),
+          dest_sc: String(details.dest_tc || details.dest_en),
         });
 
         const routeStops = await getRouteStops(
@@ -190,7 +183,7 @@ export default function RouteDetailScreen() {
         }
       } catch (error) {
         console.error("Failed to fetch route details:", error);
-        Alert.alert("Error", "Failed to load route information");
+        Alert.alert(t("error"), t("failedToLoadRouteInformation"));
       } finally {
         setLoading(false);
       }
@@ -221,14 +214,14 @@ export default function RouteDetailScreen() {
       setIsFavorite(!isFavorite);
 
       Alert.alert(
-        isFavorite ? "Removed from Favorites" : "Added to Favorites",
+        isFavorite ? t("removedFromFavorites") : t("addedToFavorites"),
         isFavorite
-          ? "This route has been removed from your favorites."
-          : "This route has been added to your favorites."
+          ? t("routeRemovedFromFavorites")
+          : t("routeAddedToFavorites")
       );
     } catch (error) {
       console.error("Error updating favorites:", error);
-      Alert.alert("Error", "Failed to update favorites");
+      Alert.alert(t("error"), t("failedToUpdateFavorites"));
     }
   };
 
@@ -250,21 +243,11 @@ export default function RouteDetailScreen() {
     }
   };
 
-
-  const languageLabels = {
-    inbound: { en: "Inbound", tc: "往程", sc: "往程" },
-    outbound: { en: "Outbound", tc: "回程", sc: "回程" },
-    serviceType: { en: "Service Type", tc: "服務類型", sc: "服务类型" },
-    route: { en: "Route", tc: "路線", sc: "路线" },
-    stops: { en: "Stops", tc: "站點", sc: "站点" },
-    yourLocation: { en: "Your Location", tc: "您的位置", sc: "您的位置" },
-  };
-
   return (
     <ThemedView style={styles.container}>
       <Stack.Screen
         options={{
-          title: `${getText("Route", "路線", "路线", language)} ${routeId}`,
+          title: `${t("route")} ${routeId}`,
           headerRight: () => (
             <View style={styles.headerButtons}>
               <TouchableOpacity
@@ -288,36 +271,22 @@ export default function RouteDetailScreen() {
         <>
           <ThemedView style={styles.routeHeader}>
             <ThemedText type="title" style={styles.routeNumber}>
-              {getText("Route", "路線", "路线", language)} {routeId}
+              {t("route")} {routeId}
             </ThemedText>
             <ThemedText style={styles.routeDirection}>
-              {getText(
-                languageLabels.inbound.en,
-                languageLabels.inbound.tc,
-                languageLabels.inbound.sc,
-                language
-              )}{" "}
-              •{" "}
-              {getText(
-                "Service Type",
-                "服務類型",
-                "服务类型",
-                language
-              )}: {serviceType}
+              {t(direction)} • {t("serviceType")}: {serviceType}
             </ThemedText>
             <ThemedText style={styles.routePath}>
-              {getText(
+              {getLocalizedText(
                 routeInfo.origin,
                 routeInfo.orig_tc,
-                routeInfo.orig_sc,
-                language
+                routeInfo.orig_sc
               )}{" "}
               →{" "}
-              {getText(
+              {getLocalizedText(
                 routeInfo.destination,
                 routeInfo.dest_tc,
-                routeInfo.dest_sc,
-                language
+                routeInfo.dest_sc
               )}
             </ThemedText>
           </ThemedView>
@@ -355,18 +324,12 @@ export default function RouteDetailScreen() {
                       latitude: stop.lat,
                       longitude: stop.long,
                     }}
-                    title={`${index + 1}. ${getText(
+                    title={`${index + 1}. ${getLocalizedText(
                       stop.name_en,
                       stop.name_tc,
-                      stop.name_sc,
-                      language
+                      stop.name_sc
                     )}`}
-                    description={`${getText(
-                      "Sequence",
-                      "序號",
-                      "序号",
-                      language
-                    )}: ${stop.seq}`}
+                    description={`${t("sequence")}: ${stop.seq}`}
                     pinColor={nearestStopIndex === index ? "blue" : undefined}
                     onCalloutPress={() => handleStopPress(stop)}
                   />
@@ -378,12 +341,7 @@ export default function RouteDetailScreen() {
                       latitude: userLocation.coords.latitude,
                       longitude: userLocation.coords.longitude,
                     }}
-                    title={getText(
-                      "Your Location",
-                      "您的位置",
-                      "您的位置",
-                      language
-                    )}
+                    title={t("yourLocation")}
                     pinColor="green"
                   />
                 )}
@@ -392,7 +350,7 @@ export default function RouteDetailScreen() {
           )}
 
           <ThemedText type="subtitle" style={styles.stopsHeader}>
-            {getText("Stops", "站點", "站点", language)} ({stops.length})
+            {t("stops")} ({stops.length})
           </ThemedText>
 
           <FlatList
@@ -430,11 +388,10 @@ export default function RouteDetailScreen() {
                 </ThemedView>
                 <ThemedView style={styles.stopInfo}>
                   <ThemedText style={styles.stopName}>
-                    {getText(
+                    {getLocalizedText(
                       item.name_en,
                       item.name_tc,
-                      item.name_sc,
-                      language
+                      item.name_sc
                     )}
                   </ThemedText>
                   {language === "en" && (
