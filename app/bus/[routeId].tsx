@@ -31,6 +31,19 @@ import {
 
 const { width } = Dimensions.get("window");
 
+type Language = "en" | "tc" | "sc";
+
+const getText = (en: string, tc: string, sc: string, lang: Language): string => {
+  switch (lang) {
+    case "tc":
+      return tc;
+    case "sc":
+      return sc;
+    default:
+      return en;
+  }
+};
+
 export default function RouteDetailScreen() {
   const { routeId, bound, serviceType } = useLocalSearchParams();
   const [stops, setStops] = useState<Array<RouteStop & Stop>>([]);
@@ -39,11 +52,23 @@ export default function RouteDetailScreen() {
   const [routeInfo, setRouteInfo] = useState<{
     origin: string;
     destination: string;
-  }>({ origin: "", destination: "" });
+    orig_tc: string;
+    dest_tc: string;
+    orig_sc: string;
+    dest_sc: string;
+  }>({
+    origin: "",
+    destination: "",
+    orig_tc: "",
+    dest_tc: "",
+    orig_sc: "",
+    dest_sc: "",
+  });
   const [userLocation, setUserLocation] =
     useState<Location.LocationObject | null>(null);
   const [nearestStopIndex, setNearestStopIndex] = useState<number | null>(null);
   const mapRef = useRef<MapView>(null);
+  const [language, setLanguage] = useState<Language>("en");
 
   const direction = bound === "I" ? "inbound" : "outbound";
   const routeKey = `${routeId}-${bound}-${serviceType}`;
@@ -66,7 +91,6 @@ export default function RouteDetailScreen() {
       try {
         setLoading(true);
 
-        // Get user location
         const { status } = await Location.requestForegroundPermissionsAsync();
         if (status === "granted") {
           const location = (await Location.getCurrentPositionAsync(
@@ -75,7 +99,6 @@ export default function RouteDetailScreen() {
           setUserLocation(location);
         }
 
-        // Fetch route details
         const details = await getRouteDetails(
           routeId as string,
           direction as "inbound" | "outbound",
@@ -85,20 +108,21 @@ export default function RouteDetailScreen() {
         setRouteInfo({
           origin: details.orig_en,
           destination: details.dest_en,
+          orig_tc: String(details.orig_tc || details.orig_en),
+          dest_tc: String(details.dest_tc || details.dest_en),
+          orig_sc: String(details.orig_tc || details.orig_en), // Use orig_tc as fallback
+          dest_sc: String(details.dest_tc || details.dest_en), // Use dest_tc as fallback
         });
 
-        // Fetch route stops
         const routeStops = await getRouteStops(
           routeId as string,
           direction as "inbound" | "outbound",
           serviceType as string
         );
 
-        // Fetch all stops to get their details
         const allStops = await getAllStops();
         const stopsMap = new Map(allStops.map((stop) => [stop.stop, stop]));
 
-        // Combine route stops with stop details
         const routeStopsWithDetails = routeStops.map((routeStop) => {
           const stopDetails = stopsMap.get(routeStop.stop);
           return {
@@ -109,14 +133,13 @@ export default function RouteDetailScreen() {
               name_sc: "未知站",
               lat: 0,
               long: 0,
-              distance: 0, // Default distance value
+              distance: 0,
             }),
           };
         });
 
         setStops(routeStopsWithDetails);
 
-        // If user location is available, find the nearest stop
         if (userLocation && routeStopsWithDetails.length > 0) {
           const { latitude, longitude } = userLocation.coords;
           let minDistance = Number.MAX_VALUE;
@@ -136,7 +159,6 @@ export default function RouteDetailScreen() {
 
           setNearestStopIndex(minDistanceIndex);
 
-          // Wait for the map to be ready and then zoom to the nearest stop
           setTimeout(() => {
             if (mapRef.current) {
               mapRef.current.animateToRegion(
@@ -151,7 +173,6 @@ export default function RouteDetailScreen() {
             }
           }, 500);
         } else if (routeStopsWithDetails.length > 0) {
-          // If no user location, fit all stops on the map
           setTimeout(() => {
             if (mapRef.current) {
               mapRef.current.fitToCoordinates(
@@ -191,10 +212,8 @@ export default function RouteDetailScreen() {
       }
 
       if (isFavorite) {
-        // Remove from favorites
         favorites.kmbID = favorites.kmbID.filter((id) => id !== routeKey);
       } else {
-        // Add to favorites
         favorites.kmbID.push(routeKey);
       }
 
@@ -214,7 +233,6 @@ export default function RouteDetailScreen() {
   };
 
   const handleStopPress = (stop: RouteStop & Stop) => {
-    // Navigate to stop ETA screen
     router.push(`/stop/${stop.stop}`);
   };
 
@@ -232,22 +250,34 @@ export default function RouteDetailScreen() {
     }
   };
 
+
+  const languageLabels = {
+    inbound: { en: "Inbound", tc: "往程", sc: "往程" },
+    outbound: { en: "Outbound", tc: "回程", sc: "回程" },
+    serviceType: { en: "Service Type", tc: "服務類型", sc: "服务类型" },
+    route: { en: "Route", tc: "路線", sc: "路线" },
+    stops: { en: "Stops", tc: "站點", sc: "站点" },
+    yourLocation: { en: "Your Location", tc: "您的位置", sc: "您的位置" },
+  };
+
   return (
     <ThemedView style={styles.container}>
       <Stack.Screen
         options={{
-          title: `Route ${routeId}`,
+          title: `${getText("Route", "路線", "路线", language)} ${routeId}`,
           headerRight: () => (
-            <TouchableOpacity
-              onPress={toggleFavorite}
-              style={styles.favoriteButton}
-            >
-              <IconSymbol
-                name={isFavorite ? "star.fill" : "star"}
-                size={24}
-                color={isFavorite ? "#FFD700" : "#808080"}
-              />
-            </TouchableOpacity>
+            <View style={styles.headerButtons}>
+              <TouchableOpacity
+                onPress={toggleFavorite}
+                style={styles.favoriteButton}
+              >
+                <IconSymbol
+                  name={isFavorite ? "star.fill" : "star"}
+                  size={24}
+                  color={isFavorite ? "#FFD700" : "#808080"}
+                />
+              </TouchableOpacity>
+            </View>
           ),
         }}
       />
@@ -258,14 +288,37 @@ export default function RouteDetailScreen() {
         <>
           <ThemedView style={styles.routeHeader}>
             <ThemedText type="title" style={styles.routeNumber}>
-              Route {routeId}
+              {getText("Route", "路線", "路线", language)} {routeId}
             </ThemedText>
             <ThemedText style={styles.routeDirection}>
-              {bound === "I" ? "Inbound" : "Outbound"} • Service Type:{" "}
-              {serviceType}
+              {getText(
+                languageLabels.inbound.en,
+                languageLabels.inbound.tc,
+                languageLabels.inbound.sc,
+                language
+              )}{" "}
+              •{" "}
+              {getText(
+                "Service Type",
+                "服務類型",
+                "服务类型",
+                language
+              )}: {serviceType}
             </ThemedText>
             <ThemedText style={styles.routePath}>
-              {routeInfo.origin} → {routeInfo.destination}
+              {getText(
+                routeInfo.origin,
+                routeInfo.orig_tc,
+                routeInfo.orig_sc,
+                language
+              )}{" "}
+              →{" "}
+              {getText(
+                routeInfo.destination,
+                routeInfo.dest_tc,
+                routeInfo.dest_sc,
+                language
+              )}
             </ThemedText>
           </ThemedView>
 
@@ -284,7 +337,6 @@ export default function RouteDetailScreen() {
                   longitudeDelta: 0.05,
                 }}
               >
-                {/* Route line connecting all stops */}
                 {stops.length > 1 && (
                   <Polyline
                     coordinates={stops.map((stop) => ({
@@ -296,7 +348,6 @@ export default function RouteDetailScreen() {
                   />
                 )}
 
-                {/* Stop markers */}
                 {stops.map((stop, index) => (
                   <Marker
                     key={stop.stop}
@@ -304,21 +355,35 @@ export default function RouteDetailScreen() {
                       latitude: stop.lat,
                       longitude: stop.long,
                     }}
-                    title={`${index + 1}. ${stop.name_en}`}
-                    description={`Sequence: ${stop.seq}`}
+                    title={`${index + 1}. ${getText(
+                      stop.name_en,
+                      stop.name_tc,
+                      stop.name_sc,
+                      language
+                    )}`}
+                    description={`${getText(
+                      "Sequence",
+                      "序號",
+                      "序号",
+                      language
+                    )}: ${stop.seq}`}
                     pinColor={nearestStopIndex === index ? "blue" : undefined}
                     onCalloutPress={() => handleStopPress(stop)}
                   />
                 ))}
 
-                {/* User location marker if available */}
                 {userLocation && (
                   <Marker
                     coordinate={{
                       latitude: userLocation.coords.latitude,
                       longitude: userLocation.coords.longitude,
                     }}
-                    title="Your Location"
+                    title={getText(
+                      "Your Location",
+                      "您的位置",
+                      "您的位置",
+                      language
+                    )}
                     pinColor="green"
                   />
                 )}
@@ -327,7 +392,7 @@ export default function RouteDetailScreen() {
           )}
 
           <ThemedText type="subtitle" style={styles.stopsHeader}>
-            Stops ({stops.length})
+            {getText("Stops", "站點", "站点", language)} ({stops.length})
           </ThemedText>
 
           <FlatList
@@ -365,11 +430,18 @@ export default function RouteDetailScreen() {
                 </ThemedView>
                 <ThemedView style={styles.stopInfo}>
                   <ThemedText style={styles.stopName}>
-                    {item.name_en}
+                    {getText(
+                      item.name_en,
+                      item.name_tc,
+                      item.name_sc,
+                      language
+                    )}
                   </ThemedText>
-                  <ThemedText style={styles.stopNameChinese}>
-                    {item.name_tc}
-                  </ThemedText>
+                  {language === "en" && (
+                    <ThemedText style={styles.stopNameChinese}>
+                      {item.name_tc}
+                    </ThemedText>
+                  )}
                 </ThemedView>
                 <TouchableOpacity
                   style={styles.mapButton}
@@ -478,5 +550,20 @@ const styles = StyleSheet.create({
   },
   favoriteButton: {
     marginRight: 12,
+  },
+  headerButtons: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  languageButton: {
+    marginRight: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    backgroundColor: "#0a7ea4",
+    borderRadius: 4,
+  },
+  languageButtonText: {
+    color: "white",
+    fontWeight: "bold",
   },
 });
