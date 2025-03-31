@@ -248,7 +248,7 @@ export default function NearbyScreen() {
             </ThemedText>
 
             {nearbyStops.length === 0 ? (
-              <ThemedText style={styles.noStopsText}>
+              <ThemedText style={styles.noStopsText}>{/*  */}
                 {t("nearby.no.stops").replace("{0}", radius.toString())}
               </ThemedText>
             ) : (
