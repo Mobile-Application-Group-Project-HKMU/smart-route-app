@@ -162,19 +162,28 @@ export default function BusRoutesScreen() {
       
       setFilteredRoutes(filtered);
     } else {
-      // For stations, only apply search query filter
-      if (searchQuery.trim() === "") {
-        setFilteredStations(stations);
-      } else {
-        const query = searchQuery.toLowerCase();
-        const filtered = stations.filter(
-          (station) =>
-            station.name_en.toLowerCase().includes(query) ||
-            station.name_tc.includes(query) ||
-            station.stop.includes(query)
+      // For stations, apply both company filter and search query filter
+      let filtered = stations;
+      
+      // First filter by transport company if not "ALL"
+      if (transportFilter !== "ALL") {
+        filtered = filtered.filter(
+          station => (station.company || 'KMB').toUpperCase() === transportFilter
         );
-        setFilteredStations(filtered);
       }
+      
+      // Then apply search query filter if any
+      if (searchQuery.trim() !== "") {
+        const query = searchQuery.toLowerCase();
+        filtered = filtered.filter(
+          (station) =>
+            (String(station.name_en || '').toLowerCase()).includes(query) ||
+            (String(station.name_tc || '')).includes(query) ||
+            (String(station.stop || '')).includes(query)
+        );
+      }
+      
+      setFilteredStations(filtered);
     }
     
     setCurrentPage(1); // Reset to first page on filter change
@@ -322,8 +331,13 @@ export default function BusRoutesScreen() {
 
   // Render transport mode tabs
   const renderTransportTabs = () => {
-    // Show only transport companies that have routes
-    const availableCompanies = new Set(routes.map(route => (route.co || 'KMB').toUpperCase()));
+    // Show only transport companies that have routes or stations
+    const availableCompanies = new Set(
+      searchType === "routes" 
+        ? routes.map(route => (route.co || 'KMB').toUpperCase())
+        : stations.map(station => (station.company || 'KMB').toUpperCase())
+    );
+    
     const transportModes: TransportFilter[] = ['ALL'];
     
     // Add available transport companies to the tabs
@@ -453,8 +467,8 @@ export default function BusRoutesScreen() {
         </TouchableOpacity>
       </ThemedView>
 
-      {/* Transport company tabs - only show for routes */}
-      {searchType === "routes" && renderTransportTabs()}
+      {/* Transport company tabs - show for both routes and stations */}
+      {renderTransportTabs()}
       
       {/* Show station counts by company when in station mode */}
       {searchType === "stations" && renderStationCounts()}
