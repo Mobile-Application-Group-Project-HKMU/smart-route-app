@@ -102,6 +102,11 @@ const busTranslations: Record<string, Record<Language, string>> = {
     'en': 'No stations found for this company',
     'zh-Hant': '找不到此營運商的站點',
     'zh-Hans': '找不到此营运商的站点'
+  },
+  'bus.from': {
+    'en': 'From',
+    'zh-Hant': '從',
+    'zh-Hans': '从'
   }
 };
 

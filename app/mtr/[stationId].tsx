@@ -263,7 +263,6 @@ export default function MtrStationScreen() {
           {Platform.OS !== 'web' && (
             <View style={styles.mapContainer}>
               <MapView
-              onPress={openNavigation}
                 ref={mapRef}
                 style={styles.map}
                 provider={Platform.OS === "android" ? PROVIDER_GOOGLE : undefined}
@@ -283,6 +282,19 @@ export default function MtrStationScreen() {
                   pinColor="#0075C2"
                 />
               </MapView>
+                            <TouchableOpacity
+                              style={styles.navigationButton}
+                              onPress={openNavigation}
+                            >
+                              <IconSymbol
+                                name="arrow.triangle.turn.up.right.circle.fill"
+                                size={20}
+                                color="white"
+                              />
+                              <ThemedText style={styles.navigationButtonText}>
+                                {t("navigate")}
+                              </ThemedText>
+                            </TouchableOpacity>
             </View>
           )}
           
@@ -523,5 +535,21 @@ const styles = StyleSheet.create({
     marginTop: 40,
     fontSize: 16,
     opacity: 0.7,
+  },
+  navigationButton: {
+    position: "absolute",
+    bottom: 10,
+    right: 10,
+    backgroundColor: "#0a7ea4",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  navigationButtonText: {
+    color: "white",
+    marginLeft: 4,
+    fontWeight: "bold",
   },
 });

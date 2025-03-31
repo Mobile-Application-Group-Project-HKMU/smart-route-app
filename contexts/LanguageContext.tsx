@@ -1,41 +1,41 @@
 import React, { createContext, useState, useContext, ReactNode } from 'react';
-import translations from '../translations';
+import translations from '@/translations';
 
-// Define the available languages
+// Language types
 export type Language = 'en' | 'zh-Hant' | 'zh-Hans';
 
-// Define the context interface
-interface LanguageContextType {
+// Context interface
+interface LanguageContextProps {
   language: Language;
-  setLanguage: (language: Language) => void;
+  setLanguage: (lang: Language) => void;
   t: (key: string, ...args: any[]) => string;
 }
 
-// Create the context with default values
-const LanguageContext = createContext<LanguageContextType>({
+// Create context with default values
+const LanguageContext = createContext<LanguageContextProps>({
   language: 'en',
   setLanguage: () => {},
-  t: () => '',
+  t: (key) => key,
 });
 
 // Provider component
-export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export function LanguageProvider({ children }: { children: ReactNode }) {
   const [language, setLanguage] = useState<Language>('en');
 
   // Translation function
   const t = (key: string, ...args: any[]): string => {
-    // Get the translation
-    const translation = translations[key]?.[language];
+    // Get translation for current language
+    const translation = translations[key]?.[language] || key;
     
-    if (!translation) {
-      console.warn(`Translation key not found: "${key}"`);
-      return key;
+    // Handle arguments for string interpolation
+    if (args.length > 0 && translation !== key) {
+      return translation.replace(/\{(\d+)\}/g, (_, index) => {
+        const argIndex = parseInt(index, 10);
+        return args[argIndex] !== undefined ? String(args[argIndex]) : `{${index}}`;
+      });
     }
-
-    // Replace placeholders with arguments
-    return args.reduce((result, arg, index) => {
-      return result.replace(`{${index}}`, String(arg));
-    }, translation);
+    
+    return translation;
   };
 
   return (
@@ -43,7 +43,9 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
       {children}
     </LanguageContext.Provider>
   );
-};
+}
 
 // Custom hook to use the language context
-export const useLanguage = () => useContext(LanguageContext);
+export function useLanguage() {
+  return useContext(LanguageContext);
+}

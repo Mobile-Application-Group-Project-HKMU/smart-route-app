@@ -1,16 +1,19 @@
 import { Language } from '../contexts/LanguageContext';
-import busTranslations from './bus';
-import commonTranslations from './common';
 import homeTranslations from './home';
+import busTranslations from './bus';
+import tabsTranslations from './tabs';
+import commonTranslations from './common';
 import nearbyTranslations from './nearby';
 import settingsTranslations from './settings';
 import stopTranslations from './stop';
 import transportTranslations from './transport';
 
+// Merge all translations into a single object
 const translations: Record<string, Record<Language, string>> = {
-  ...busTranslations,
-  ...commonTranslations,
   ...homeTranslations,
+  ...busTranslations,
+  ...tabsTranslations,
+  ...commonTranslations,
   ...nearbyTranslations,
   ...settingsTranslations,
   ...stopTranslations,

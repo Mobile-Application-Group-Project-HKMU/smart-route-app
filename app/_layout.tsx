@@ -5,12 +5,39 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
-
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 
+// Customize the navigation themes to match our color constants
+import { Colors } from '@/constants/Colors';
+
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
+
+// Customize the navigation themes
+const CustomDefaultTheme = {
+  ...DefaultTheme,
+  colors: {
+    ...DefaultTheme.colors,
+    primary: Colors.light.tint,
+    background: Colors.light.background,
+    card: Colors.light.card,
+    text: Colors.light.text,
+    border: Colors.light.border,
+  },
+};
+
+const CustomDarkTheme = {
+  ...DarkTheme,
+  colors: {
+    ...DarkTheme.colors,
+    primary: Colors.dark.tint,
+    background: Colors.dark.background,
+    card: Colors.dark.card,
+    text: Colors.dark.text,
+    border: Colors.dark.border,
+  },
+};
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -30,12 +57,12 @@ export default function RootLayout() {
 
   return (
     <LanguageProvider>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+      <ThemeProvider value={colorScheme === 'dark' ? CustomDarkTheme : CustomDefaultTheme}>
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="+not-found" />
         </Stack>
-        <StatusBar style="auto" />
+        <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
       </ThemeProvider>
     </LanguageProvider>
   );
