@@ -56,7 +56,7 @@ export default function BusRoutesScreen() {
     KMB: { light: "#FF5151", dark: "#B30000", text: "#FFFFFF" },
     CTB: { light: "#FFDD00", dark: "#CC9900", text: "#000000" },
     GMB: { light: "#66CC66", dark: "#009900", text: "#FFFFFF" },
-    NLB: { light: "#00CCCC", dark: "#008888", text: "#FFFFFF" }, // Now valid
+    NLB: { light: "#00CCCC", dark: "#008888", text: "#FFFFFF" }, 
     HKKF: { light: "#4D94FF", dark: "#0066CC", text: "#FFFFFF" },
     MTR: { light: "#E60012", dark: "#B30000", text: "#FFFFFF" },
     LR: { light: "#95CA3E", dark: "#6B9130", text: "#FFFFFF" },
@@ -125,9 +125,9 @@ export default function BusRoutesScreen() {
           console.warn('Failed to fetch GMB data:', error);
         }
         
-        // Try to fetch MTR routes and stops
+        // Try to fetch MTR routes and stops with correct language
         try {
-          const mtrRoutes = await getAllMtrRoutes(); // Fixed function name
+          const mtrRoutes = await getAllMtrRoutes(language as 'en' | 'zh-Hant' | 'zh-Hans');
           if (mtrRoutes && mtrRoutes.length > 0) {
             allRoutes.push(...mtrRoutes.map(route => ({
               ...route,
@@ -135,7 +135,7 @@ export default function BusRoutesScreen() {
             })));
           }
           
-          const mtrStops = await getAllMtrStops(); // Fixed function name
+          const mtrStops = await getAllMtrStops();
           if (mtrStops && mtrStops.length > 0) {
             allStations.push(...mtrStops.map(stop => ({
               ...stop,
@@ -161,7 +161,7 @@ export default function BusRoutesScreen() {
     };
 
     fetchData();
-  }, []);
+  }, [language]);
 
   useEffect(() => {
     // Apply filters when search query or transport filter changes

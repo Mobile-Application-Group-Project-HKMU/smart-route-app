@@ -67,21 +67,46 @@ async function cachedApiGet<T>(url: string): Promise<T> {
 /**
  * Gets all MTR lines (routes)
  */
-export async function getAllLines(): Promise<TransportRoute[]> {
-  return [
-    { route: 'AEL', co: 'MTR', orig_en: 'Hong Kong', orig_tc: '香港', dest_en: 'AsiaWorld-Expo', dest_tc: '博覽館', mode: 'MTR', color: MTR_COLORS['AEL'] },
-    { route: 'TCL', co: 'MTR', orig_en: 'Hong Kong', orig_tc: '香港', dest_en: 'Tung Chung', dest_tc: '東涌', mode: 'MTR', color: MTR_COLORS['TCL'] },
-    { route: 'TML', co: 'MTR', orig_en: 'Wu Kai Sha', orig_tc: '烏溪沙', dest_en: 'Tuen Mun', dest_tc: '屯門', mode: 'MTR', color: MTR_COLORS['TML'] },
-    { route: 'TKL', co: 'MTR', orig_en: 'North Point', orig_tc: '北角', dest_en: 'Po Lam', dest_tc: '寶琳', mode: 'MTR', color: MTR_COLORS['TKL'] },
-    { route: 'EAL', co: 'MTR', orig_en: 'Admiralty', orig_tc: '金鐘', dest_en: 'Lok Ma Chau', dest_tc: '落馬洲', mode: 'MTR', color: MTR_COLORS['EAL'] },
-    { route: 'SIL', co: 'MTR', orig_en: 'Admiralty', orig_tc: '金鐘', dest_en: 'South Horizons', dest_tc: '海怡半島', mode: 'MTR', color: MTR_COLORS['SIL'] },
-    { route: 'TWL', co: 'MTR', orig_en: 'Central', orig_tc: '中環', dest_en: 'Tsuen Wan', dest_tc: '荃灣', mode: 'MTR', color: MTR_COLORS['TWL'] },
-    { route: 'ISL', co: 'MTR', orig_en: 'Kennedy Town', orig_tc: '堅尼地城', dest_en: 'Chai Wan', dest_tc: '柴灣', mode: 'MTR', color: MTR_COLORS['ISL'] },
-    { route: 'KTL', co: 'MTR', orig_en: 'Whampoa', orig_tc: '黃埔', dest_en: 'Tiu Keng Leng', dest_tc: '調景嶺', mode: 'MTR', color: MTR_COLORS['KTL'] },
-  ];
+export async function getAllLines(language: 'en' | 'zh-Hant' | 'zh-Hans' = 'en'): Promise<TransportRoute[]> {
+  if (language === 'zh-Hans') {
+    return [
+      { route: 'AEL', co: 'MTR', orig_en: 'Hong Kong', orig_tc: '香港', dest_en: 'AsiaWorld-Expo', dest_tc: '博览馆', mode: 'MTR', color: MTR_COLORS['AEL'] },
+      { route: 'TCL', co: 'MTR', orig_en: 'Hong Kong', orig_tc: '香港', dest_en: 'Tung Chung', dest_tc: '东涌', mode: 'MTR', color: MTR_COLORS['TCL'] },
+      { route: 'TML', co: 'MTR', orig_en: 'Wu Kai Sha', orig_tc: '乌溪沙', dest_en: 'Tuen Mun', dest_tc: '屯门', mode: 'MTR', color: MTR_COLORS['TML'] },
+      { route: 'TKL', co: 'MTR', orig_en: 'North Point', orig_tc: '北角', dest_en: 'Po Lam', dest_tc: '宝琳', mode: 'MTR', color: MTR_COLORS['TKL'] },
+      { route: 'EAL', co: 'MTR', orig_en: 'Admiralty', orig_tc: '金钟', dest_en: 'Lok Ma Chau', dest_tc: '落马洲', mode: 'MTR', color: MTR_COLORS['EAL'] },
+      { route: 'SIL', co: 'MTR', orig_en: 'Admiralty', orig_tc: '金钟', dest_en: 'South Horizons', dest_tc: '海怡半岛', mode: 'MTR', color: MTR_COLORS['SIL'] },
+      { route: 'TWL', co: 'MTR', orig_en: 'Central', orig_tc: '中环', dest_en: 'Tsuen Wan', dest_tc: '荃湾', mode: 'MTR', color: MTR_COLORS['TWL'] },
+      { route: 'ISL', co: 'MTR', orig_en: 'Kennedy Town', orig_tc: '坚尼地城', dest_en: 'Chai Wan', dest_tc: '柴湾', mode: 'MTR', color: MTR_COLORS['ISL'] },
+      { route: 'KTL', co: 'MTR', orig_en: 'Whampoa', orig_tc: '黄埔', dest_en: 'Tiu Keng Leng', dest_tc: '调景岭', mode: 'MTR', color: MTR_COLORS['KTL'] },
+    ];
+  } else if (language === 'zh-Hant') {
+    return [
+      { route: 'AEL', co: 'MTR', orig_en: 'Hong Kong', orig_tc: '香港', dest_en: 'AsiaWorld-Expo', dest_tc: '博覽館', mode: 'MTR', color: MTR_COLORS['AEL'] },
+      { route: 'TCL', co: 'MTR', orig_en: 'Hong Kong', orig_tc: '香港', dest_en: 'Tung Chung', dest_tc: '東涌', mode: 'MTR', color: MTR_COLORS['TCL'] },
+      { route: 'TML', co: 'MTR', orig_en: 'Wu Kai Sha', orig_tc: '烏溪沙', dest_en: 'Tuen Mun', dest_tc: '屯門', mode: 'MTR', color: MTR_COLORS['TML'] },
+      { route: 'TKL', co: 'MTR', orig_en: 'North Point', orig_tc: '北角', dest_en: 'Po Lam', dest_tc: '寶琳', mode: 'MTR', color: MTR_COLORS['TKL'] },
+      { route: 'EAL', co: 'MTR', orig_en: 'Admiralty', orig_tc: '金鐘', dest_en: 'Lok Ma Chau', dest_tc: '落馬洲', mode: 'MTR', color: MTR_COLORS['EAL'] },
+      { route: 'SIL', co: 'MTR', orig_en: 'Admiralty', orig_tc: '金鐘', dest_en: 'South Horizons', dest_tc: '海怡半島', mode: 'MTR', color: MTR_COLORS['SIL'] },
+      { route: 'TWL', co: 'MTR', orig_en: 'Central', orig_tc: '中環', dest_en: 'Tsuen Wan', dest_tc: '荃灣', mode: 'MTR', color: MTR_COLORS['TWL'] },
+      { route: 'ISL', co: 'MTR', orig_en: 'Kennedy Town', orig_tc: '堅尼地城', dest_en: 'Chai Wan', dest_tc: '柴灣', mode: 'MTR', color: MTR_COLORS['ISL'] },
+      { route: 'KTL', co: 'MTR', orig_en: 'Whampoa', orig_tc: '黃埔', dest_en: 'Tiu Keng Leng', dest_tc: '調景嶺', mode: 'MTR', color: MTR_COLORS['KTL'] },
+    ];
+  } else {
+    // Default English
+    return [
+      { route: 'AEL', co: 'MTR', orig_en: 'Hong Kong', orig_tc: '香港', dest_en: 'AsiaWorld-Expo', dest_tc: '博覽館', mode: 'MTR', color: MTR_COLORS['AEL'] },
+      { route: 'TCL', co: 'MTR', orig_en: 'Hong Kong', orig_tc: '香港', dest_en: 'Tung Chung', dest_tc: '東涌', mode: 'MTR', color: MTR_COLORS['TCL'] },
+      { route: 'TML', co: 'MTR', orig_en: 'Wu Kai Sha', orig_tc: '烏溪沙', dest_en: 'Tuen Mun', dest_tc: '屯門', mode: 'MTR', color: MTR_COLORS['TML'] },
+      { route: 'TKL', co: 'MTR', orig_en: 'North Point', orig_tc: '北角', dest_en: 'Po Lam', dest_tc: '寶琳', mode: 'MTR', color: MTR_COLORS['TKL'] },
+      { route: 'EAL', co: 'MTR', orig_en: 'Admiralty', orig_tc: '金鐘', dest_en: 'Lok Ma Chau', dest_tc: '落馬洲', mode: 'MTR', color: MTR_COLORS['EAL'] },
+      { route: 'SIL', co: 'MTR', orig_en: 'Admiralty', orig_tc: '金鐘', dest_en: 'South Horizons', dest_tc: '海怡半島', mode: 'MTR', color: MTR_COLORS['SIL'] },
+      { route: 'TWL', co: 'MTR', orig_en: 'Central', orig_tc: '中環', dest_en: 'Tsuen Wan', dest_tc: '荃灣', mode: 'MTR', color: MTR_COLORS['TWL'] },
+      { route: 'ISL', co: 'MTR', orig_en: 'Kennedy Town', orig_tc: '堅尼地城', dest_en: 'Chai Wan', dest_tc: '柴灣', mode: 'MTR', color: MTR_COLORS['ISL'] },
+      { route: 'KTL', co: 'MTR', orig_en: 'Whampoa', orig_tc: '黃埔', dest_en: 'Tiu Keng Leng', dest_tc: '調景嶺', mode: 'MTR', color: MTR_COLORS['KTL'] },
+    ];
+  }
 }
-
-
 
 /**
  * Finds MTR stations near a specified location

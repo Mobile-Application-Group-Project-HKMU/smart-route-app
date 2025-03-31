@@ -33,32 +33,31 @@ export default function MtrLineScreen() {
   useEffect(() => {
     const loadLineData = async () => {
       if (!lineId) return;
-      
+
       try {
         setLoading(true);
-        
+
         // Fetch line details
         const lines = await getAllRoutes();
-        const line = lines.find(l => l.route === lineId);
-        
+        const line = lines.find((l) => l.route === lineId);
+
         if (!line) {
           Alert.alert("Error", "Line not found");
           router.back();
           return;
         }
-        
+
         setLineData(line);
-        
+
         // Fetch stations on this line
         const allStations = await getAllStops();
-        const lineStations = allStations.filter(
-          station => station.line_codes.includes(lineId as string)
+        const lineStations = allStations.filter((station) =>
+          station.line_codes.includes(lineId as string)
         );
-        
-        // Sort stations by sequence (this is a placeholder - in a real app, 
+
+        // Sort stations by sequence (this is a placeholder - in a real app,
         // you'd need actual sequence data from the API)
         setStations(lineStations);
-        
       } catch (error) {
         console.error("Failed to load line data:", error);
         Alert.alert("Error", "Could not load line information");
@@ -66,74 +65,119 @@ export default function MtrLineScreen() {
         setLoading(false);
       }
     };
-    
+
     loadLineData();
   }, [lineId]);
-  
+
   // Navigate to station details
   const navigateToStation = (stationId: string) => {
     router.push({
       pathname: "/mtr/[stationId]",
-      params: { stationId }
+      params: { stationId },
     });
   };
-  
+
   // Get origin and destination names based on language
   const getLineOrigin = () => {
     if (!lineData) return "";
-    return language === 'en' ? lineData.orig_en : lineData.orig_tc;
+    return language === "en" ? lineData.orig_en : lineData.orig_tc;
   };
-  
+
   const getLineDestination = () => {
     if (!lineData) return "";
-    return language === 'en' ? lineData.dest_en : lineData.dest_tc;
+    return language === "en" ? lineData.dest_en : lineData.dest_tc;
   };
-  
+
   // Get the color for the current line
   const getLineColor = () => {
-    return MTR_COLORS[lineId as keyof typeof MTR_COLORS] || '#666666';
+    return MTR_COLORS[lineId as keyof typeof MTR_COLORS] || "#666666";
   };
-  
+
   // Get station name based on language
   const getStationName = (station: MtrStation) => {
-    return language === 'en' 
-      ? station.name_en 
-      : language === 'zh-Hans' 
-        ? station.name_sc || station.name_tc
-        : station.name_tc;
+    return language === "en"
+      ? station.name_en
+      : language === "zh-Hans"
+      ? station.name_sc || station.name_tc
+      : station.name_tc;
   };
-  
+
+  // Get the line name based on the language
+  const getLineName = () => {
+    if (!lineData) return `${lineId} Line`;
+
+    if (language === "en") {
+      return `${lineId} Line`;
+    } else if (language === "zh-Hans") {
+      // Map line codes to simplified Chinese names
+      const lineNames: Record<string, string> = {
+        AEL: "机场快线",
+        TCL: "东涌线",
+        TML: "屯马线",
+        TKL: "将军澳线",
+        EAL: "东铁线",
+        TWL: "荃湾线",
+        ISL: "港岛线",
+        KTL: "观塘线",
+        SIL: "南港岛线",
+        DRL: "迪士尼线",
+      };
+      return lineNames[lineId as string] || `${lineId}线`;
+    } else {
+      // Traditional Chinese names
+      const lineNames: Record<string, string> = {
+        AEL: "機場快線",
+        TCL: "東涌綫",
+        TML: "屯馬綫",
+        TKL: "將軍澳綫",
+        EAL: "東鐵綫",
+        TWL: "荃灣綫",
+        ISL: "港島綫",
+        KTL: "觀塘綫",
+        SIL: "南港島綫",
+        DRL: "迪士尼綫",
+      };
+      return lineNames[lineId as string] || `${lineId}綫`;
+    }
+  };
+
   return (
     <ThemedView style={styles.container}>
       <Stack.Screen
         options={{
-          title: `${lineId} Line`,
-          headerTintColor: Platform.OS === 'ios' ? getLineColor() : undefined,
+          title: getLineName(),
+          headerTintColor: Platform.OS === "ios" ? getLineColor() : undefined,
         }}
       />
-      
+
       {loading ? (
         <ActivityIndicator size="large" style={styles.loader} />
       ) : lineData ? (
         <>
           {/* Line information header */}
           <ThemedView style={styles.lineHeader}>
-            <ThemedView style={[styles.lineChip, { backgroundColor: getLineColor() }]}>
+            <ThemedView
+              style={[styles.lineChip, { backgroundColor: getLineColor() }]}
+            >
               <ThemedText style={styles.lineCode}>{lineId}</ThemedText>
             </ThemedView>
-            
-            <ThemedText style={styles.lineName}>
+
+            <ThemedText style={styles.lineName}>{getLineName()}</ThemedText>
+
+            <ThemedText style={styles.lineRoute}>
               {getLineOrigin()} → {getLineDestination()}
             </ThemedText>
           </ThemedView>
-          
+
           {/* Map view - only on native platforms */}
-          {Platform.OS !== 'web' && stations.length > 0 && (
+          {Platform.OS !== "web" && stations.length > 0 && (
             <View style={styles.mapContainer}>
               <MapView
                 ref={mapRef}
                 style={styles.map}
-                provider={Platform.OS === "android" ? PROVIDER_GOOGLE : undefined}
+                provider={
+                  Platform.OS === "android" ? PROVIDER_GOOGLE : undefined
+                }
                 initialRegion={{
                   // Center the map on the first station
                   latitude: stations[0].lat,
@@ -144,14 +188,14 @@ export default function MtrLineScreen() {
               >
                 {/* Line connecting all stations */}
                 <Polyline
-                  coordinates={stations.map(s => ({
+                  coordinates={stations.map((s) => ({
                     latitude: s.lat,
                     longitude: s.long,
                   }))}
                   strokeColor={getLineColor()}
                   strokeWidth={4}
                 />
-                
+
                 {/* Station markers */}
                 {stations.map((station) => (
                   <Marker
@@ -161,19 +205,21 @@ export default function MtrLineScreen() {
                       longitude: station.long,
                     }}
                     title={station.name_en}
-                    pinColor={station.is_interchange ? "#FF9800" : getLineColor()}
+                    pinColor={
+                      station.is_interchange ? "#FF9800" : getLineColor()
+                    }
                     onCalloutPress={() => navigateToStation(station.stop)}
                   />
                 ))}
               </MapView>
             </View>
           )}
-          
+
           {/* Stations list */}
           <ThemedText style={styles.stationsTitle}>
             {t("transport.line.stations")} ({stations.length})
           </ThemedText>
-          
+
           <FlatList
             data={stations}
             keyExtractor={(item) => item.stop}
@@ -183,35 +229,45 @@ export default function MtrLineScreen() {
                 style={styles.stationItem}
                 onPress={() => navigateToStation(item.stop)}
               >
-                <ThemedView style={[styles.stationDot, { backgroundColor: getLineColor() }]} />
+                <ThemedView
+                  style={[
+                    styles.stationDot,
+                    { backgroundColor: getLineColor() },
+                  ]}
+                />
                 <ThemedView style={styles.stationContent}>
                   <ThemedText style={styles.stationName}>
                     {getStationName(item)}
                   </ThemedText>
-                  
-                  <ThemedText style={styles.stationId}>
-                    {item.stop}
-                  </ThemedText>
-                  
+
+                  <ThemedText style={styles.stationId}>{item.stop}</ThemedText>
+
                   {item.is_interchange && (
                     <ThemedView style={styles.interchangeChips}>
                       {item.line_codes
-                        .filter(l => l !== lineId)
-                        .map(line => (
+                        .filter((l) => l !== lineId)
+                        .map((line) => (
                           <ThemedView
                             key={line}
                             style={[
                               styles.miniLineChip,
-                              { backgroundColor: MTR_COLORS[line as keyof typeof MTR_COLORS] || '#666666' }
+                              {
+                                backgroundColor:
+                                  MTR_COLORS[
+                                    line as keyof typeof MTR_COLORS
+                                  ] || "#666666",
+                              },
                             ]}
                           >
-                            <ThemedText style={styles.miniLineCode}>{line}</ThemedText>
+                            <ThemedText style={styles.miniLineCode}>
+                              {line}
+                            </ThemedText>
                           </ThemedView>
                         ))}
                     </ThemedView>
                   )}
                 </ThemedView>
-                
+
                 <IconSymbol name="chevron.right" size={20} color="#808080" />
               </TouchableOpacity>
             )}
@@ -255,7 +311,13 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   lineName: {
-    fontSize: 16,
+    fontSize: 18,
+    fontWeight: "600",
+    marginVertical: 8,
+    textAlign: "center",
+  },
+  lineRoute: {
+    fontSize: 14,
     fontWeight: "500",
     textAlign: "center",
   },
