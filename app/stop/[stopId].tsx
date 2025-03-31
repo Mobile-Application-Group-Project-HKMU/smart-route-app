@@ -236,11 +236,6 @@ export default function StopETAScreen() {
                 ? stopInfo?.name_sc || t("stop.title")
                 : stopInfo?.name_tc || t("stop.title")}
             </ThemedText>
-            <ThemedText style={styles.stopNameChinese}>
-              {language === "zh-Hans"
-                ? stopInfo?.name_sc || t("stop.title")
-                : stopInfo?.name_tc || t("stop.title")}
-            </ThemedText>
             <ThemedText style={styles.stopId}>
               {t("stop.id")}: {stopId}
             </ThemedText>
