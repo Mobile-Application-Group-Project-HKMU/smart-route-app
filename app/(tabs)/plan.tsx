@@ -22,18 +22,16 @@ import ParallaxScrollView from "@/components/ParallaxScrollView";
 // Import transport utilities
 import { getAllStops as getAllKmbStops } from "@/util/kmb";
 import { getAllStops as getAllMtrStops } from "@/util/mtr";
-import { getAllStops as getAllGmbStops } from "@/util/gmb";
 import { TransportStop, TransportMode } from "@/types/transport-types";
 
 type JourneyStep = {
-  type: "WALK" | "BUS" | "MTR" | "GMB";
+  type: "WALK" | "BUS" | "MTR";
   from: TransportStop;
   to: TransportStop;
   distance?: number;
   duration?: number;
   route?: string;
   company?: string;
-  fare?: number;
 };
 
 type Journey = {
@@ -41,7 +39,6 @@ type Journey = {
   steps: JourneyStep[];
   totalDuration: number;
   totalDistance: number;
-  totalFare: number;
 };
 
 type SearchResult = TransportStop & {
@@ -75,7 +72,6 @@ export default function RoutePlanScreen() {
         // Get stops from different transport providers
         const kmbStops = await getAllKmbStops();
         const mtrStops = await getAllMtrStops();
-        const gmbStops = await getAllGmbStops();
 
         // Process stops to add display name
         const processedStops = [
@@ -89,12 +85,6 @@ export default function RoutePlanScreen() {
             ...stop,
             company: "MTR",
             mode: "MTR" as TransportMode,
-            displayName: language === "en" ? stop.name_en : stop.name_tc,
-          })),
-          ...gmbStops.map((stop) => ({
-            ...stop,
-            company: "GMB",
-            mode: "GMB" as TransportMode,
             displayName: language === "en" ? stop.name_en : stop.name_tc,
           })),
         ];
@@ -229,7 +219,7 @@ export default function RoutePlanScreen() {
 
     const distance = calculateDistance(fromLat, fromLng, toLat, toLng);
 
-    // For demonstration, create three journey options with different modes
+    // For demonstration, create journey options with different modes
     return [
       {
         id: "1",
@@ -252,7 +242,6 @@ export default function RoutePlanScreen() {
             company: "KMB",
             distance: Math.round(distance * 0.9),
             duration: Math.round(((distance * 0.9) / 500) * 60), // Bus at 500m per minute
-            fare: Math.round(distance * 0.06), // Sample fare calculation
           },
           {
             type: "WALK",
@@ -264,7 +253,6 @@ export default function RoutePlanScreen() {
         ],
         totalDuration: Math.round((distance / 400) * 60), // Estimated total in minutes
         totalDistance: Math.round(distance),
-        totalFare: Math.round(distance * 0.06),
       },
       {
         id: "2",
@@ -290,7 +278,6 @@ export default function RoutePlanScreen() {
             company: "MTR",
             distance: Math.round(distance * 0.7),
             duration: Math.round(((distance * 0.7) / 1000) * 60), // MTR at 1000m per minute
-            fare: Math.round(distance * 0.08), // Sample fare calculation
           },
           {
             type: "WALK",
@@ -302,7 +289,6 @@ export default function RoutePlanScreen() {
         ],
         totalDuration: Math.round((distance / 600) * 60),
         totalDistance: Math.round(distance),
-        totalFare: Math.round(distance * 0.08),
       },
       {
         id: "3",
@@ -313,31 +299,45 @@ export default function RoutePlanScreen() {
               ...from,
               name_en: useCurrentLocation ? "Current Location" : from.name_en,
             },
-            to: { ...getNearbyStop(from, "GMB"), name_en: "Nearby GMB Stop" },
+            to: { ...getNearbyStop(from, "KMB"), name_en: "Nearby KMB Stop" },
             distance: Math.round(distance * 0.1),
             duration: Math.round(((distance * 0.1) / 80) * 60),
           },
           {
-            type: "GMB",
-            from: getNearbyStop(from, "GMB"),
-            to: getNearbyStop(to, "GMB"),
-            route: getRandomRoute("GMB"),
-            company: "GMB",
-            distance: Math.round(distance * 0.8),
-            duration: Math.round(((distance * 0.8) / 400) * 60), // GMB at 400m per minute
-            fare: Math.round(distance * 0.05), // Sample fare calculation
+            type: "BUS",
+            from: getNearbyStop(from, "KMB"),
+            to: getNearbyStop(from, "MTR", 0.4), // Transfer point
+            route: getRandomRoute("KMB"),
+            company: "KMB",
+            distance: Math.round(distance * 0.4),
+            duration: Math.round(((distance * 0.4) / 400) * 60),
           },
           {
             type: "WALK",
-            from: getNearbyStop(to, "GMB"),
+            from: getNearbyStop(from, "MTR", 0.4), // Transfer point
+            to: getNearbyStop(from, "MTR", 0.45), // MTR station
+            distance: Math.round(distance * 0.05),
+            duration: Math.round(((distance * 0.05) / 80) * 60),
+          },
+          {
+            type: "MTR",
+            from: getNearbyStop(from, "MTR", 0.45), // MTR station
+            to: getNearbyStop(to, "MTR"),
+            route: getRandomRoute("MTR"),
+            company: "MTR",
+            distance: Math.round(distance * 0.35),
+            duration: Math.round(((distance * 0.35) / 1000) * 60),
+          },
+          {
+            type: "WALK",
+            from: getNearbyStop(to, "MTR"),
             to: to,
             distance: Math.round(distance * 0.1),
             duration: Math.round(((distance * 0.1) / 80) * 60),
           },
         ],
-        totalDuration: Math.round((distance / 350) * 60),
+        totalDuration: Math.round((distance / 500) * 60),
         totalDistance: Math.round(distance),
-        totalFare: Math.round(distance * 0.05),
       },
     ];
   };
@@ -363,10 +363,14 @@ export default function RoutePlanScreen() {
     return R * c; // Distance in meters
   };
 
-  const getNearbyStop = (location: any, company: string) => {
+  const getNearbyStop = (
+    location: any,
+    company: string,
+    offsetMultiplier = 0.2
+  ) => {
     // In a real app, this would find the closest stop of the given company
     // For this demo, just return a slightly offset location
-    const offset = (Math.random() - 0.5) * 0.002; // Random small offset
+    const offset = (Math.random() - 0.5) * offsetMultiplier; // Random small offset
     return {
       ...location,
       lat: location.lat + offset,
@@ -383,8 +387,7 @@ export default function RoutePlanScreen() {
       const routes = ["TWL", "ISL", "TKL", "EAL", "SIL"];
       return routes[Math.floor(Math.random() * routes.length)];
     } else {
-      const routes = ["12", "12A", "14", "17M", "21"];
-      return routes[Math.floor(Math.random() * routes.length)];
+      return "";
     }
   };
 
@@ -396,8 +399,6 @@ export default function RoutePlanScreen() {
         return "bus";
       case "MTR":
         return "tram";
-      case "GMB":
-        return "bus";
       default:
         return "arrow.right";
     }
@@ -411,8 +412,6 @@ export default function RoutePlanScreen() {
         return "#FF5151";
       case "MTR":
         return "#E60012";
-      case "GMB":
-        return "#66CC66";
       default:
         return "#000000";
     }
@@ -436,10 +435,6 @@ export default function RoutePlanScreen() {
     return `${(meters / 1000).toFixed(1)}km`;
   };
 
-  const formatFare = (fare: number) => {
-    return `$${fare.toFixed(1)}`;
-  };
-
   // Navigate to transport details
   const navigateToTransportDetails = (step: JourneyStep) => {
     if (step.type === "BUS" && step.route) {
@@ -449,8 +444,6 @@ export default function RoutePlanScreen() {
         pathname: "/mtr/line/[lineId]",
         params: { lineId: step.route },
       });
-    } else if (step.type === "GMB" && step.route) {
-      router.push(`/bus/${step.route}?company=GMB&bound=O`);
     }
   };
 
@@ -581,13 +574,7 @@ export default function RoutePlanScreen() {
                 <IconSymbol
                   name={item.company === "MTR" ? "tram.fill" : "bus.fill"}
                   size={20}
-                  color={
-                    item.company === "MTR"
-                      ? "#E60012"
-                      : item.company === "GMB"
-                      ? "#66CC66"
-                      : "#FF5151"
-                  }
+                  color={item.company === "MTR" ? "#E60012" : "#FF5151"}
                   style={styles.resultIcon}
                 />
                 <ThemedView style={styles.resultTextContainer}>
@@ -656,9 +643,6 @@ export default function RoutePlanScreen() {
                       />
                     ))}
                 </ThemedView>
-                <ThemedText style={styles.journeyFare}>
-                  {formatFare(journey.totalFare)}
-                </ThemedText>
               </TouchableOpacity>
             ))}
           </ScrollView>
@@ -668,8 +652,7 @@ export default function RoutePlanScreen() {
             <ThemedView style={styles.journeyDetails}>
               <ThemedText style={styles.journeySummary}>
                 {formatDuration(selectedJourney.totalDuration)} ·{" "}
-                {formatDistance(selectedJourney.totalDistance)} ·{" "}
-                {formatFare(selectedJourney.totalFare)}
+                {formatDistance(selectedJourney.totalDistance)}
               </ThemedText>
 
               {/* Journey Map */}
@@ -736,7 +719,7 @@ export default function RoutePlanScreen() {
                 </View>
               )}
 
-              {/* Journey Steps - Changed from FlatList to direct mapping */}
+              {/* Journey Steps */}
               <ThemedView>
                 {selectedJourney.steps.map((step, index) => (
                   <ThemedView key={index} style={styles.journeyStep}>
@@ -758,9 +741,7 @@ export default function RoutePlanScreen() {
                           ? t("walk")
                           : step.type === "BUS"
                           ? `${t("take")} ${step.company} ${t("bus")}`
-                          : step.type === "MTR"
-                          ? `${t("take")} ${t("mtr")}`
-                          : `${t("take")} ${t("minibus")}`}
+                          : `${t("take")} ${t("mtr")}`}
                         {step.route && ` ${step.route}`}
                       </ThemedText>
 
@@ -776,7 +757,6 @@ export default function RoutePlanScreen() {
                         <ThemedText style={styles.stepMetaText}>
                           {formatDuration(step.duration || 0)} ·{" "}
                           {formatDistance(step.distance || 0)}
-                          {step.fare ? ` · ${formatFare(step.fare)}` : ""}
                         </ThemedText>
 
                         {step.type !== "WALK" && (
@@ -1037,12 +1017,6 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.5)",
     padding: 6,
     borderRadius: 8,
-  },
-  journeyFare: {
-    marginTop: 6,
-    fontSize: 15,
-    fontWeight: "500",
-    color: "#8B4513",
   },
   journeyDetails: {
     flex: 1,
