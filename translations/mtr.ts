@@ -93,7 +93,11 @@ export const mtrTranslations: Record<string, Record<Language, string>> = {
     'en': 'Destination',
     'zh-Hant': '目的地',
     'zh-Hans': '目的地'
-  }
+  },  'mtr.station.stations': {
+    'en': 'Stations on this line',
+    'zh-Hant': '此線路上的車站',
+    'zh-Hans': '此线路上的车站'
+  },
 };
 
 export default mtrTranslations;

@@ -184,7 +184,7 @@ export default function MtrLineScreen() {
 
           {/* Stations list */}
           <ThemedText style={styles.stationsTitle}>
-            {t("transport.line.stations")} ({stations.length})
+            {t("mtr.station.stations")} ({stations.length})
           </ThemedText>
 
           <FlatList

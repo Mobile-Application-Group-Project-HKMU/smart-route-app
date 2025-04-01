@@ -310,16 +310,6 @@ export default function HomeScreen() {
           </ThemedText>
         </TouchableOpacity>
       </ThemedView>
-
-      <ThemedView style={styles.quickNav}>
-        <TouchableOpacity
-          style={styles.quickNavButton}
-          onPress={navigateToRoutePlanner}
-        >
-          <IconSymbol name="arrow.triangle.swap" size={24} color="#0a7ea4" />
-          <ThemedText style={styles.quickNavText}>{t("routePlan")}</ThemedText>
-        </TouchableOpacity>
-      </ThemedView>
     </ParallaxScrollView>
   );
 }
