@@ -123,6 +123,12 @@ export default function HomeScreen() {
     router.push("/about?fromIndex=true");
   };
 
+  // Update the route planner navigation to work with tab navigation
+  const navigateToRoutePlanner = () => {
+    // Use the tab navigation instead of pushing to a new screen
+    router.navigate("/(tabs)/plan");
+  };
+
   return (
     <ParallaxScrollView
       headerBackgroundColor={{ light: "#A1CEDC", dark: "#1D3D47" }}
@@ -302,6 +308,16 @@ export default function HomeScreen() {
           <ThemedText style={styles.aboutButtonText}>
             {t("home.about")}
           </ThemedText>
+        </TouchableOpacity>
+      </ThemedView>
+
+      <ThemedView style={styles.quickNav}>
+        <TouchableOpacity
+          style={styles.quickNavButton}
+          onPress={navigateToRoutePlanner}
+        >
+          <IconSymbol name="arrow.triangle.swap" size={24} color="#0a7ea4" />
+          <ThemedText style={styles.quickNavText}>{t("routePlan")}</ThemedText>
         </TouchableOpacity>
       </ThemedView>
     </ParallaxScrollView>
