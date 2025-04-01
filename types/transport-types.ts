@@ -82,6 +82,10 @@ export interface TransportRouteStop {
   name_en?: string;
   name_tc?: string;
   data_timestamp?: string;
+  lat?: number;
+  long?: number;
+  
+
 }
 
 // Enhanced TransportETA
