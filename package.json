@@ -12,7 +12,7 @@
     "lint": "expo lint",
     "build": "eas build --platform all",
     "apk": "eas build --profile preview",
-    "prebuild": "expo prebuild --clean"
+    "prebuild": "expo prebuild  --platform all --clean"
   },
   "jest": {
     "preset": "jest-expo"
