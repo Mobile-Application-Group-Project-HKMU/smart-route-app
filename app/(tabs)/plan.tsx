@@ -3,13 +3,11 @@ import {
   View,
   TextInput,
   TouchableOpacity,
-  FlatList,
   StyleSheet,
   ActivityIndicator,
   Alert,
   ScrollView,
   Platform,
-  Image,
 } from "react-native";
 import { Stack, router } from "expo-router";
 import * as Location from "expo-location";
@@ -573,11 +571,10 @@ export default function RoutePlanScreen() {
       {/* Search Results */}
       {(searchingFrom || searchingTo) && searchResults.length > 0 && (
         <ThemedView style={styles.searchResults}>
-          <FlatList
-            data={searchResults}
-            keyExtractor={(item) => `${item.company}-${item.stop}`}
-            renderItem={({ item }) => (
+          <ScrollView>
+            {searchResults.map((item) => (
               <TouchableOpacity
+                key={`${item.company}-${item.stop}`}
                 style={styles.searchResultItem}
                 onPress={() => handleSelectStop(item)}
               >
@@ -602,8 +599,8 @@ export default function RoutePlanScreen() {
                   </ThemedText>
                 </ThemedView>
               </TouchableOpacity>
-            )}
-          />
+            ))}
+          </ScrollView>
         </ThemedView>
       )}
 
@@ -739,54 +736,53 @@ export default function RoutePlanScreen() {
                 </View>
               )}
 
-              {/* Journey Steps */}
-              {/* Replace FlatList with map to avoid nesting VirtualizedLists */}
+              {/* Journey Steps - Changed from FlatList to direct mapping */}
               <ThemedView>
-                {selectedJourney.steps.map((item, index) => (
+                {selectedJourney.steps.map((step, index) => (
                   <ThemedView key={index} style={styles.journeyStep}>
                     <ThemedView
                       style={[
                         styles.stepIconContainer,
-                        { backgroundColor: getTransportColor(item.type) },
+                        { backgroundColor: getTransportColor(step.type) },
                       ]}
                     >
                       <IconSymbol
-                        name={getTransportIcon(item.type)}
+                        name={getTransportIcon(step.type)}
                         size={24}
                         color="white"
                       />
                     </ThemedView>
                     <ThemedView style={styles.stepDetails}>
                       <ThemedText style={styles.stepType}>
-                        {item.type === "WALK"
+                        {step.type === "WALK"
                           ? t("walk")
-                          : item.type === "BUS"
-                          ? `${t("take")} ${item.company} ${t("bus")}`
-                          : item.type === "MTR"
+                          : step.type === "BUS"
+                          ? `${t("take")} ${step.company} ${t("bus")}`
+                          : step.type === "MTR"
                           ? `${t("take")} ${t("mtr")}`
                           : `${t("take")} ${t("minibus")}`}
-                        {item.route && ` ${item.route}`}
+                        {step.route && ` ${step.route}`}
                       </ThemedText>
 
                       <ThemedText style={styles.stepFromTo}>
                         {language === "en"
-                          ? item.from.name_en
-                          : item.from.name_tc}{" "}
+                          ? step.from.name_en
+                          : step.from.name_tc}{" "}
                         →{" "}
-                        {language === "en" ? item.to.name_en : item.to.name_tc}
+                        {language === "en" ? step.to.name_en : step.to.name_tc}
                       </ThemedText>
 
                       <ThemedView style={styles.stepMeta}>
                         <ThemedText style={styles.stepMetaText}>
-                          {formatDuration(item.duration || 0)} ·{" "}
-                          {formatDistance(item.distance || 0)}
-                          {item.fare ? ` · ${formatFare(item.fare)}` : ""}
+                          {formatDuration(step.duration || 0)} ·{" "}
+                          {formatDistance(step.distance || 0)}
+                          {step.fare ? ` · ${formatFare(step.fare)}` : ""}
                         </ThemedText>
 
-                        {item.type !== "WALK" && (
+                        {step.type !== "WALK" && (
                           <TouchableOpacity
                             style={styles.viewRouteButton}
-                            onPress={() => navigateToTransportDetails(item)}
+                            onPress={() => navigateToTransportDetails(step)}
                           >
                             <ThemedText style={styles.viewRouteText}>
                               {t("viewRoute")}

@@ -104,39 +104,8 @@ export default function MtrLineScreen() {
   const getLineName = () => {
     if (!lineData) return `${lineId} Line`;
 
-    if (language === "en") {
-      return `${lineId} Line`;
-    } else if (language === "zh-Hans") {
-      // Map line codes to simplified Chinese names
-      const lineNames: Record<string, string> = {
-        AEL: "机场快线",
-        TCL: "东涌线",
-        TML: "屯马线",
-        TKL: "将军澳线",
-        EAL: "东铁线",
-        TWL: "荃湾线",
-        ISL: "港岛线",
-        KTL: "观塘线",
-        SIL: "南港岛线",
-        DRL: "迪士尼线",
-      };
-      return lineNames[lineId as string] || `${lineId}线`;
-    } else {
-      // Traditional Chinese names
-      const lineNames: Record<string, string> = {
-        AEL: "機場快線",
-        TCL: "東涌綫",
-        TML: "屯馬綫",
-        TKL: "將軍澳綫",
-        EAL: "東鐵綫",
-        TWL: "荃灣綫",
-        ISL: "港島綫",
-        KTL: "觀塘綫",
-        SIL: "南港島綫",
-        DRL: "迪士尼綫",
-      };
-      return lineNames[lineId as string] || `${lineId}綫`;
-    }
+    // Use the translation system
+    return t(`line.${lineId}`);
   };
 
   return (

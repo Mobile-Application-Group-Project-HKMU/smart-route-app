@@ -15,6 +15,11 @@ const tabsTranslations: Record<string, Record<Language, string>> = {
     'en': 'Nearby',
     'zh-Hant': '附近',
     'zh-Hans': '附近'
+  },
+  'tabs.plan': {
+    'en': 'Plan',
+    'zh-Hant': '規劃',
+    'zh-Hans': '规划'
   }
 };
 

@@ -90,6 +90,36 @@ const transportTranslations: Record<string, Record<Language, string>> = {
     'en': 'Line information not found',
     'zh-Hant': '找不到線路信息',
     'zh-Hans': '找不到线路信息'
+  },
+  'navigate': {
+    'en': 'Navigate',
+    'zh-Hant': '導航',
+    'zh-Hans': '导航'
+  },
+  'error.navigation': {
+    'en': 'Navigation Error',
+    'zh-Hant': '導航錯誤',
+    'zh-Hans': '导航错误'
+  },
+  'error.open.maps': {
+    'en': 'Could not open maps application',
+    'zh-Hant': '無法打開地圖應用',
+    'zh-Hans': '无法打开地图应用'
+  },
+  'transport.mtr.station': {
+    'en': 'MTR Station',
+    'zh-Hant': '港鐵站',
+    'zh-Hans': '港铁站'
+  },
+  'transport.mtr.line': {
+    'en': 'MTR Line',
+    'zh-Hant': '港鐵綫路',
+    'zh-Hans': '港铁线路'
+  },
+  'transport.mtr.system': {
+    'en': 'MTR System',
+    'zh-Hant': '港鐵系統',
+    'zh-Hans': '港铁系统'
   }
 };
 

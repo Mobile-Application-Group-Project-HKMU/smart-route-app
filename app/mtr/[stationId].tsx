@@ -51,6 +51,7 @@ export default function MtrStationScreen() {
       console.error("Error checking favorite status:", error);
     }
   };
+
   const openNavigation = () => {
     if (!station) return;
 
@@ -80,6 +81,7 @@ export default function MtrStationScreen() {
       }
     });
   };
+
   const toggleFavorite = async () => {
     try {
       let favorites = (await getFromLocalStorage(
@@ -232,7 +234,7 @@ export default function MtrStationScreen() {
           {/* Station information section */}
           <ThemedView style={styles.infoCard}>
             <ThemedText style={styles.stationId}>
-              {t("transport.station.id")}: {stationId}
+              {t("mtr.station.id") || t("transport.station.id")}: {stationId}
             </ThemedText>
 
             <View style={styles.lineChips}>
@@ -256,7 +258,8 @@ export default function MtrStationScreen() {
 
             {station.is_interchange && (
               <ThemedText style={styles.interchangeNote}>
-                {t("transport.station.interchange")}
+                {t("mtr.station.interchange") ||
+                  t("transport.station.interchange")}
               </ThemedText>
             )}
           </ThemedView>
@@ -304,7 +307,7 @@ export default function MtrStationScreen() {
 
           {/* ETAs section */}
           <ThemedText style={styles.sectionTitle}>
-            {t("transport.station.arrivals")}
+            {t("mtr.station.nextTrain") || t("transport.station.arrivals")}
           </ThemedText>
 
           {etas.length === 0 ? (
@@ -358,7 +361,9 @@ export default function MtrStationScreen() {
                         </ThemedText>
                         {eta.platform && (
                           <ThemedText style={styles.platformInfo}>
-                            {t("transport.info.platform")} {eta.platform}
+                            {t("mtr.station.platform") ||
+                              t("transport.info.platform")}{" "}
+                            {eta.platform}
                           </ThemedText>
                         )}
                         {eta.rmk_en && (
