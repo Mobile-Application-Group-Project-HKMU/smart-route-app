@@ -9,6 +9,7 @@ import {
   Alert,
   ScrollView,
   Platform,
+  Image,
 } from "react-native";
 import { Stack, router } from "expo-router";
 import * as Location from "expo-location";
@@ -18,6 +19,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { IconSymbol } from "@/components/ui/IconSymbol";
 import { useLanguage } from "@/contexts/LanguageContext";
+import ParallaxScrollView from "@/components/ParallaxScrollView";
 
 // Import transport utilities
 import { getAllStops as getAllKmbStops } from "@/util/kmb";
@@ -192,11 +194,6 @@ export default function RoutePlanScreen() {
 
     try {
       setLoading(true);
-
-      // In a real app, this would call a journey planning API
-      // For this implementation, we'll create some sample journeys
-
-      // Our location source is either the selected stop or user location
       const origin =
         useCurrentLocation && userLocation
           ? {
@@ -460,7 +457,17 @@ export default function RoutePlanScreen() {
   };
 
   return (
-    <ThemedView style={styles.container}>
+    <ParallaxScrollView
+      headerBackgroundColor={{ light: "#83ac23", dark: "#1A1A1A" }}
+      headerImage={
+        <IconSymbol
+          size={310}
+          color="#0A3161"
+          name="arrow.triangle.swap"
+          style={styles.headerImage}
+        />
+      }
+    >
       <Stack.Screen options={{ title: t("routePlan") }} />
 
       {/* Search Inputs */}
@@ -469,7 +476,7 @@ export default function RoutePlanScreen() {
           <IconSymbol
             name="location.fill"
             size={20}
-            color="#0a7ea4"
+            color="#8B4513"
             style={styles.inputIcon}
           />
           <TextInput
@@ -503,7 +510,7 @@ export default function RoutePlanScreen() {
           style={styles.currentLocationButton}
           onPress={handleUseCurrentLocation}
         >
-          <IconSymbol name="location.circle.fill" size={20} color="#0a7ea4" />
+          <IconSymbol name="location.circle.fill" size={20} color="#8B4513" />
           <ThemedText style={styles.currentLocationText}>
             {t("useCurrentLocation")}
           </ThemedText>
@@ -513,7 +520,7 @@ export default function RoutePlanScreen() {
           <IconSymbol
             name="mappin.circle.fill"
             size={20}
-            color="#E60012"
+            color="#8B4513"
             style={styles.inputIcon}
           />
           <TextInput
@@ -602,7 +609,7 @@ export default function RoutePlanScreen() {
 
       {loadingStops && (
         <ThemedView style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#0a7ea4" />
+          <ActivityIndicator size="large" color="#8B4513" />
           <ThemedText style={styles.loadingText}>
             {t("loading.stops")}
           </ThemedText>
@@ -611,7 +618,7 @@ export default function RoutePlanScreen() {
 
       {loading && (
         <ThemedView style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#0a7ea4" />
+          <ActivityIndicator size="large" color="#8B4513" />
           <ThemedText style={styles.loadingText}>
             {t("planning.journey")}
           </ThemedText>
@@ -733,11 +740,10 @@ export default function RoutePlanScreen() {
               )}
 
               {/* Journey Steps */}
-              <FlatList
-                data={selectedJourney.steps}
-                keyExtractor={(_, index) => index.toString()}
-                renderItem={({ item }) => (
-                  <ThemedView style={styles.journeyStep}>
+              {/* Replace FlatList with map to avoid nesting VirtualizedLists */}
+              <ThemedView>
+                {selectedJourney.steps.map((item, index) => (
+                  <ThemedView key={index} style={styles.journeyStep}>
                     <ThemedView
                       style={[
                         styles.stepIconContainer,
@@ -790,8 +796,8 @@ export default function RoutePlanScreen() {
                       </ThemedView>
                     </ThemedView>
                   </ThemedView>
-                )}
-              />
+                ))}
+              </ThemedView>
             </ThemedView>
           )}
         </ThemedView>
@@ -803,7 +809,7 @@ export default function RoutePlanScreen() {
         journeys.length === 0 &&
         (fromStop || useCurrentLocation || toStop) && (
           <ThemedView style={styles.emptyStateContainer}>
-            <IconSymbol name="map" size={60} color="#0a7ea4" />
+            <IconSymbol name="map" size={60} color="#8B4513" />
             <ThemedText style={styles.emptyStateText}>
               {t("plan.journey.instruction")}
             </ThemedText>
@@ -818,13 +824,13 @@ export default function RoutePlanScreen() {
         !toStop &&
         !useCurrentLocation && (
           <ThemedView style={styles.emptyStateContainer}>
-            <IconSymbol name="arrow.triangle.swap" size={60} color="#0a7ea4" />
+            <IconSymbol name="arrow.triangle.swap" size={60} color="#8B4513" />
             <ThemedText style={styles.emptyStateText}>
               {t("select.origin.destination")}
             </ThemedText>
           </ThemedView>
         )}
-    </ThemedView>
+    </ParallaxScrollView>
   );
 }
 
@@ -833,18 +839,50 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
   },
+  headerImageContainer: {
+    position: "absolute",
+    bottom: 0,
+    right: 20,
+    justifyContent: "flex-end",
+    alignItems: "flex-end",
+    height: 178,
+    width: 178,
+  },
+  headerImage: {
+    color: "#16b79c",
+    bottom: -90,
+    left: -35,
+    position: "absolute",
+    opacity: 0.7,
+  },
+  reactLogo: {
+    height: 178,
+    width: 290,
+    bottom: 0,
+    left: 0,
+    position: "absolute",
+  },
   searchContainer: {
     marginBottom: 16,
     gap: 12,
+    backgroundColor: "#FFD580",
+    padding: 16,
+    borderRadius: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
+    borderColor: "#e0e0e0",
+    borderRadius: 12,
     paddingHorizontal: 12,
-    backgroundColor: "#f9f9f9",
+    backgroundColor: "white",
+    height: 52,
   },
   inputIcon: {
     marginRight: 8,
@@ -852,6 +890,8 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     height: 48,
+    fontSize: 16,
+    color: "#8B4513",
   },
   clearButton: {
     padding: 8,
@@ -861,26 +901,35 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 8,
     paddingHorizontal: 12,
+    marginLeft: 4,
   },
   currentLocationText: {
     marginLeft: 8,
-    color: "#0a7ea4",
+    color: "#8B4513",
+    fontWeight: "500",
   },
   planButton: {
-    backgroundColor: "#0075C2",
+    backgroundColor: "#8B4513",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 8,
-    padding: 12,
+    borderRadius: 12,
+    padding: 14,
     gap: 8,
+    shadowColor: "#8B4513",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
   },
   disabledButton: {
-    backgroundColor: "#999999",
+    backgroundColor: "#b0b0b0",
+    shadowOpacity: 0,
+    elevation: 1,
   },
   planButtonText: {
     color: "white",
-    fontWeight: "500",
+    fontWeight: "600",
     fontSize: 16,
   },
   searchResults: {
@@ -889,19 +938,21 @@ const styles = StyleSheet.create({
     left: 16,
     right: 16,
     backgroundColor: "white",
-    borderRadius: 8,
+    borderRadius: 12,
     maxHeight: 300,
     zIndex: 10,
     elevation: 5,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    borderWidth: 1,
+    borderColor: "#f0f0f0",
   },
   searchResultItem: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 12,
+    padding: 14,
     borderBottomWidth: 1,
     borderBottomColor: "#f0f0f0",
   },
@@ -913,10 +964,14 @@ const styles = StyleSheet.create({
   },
   resultText: {
     fontSize: 16,
+    fontWeight: "500",
+    color: "#8B4513",
   },
   resultSubtext: {
     fontSize: 12,
     opacity: 0.7,
+    marginTop: 2,
+    color: "#8B4513",
   },
   loadingContainer: {
     flex: 1,
@@ -926,66 +981,104 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
+    color: "#8B4513",
   },
   emptyStateContainer: {
-    flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 20,
+    paddingHorizontal: 32,
+    marginTop: 100,
+    minHeight: 200,
   },
   emptyStateText: {
     marginTop: 16,
     fontSize: 16,
     textAlign: "center",
     opacity: 0.7,
+    lineHeight: 24,
+    color: "#8B4513",
   },
   resultsContainer: {
     flex: 1,
   },
   journeyOptions: {
-    padding: 8,
+    padding: 12,
   },
   journeyOption: {
-    backgroundColor: "#f5f5f5",
-    borderRadius: 8,
-    padding: 12,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 14,
     marginRight: 12,
-    minWidth: 120,
+    minWidth: 130,
     alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+    borderWidth: 1,
+    borderColor: "#F0F0F0",
   },
   selectedJourneyOption: {
-    backgroundColor: "#e0f0ff",
-    borderColor: "#0a7ea4",
+    backgroundColor: "#FFD580",
+    borderColor: "#8B4513",
     borderWidth: 1,
+    shadowColor: "#8B4513",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   journeyDuration: {
-    fontSize: 16,
-    fontWeight: "500",
+    fontSize: 17,
+    fontWeight: "600",
+    color: "#8B4513",
   },
   journeyModeIcons: {
     flexDirection: "row",
     marginTop: 8,
     gap: 8,
+    backgroundColor: "rgba(255,255,255,0.5)",
+    padding: 6,
+    borderRadius: 8,
   },
   journeyFare: {
-    marginTop: 4,
-    fontSize: 14,
-    opacity: 0.7,
+    marginTop: 6,
+    fontSize: 15,
+    fontWeight: "500",
+    color: "#8B4513",
   },
   journeyDetails: {
     flex: 1,
     marginTop: 16,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: "#F0F0F0",
   },
   journeySummary: {
     fontSize: 16,
-    fontWeight: "500",
+    fontWeight: "600",
     marginBottom: 16,
+    color: "#8B4513",
+    backgroundColor: "#FFD580",
+    padding: 10,
+    borderRadius: 8,
+    textAlign: "center",
   },
   mapContainer: {
     height: 200,
     borderRadius: 12,
     overflow: "hidden",
     marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
   },
   map: {
     ...StyleSheet.absoluteFillObject,
@@ -995,46 +1088,58 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   stepIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 12,
+    marginRight: 14,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
   },
   stepDetails: {
     flex: 1,
     borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    borderBottomColor: "rgba(139, 69, 19, 0.2)",
     paddingBottom: 16,
   },
   stepType: {
     fontSize: 16,
-    fontWeight: "500",
+    fontWeight: "600",
     marginBottom: 4,
+    color: "#8B4513",
   },
   stepFromTo: {
     fontSize: 14,
-    opacity: 0.8,
+    color: "#8B4513",
     marginBottom: 8,
+    lineHeight: 20,
   },
   stepMeta: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    marginTop: 4,
   },
   stepMetaText: {
     fontSize: 14,
+    color: "#8B4513",
     opacity: 0.7,
   },
   viewRouteButton: {
-    backgroundColor: "#f0f0f0",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    backgroundColor: "white",
+    paddingHorizontal: 14,
+    paddingVertical: 7,
     borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "rgba(139, 69, 19, 0.3)",
   },
   viewRouteText: {
-    fontSize: 12,
-    color: "#0a7ea4",
+    fontSize: 13,
+    fontWeight: "500",
+    color: "#8B4513",
   },
 });

@@ -57,7 +57,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="plan"
         options={{
-          title: t("routePlan"),
+          title: t("tabs.plan"),
           tabBarIcon: ({ color }) => (
             <IconSymbol name="arrow.triangle.swap" size={24} color={color} />
           ),

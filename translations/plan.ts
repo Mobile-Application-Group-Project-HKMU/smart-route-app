@@ -1,9 +1,5 @@
 export const planTranslations = {
-  'routePlan': {
-    'en': 'Route Planner',
-    'zh-Hant': '路線規劃',
-    'zh-Hans': '路线规划'
-  },
+
   'fromStop': {
     'en': 'From (Origin)',
     'zh-Hant': '出發地',
