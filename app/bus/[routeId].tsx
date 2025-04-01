@@ -30,7 +30,13 @@ import {
 import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function RouteDetailScreen() {
-  const { routeId, bound, serviceType } = useLocalSearchParams();
+  const {
+    routeId,
+    bound,
+    serviceType,
+    company: companyParam,
+    region,
+  } = useLocalSearchParams();
   const [stops, setStops] = useState<Array<RouteStop & Stop>>([]);
   const [loading, setLoading] = useState(true);
   const [isFavorite, setIsFavorite] = useState(false);
@@ -91,94 +97,152 @@ export default function RouteDetailScreen() {
           setUserLocation(location);
         }
 
-        const details = await getRouteDetails(
-          routeId as string,
-          direction as "inbound" | "outbound",
-          serviceType as string
-        );
+        const company = (
+          Array.isArray(companyParam) ? companyParam[0] : companyParam || "KMB"
+        ).toUpperCase();
 
-        setRouteInfo({
-          origin: details.orig_en,
-          destination: details.dest_en,
-          orig_tc: String(details.orig_tc || details.orig_en),
-          dest_tc: String(details.dest_tc || details.dest_en),
-          orig_sc: String(details.orig_tc || details.orig_en),
-          dest_sc: String(details.dest_tc || details.dest_en),
-        });
+        if (company === "GMB") {
+          const regionValue = region as "HKI" | "KLN" | "NT";
 
-        const routeStops = await getRouteStops(
-          routeId as string,
-          direction as "inbound" | "outbound",
-          serviceType as string
-        );
+          const {
+            getRouteDetails: getGmbRouteDetails,
+            getRouteStops: getGmbRouteStops,
+          } = await import("@/util/gmb");
 
-        const allStops = await getAllStops();
-        const stopsMap = new Map(allStops.map((stop) => [stop.stop, stop]));
+          const gmbRouteDetails = await getGmbRouteDetails(
+            regionValue,
+            routeId as string
+          );
 
-        const routeStopsWithDetails = routeStops.map((routeStop) => {
-          const stopDetails = stopsMap.get(routeStop.stop);
-          return {
-            ...routeStop,
-            ...(stopDetails || {
-              name_en: "Unknown Stop",
-              name_tc: "未知站",
-              name_sc: "未知站",
-              lat: 0,
-              long: 0,
-              distance: 0,
-            }),
-          };
-        });
+          const directionObj =
+            gmbRouteDetails.directions?.find((d) =>
+              bound
+                ? bound === "O"
+                  ? d.route_seq === "1"
+                  : d.route_seq === "2"
+                : true
+            ) || gmbRouteDetails.directions?.[0];
 
-        setStops(routeStopsWithDetails);
+          if (directionObj) {
+            setRouteInfo({
+              origin: directionObj.orig_en,
+              destination: directionObj.dest_en,
+              orig_tc: directionObj.orig_tc,
+              dest_tc: directionObj.dest_tc,
+              orig_sc: directionObj.orig_tc,
+              dest_sc: directionObj.dest_tc,
+            });
 
-        if (userLocation && routeStopsWithDetails.length > 0) {
-          const { latitude, longitude } = userLocation.coords;
-          let minDistance = Number.MAX_VALUE;
-          let minDistanceIndex = 0;
-
-          routeStopsWithDetails.forEach((stop, index) => {
-            const distance = Math.sqrt(
-              Math.pow(stop.lat - latitude, 2) +
-                Math.pow(stop.long - longitude, 2)
+            const routeSeq = bound === "I" ? "2" : "1";
+            const gmbRouteStops = await getGmbRouteStops(
+              routeId as string,
+              routeSeq as "1" | "2"
             );
 
-            if (distance < minDistance) {
-              minDistance = distance;
-              minDistanceIndex = index;
-            }
+            setStops(
+              gmbRouteStops.map((stop) => ({
+                ...stop,
+                route: routeId as string,
+                bound: bound as "I" | "O",
+                co: "KMB" as "KMB", // Cast to KMB for type compatibility
+                service_type: "1",
+                data_timestamp: new Date().toISOString(),
+                lat: parseFloat(String(stop.lat || "0")),
+                long: parseFloat(String(stop.long || "0")),
+                name_sc: stop.name_tc || stop.name_tc || "",
+              })) as Array<RouteStop & Stop>
+            );
+          }
+        } else {
+          const details = await getRouteDetails(
+            routeId as string,
+            direction as "inbound" | "outbound",
+            serviceType as string
+          );
+
+          setRouteInfo({
+            origin: details.orig_en,
+            destination: details.dest_en,
+            orig_tc: String(details.orig_tc || details.orig_en),
+            dest_tc: String(details.dest_tc || details.dest_en),
+            orig_sc: String(details.orig_tc || details.orig_en),
+            dest_sc: String(details.dest_tc || details.dest_en),
           });
 
-          setNearestStopIndex(minDistanceIndex);
+          const routeStops = await getRouteStops(
+            routeId as string,
+            direction as "inbound" | "outbound",
+            serviceType as string
+          );
 
-          setTimeout(() => {
-            if (mapRef.current) {
-              mapRef.current.animateToRegion(
-                {
-                  latitude: routeStopsWithDetails[minDistanceIndex].lat,
-                  longitude: routeStopsWithDetails[minDistanceIndex].long,
-                  latitudeDelta: 0.01,
-                  longitudeDelta: 0.01,
-                },
-                1000
+          const allStops = await getAllStops();
+          const stopsMap = new Map(allStops.map((stop) => [stop.stop, stop]));
+
+          const routeStopsWithDetails = routeStops.map((routeStop) => {
+            const stopDetails = stopsMap.get(routeStop.stop);
+            return {
+              ...routeStop,
+              ...(stopDetails || {
+                name_en: "Unknown Stop",
+                name_tc: "未知站",
+                name_sc: "未知站",
+                lat: 0,
+                long: 0,
+                distance: 0,
+              }),
+            };
+          });
+
+          setStops(routeStopsWithDetails);
+
+          if (userLocation && routeStopsWithDetails.length > 0) {
+            const { latitude, longitude } = userLocation.coords;
+            let minDistance = Number.MAX_VALUE;
+            let minDistanceIndex = 0;
+
+            routeStopsWithDetails.forEach((stop, index) => {
+              const distance = Math.sqrt(
+                Math.pow(stop.lat - latitude, 2) +
+                  Math.pow(stop.long - longitude, 2)
               );
-            }
-          }, 500);
-        } else if (routeStopsWithDetails.length > 0) {
-          setTimeout(() => {
-            if (mapRef.current) {
-              mapRef.current.fitToCoordinates(
-                routeStopsWithDetails.map((stop) => ({
-                  latitude: stop.lat,
-                  longitude: stop.long,
-                })),
-                {
-                  edgePadding: { top: 50, right: 50, bottom: 50, left: 50 },
-                  animated: true,
-                }
-              );
-            }
-          }, 500);
+
+              if (distance < minDistance) {
+                minDistance = distance;
+                minDistanceIndex = index;
+              }
+            });
+
+            setNearestStopIndex(minDistanceIndex);
+
+            setTimeout(() => {
+              if (mapRef.current) {
+                mapRef.current.animateToRegion(
+                  {
+                    latitude: routeStopsWithDetails[minDistanceIndex].lat,
+                    longitude: routeStopsWithDetails[minDistanceIndex].long,
+                    latitudeDelta: 0.01,
+                    longitudeDelta: 0.01,
+                  },
+                  1000
+                );
+              }
+            }, 500);
+          } else if (routeStopsWithDetails.length > 0) {
+            setTimeout(() => {
+              if (mapRef.current) {
+                mapRef.current.fitToCoordinates(
+                  routeStopsWithDetails.map((stop) => ({
+                    latitude: stop.lat,
+                    longitude: stop.long,
+                  })),
+                  {
+                    edgePadding: { top: 50, right: 50, bottom: 50, left: 50 },
+                    animated: true,
+                  }
+                );
+              }
+            }, 500);
+          }
         }
       } catch (error) {
         console.error("Failed to fetch route details:", error);
@@ -188,10 +252,10 @@ export default function RouteDetailScreen() {
       }
     };
 
-    if (routeId && bound && serviceType) {
+    if (routeId) {
       fetchRouteDetails();
     }
-  }, [routeId, bound, serviceType, direction]);
+  }, [routeId, bound, serviceType, direction, companyParam, region]);
 
   const toggleFavorite = async () => {
     try {

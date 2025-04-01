@@ -251,10 +251,8 @@ export default function BusRoutesScreen() {
         `/bus/${route.route}?bound=${route.bound}&serviceType=${route.service_type}`
       );
     } else if (company === "GMB") {
-      // For GMB routes, we might need different parameters
-      router.push(
-        `/bus/${route.route}?company=GMB&region=${route.region}&routeId=${route.route_id}`
-      );
+      // For GMB routes, don't pass route ID twice
+      router.push(`/bus/${route.route}?company=GMB&region=${route.region}`);
     } else if (company === "MTR") {
       // Navigate to MTR line details
       router.push({
