@@ -19,11 +19,12 @@ import { IconSymbol } from "@/components/ui/IconSymbol";
 import { useLanguage } from "@/contexts/LanguageContext";
 import ParallaxScrollView from "@/components/ParallaxScrollView";
 
-// Import transport utilities
+// 导入交通工具相关的工具函数
 import { getAllStops as getAllKmbStops } from "@/util/kmb";
 import { getAllStops as getAllMtrStops } from "@/util/mtr";
 import { TransportStop, TransportMode } from "@/types/transport-types";
 
+// 定义行程步骤和行程的类型
 type JourneyStep = {
   type: "WALK" | "BUS" | "MTR";
   from: TransportStop;
@@ -64,16 +65,14 @@ export default function RoutePlanScreen() {
   const [userLocation, setUserLocation] =
     useState<Location.LocationObject | null>(null);
 
-  // Load all stops when component mounts
+  // 在组件挂载时加载所有站点
   useEffect(() => {
     const loadAllStops = async () => {
       try {
         setLoadingStops(true);
-        // Get stops from different transport providers
         const kmbStops = await getAllKmbStops();
         const mtrStops = await getAllMtrStops();
 
-        // Process stops to add display name
         const processedStops = [
           ...kmbStops.map((stop) => ({
             ...stop,
@@ -101,7 +100,7 @@ export default function RoutePlanScreen() {
     loadAllStops();
   }, [language]);
 
-  // Handle search query changes
+  // 处理搜索输入变化
   const handleSearch = (text: string, isFrom: boolean) => {
     if (isFrom) {
       setFromText(text);
@@ -118,7 +117,6 @@ export default function RoutePlanScreen() {
       return;
     }
 
-    // Filter stops based on search query
     const query = text.toLowerCase();
     const results = allStops
       .filter(
@@ -127,12 +125,12 @@ export default function RoutePlanScreen() {
           (stop.name_en && stop.name_en.toLowerCase().includes(query)) ||
           (stop.name_tc && stop.name_tc.includes(query))
       )
-      .slice(0, 10); // Limit to 10 results for performance
+      .slice(0, 10);
 
     setSearchResults(results);
   };
 
-  // Handle stop selection
+  // 处理选择站点
   const handleSelectStop = (stop: SearchResult) => {
     if (searchingFrom) {
       setFromStop(stop);
@@ -147,7 +145,7 @@ export default function RoutePlanScreen() {
     setSearchingTo(false);
   };
 
-  // Handle using current location
+  // 使用当前位置
   const handleUseCurrentLocation = async () => {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
@@ -173,7 +171,7 @@ export default function RoutePlanScreen() {
     }
   };
 
-  // Plan journey
+  // 规划行程
   const handlePlanJourney = async () => {
     if ((!fromStop && !useCurrentLocation) || !toStop) {
       Alert.alert(t("error"), t("select.both.locations"));
@@ -194,7 +192,6 @@ export default function RoutePlanScreen() {
         throw new Error("Origin location not available");
       }
 
-      // Generate sample journeys
       const journeys = generateSampleJourneys(origin, toStop);
       setJourneys(journeys);
 
@@ -209,147 +206,356 @@ export default function RoutePlanScreen() {
     }
   };
 
-  // Generate sample journeys for demonstration
+  // 查找最近的站点
+  const findNearestStop = (
+    location: { lat: number; long: number },
+    company: string
+  ): SearchResult | null => {
+    const filteredStops = allStops.filter((stop) => stop.company === company);
+    if (filteredStops.length === 0) {
+      return null;
+    }
+    return filteredStops.reduce((nearest, stop) => {
+      const distance = calculateDistance(
+        location.lat,
+        location.long,
+        stop.lat,
+        stop.long
+      );
+      if (!nearest || distance < nearest.distance) {
+        return { stop, distance };
+      }
+      return nearest;
+    }, null as { stop: SearchResult; distance: number } | null)!.stop;
+  };
+
+  // 生成示例行程
   const generateSampleJourneys = (from: any, to: SearchResult): Journey[] => {
-    // Calculate straight-line distance
-    const fromLat = from.lat;
-    const fromLng = from.long;
-    const toLat = to.lat;
-    const toLng = to.long;
+    const originLocation =
+      useCurrentLocation && userLocation
+        ? {
+            lat: userLocation.coords.latitude,
+            long: userLocation.coords.longitude,
+          }
+        : { lat: from.lat, long: from.long };
+    const destinationLocation = { lat: to.lat, long: to.long };
 
-    const distance = calculateDistance(fromLat, fromLng, toLat, toLng);
+    const isOriginKmb =
+      fromStop && fromStop.company === "KMB" && !useCurrentLocation;
+    const isOriginMtr =
+      fromStop && fromStop.company === "MTR" && !useCurrentLocation;
+    const isDestinationKmb = to.company === "KMB";
+    const isDestinationMtr = to.company === "MTR";
 
-    // For demonstration, create journey options with different modes
+    // **纯巴士行程**
+    const startBusStop = isOriginKmb
+      ? fromStop
+      : findNearestStop(originLocation, "KMB");
+    const endBusStop = isDestinationKmb
+      ? to
+      : findNearestStop(destinationLocation, "KMB");
+
+    const busJourneySteps: JourneyStep[] = [];
+    if (!isOriginKmb && startBusStop) {
+      const walkDistance = calculateDistance(
+        originLocation.lat,
+        originLocation.long,
+        startBusStop.lat,
+        startBusStop.long
+      );
+      busJourneySteps.push({
+        type: "WALK",
+        from: {
+          lat: originLocation.lat,
+          long: originLocation.long,
+          name_en: useCurrentLocation
+            ? "Current Location"
+            : fromStop?.displayName || "Origin",
+          name_tc: useCurrentLocation
+            ? "当前位置"
+            : fromStop?.displayName || "起点",
+          stop: "origin",
+          mode: "WALK",
+        },
+        to: startBusStop,
+        distance: Math.round(walkDistance),
+        duration: Math.round((walkDistance / 80) * 60),
+      });
+    }
+    if (startBusStop && endBusStop) {
+      const busDistance = calculateDistance(
+        startBusStop.lat,
+        startBusStop.long,
+        endBusStop.lat,
+        endBusStop.long
+      );
+      busJourneySteps.push({
+        type: "BUS",
+        from: startBusStop,
+        to: endBusStop,
+        route: getRandomRoute("KMB"),
+        company: "KMB",
+        distance: Math.round(busDistance),
+        duration: Math.round((busDistance / 500) * 60),
+      });
+    }
+    if (!isDestinationKmb && endBusStop) {
+      const walkDistance = calculateDistance(
+        endBusStop.lat,
+        endBusStop.long,
+        destinationLocation.lat,
+        destinationLocation.long
+      );
+      busJourneySteps.push({
+        type: "WALK",
+        from: endBusStop,
+        to: {
+          lat: destinationLocation.lat,
+          long: destinationLocation.long,
+          name_en: to.displayName,
+          name_tc: to.name_tc,
+          stop: to.stop,
+          mode: to.mode,
+        },
+        distance: Math.round(walkDistance),
+        duration: Math.round((walkDistance / 80) * 60),
+      });
+    }
+
+    // **纯地铁行程**
+    const startMtrStation = isOriginMtr
+      ? fromStop
+      : findNearestStop(originLocation, "MTR");
+    const endMtrStation = isDestinationMtr
+      ? to
+      : findNearestStop(destinationLocation, "MTR");
+
+    const mtrJourneySteps: JourneyStep[] = [];
+    if (!isOriginMtr && startMtrStation) {
+      const walkDistance = calculateDistance(
+        originLocation.lat,
+        originLocation.long,
+        startMtrStation.lat,
+        startMtrStation.long
+      );
+      mtrJourneySteps.push({
+        type: "WALK",
+        from: {
+          lat: originLocation.lat,
+          long: originLocation.long,
+          name_en: useCurrentLocation
+            ? "Current Location"
+            : fromStop?.displayName || "Origin",
+          name_tc: useCurrentLocation
+            ? "当前位置"
+            : fromStop?.displayName || "起点",
+          stop: "origin",
+          mode: "WALK",
+        },
+        to: startMtrStation,
+        distance: Math.round(walkDistance),
+        duration: Math.round((walkDistance / 80) * 60),
+      });
+    }
+    if (startMtrStation && endMtrStation) {
+      const mtrDistance = calculateDistance(
+        startMtrStation.lat,
+        startMtrStation.long,
+        endMtrStation.lat,
+        endMtrStation.long
+      );
+      mtrJourneySteps.push({
+        type: "MTR",
+        from: startMtrStation,
+        to: endMtrStation,
+        route: getRandomRoute("MTR"),
+        company: "MTR",
+        distance: Math.round(mtrDistance),
+        duration: Math.round((mtrDistance / 1000) * 60),
+      });
+    }
+    if (!isDestinationMtr && endMtrStation) {
+      const walkDistance = calculateDistance(
+        endMtrStation.lat,
+        endMtrStation.long,
+        destinationLocation.lat,
+        destinationLocation.long
+      );
+      mtrJourneySteps.push({
+        type: "WALK",
+        from: endMtrStation,
+        to: {
+          lat: destinationLocation.lat,
+          long: destinationLocation.long,
+          name_en: to.displayName,
+          name_tc: to.name_tc,
+          stop: to.stop,
+          mode: to.mode,
+        },
+        distance: Math.round(walkDistance),
+        duration: Math.round((walkDistance / 80) * 60),
+      });
+    }
+
+    // **巴士转地铁行程**
+    const midLat = (originLocation.lat + destinationLocation.lat) / 2;
+    const midLong = (originLocation.long + destinationLocation.long) / 2;
+    const transferMtr = findNearestStop({ lat: midLat, long: midLong }, "MTR");
+    const transferBus = transferMtr
+      ? findNearestStop(transferMtr, "KMB")
+      : null;
+
+    const transferJourneySteps: JourneyStep[] = [];
+    if (!isOriginKmb && startBusStop) {
+      const walkDistance = calculateDistance(
+        originLocation.lat,
+        originLocation.long,
+        startBusStop.lat,
+        startBusStop.long
+      );
+      transferJourneySteps.push({
+        type: "WALK",
+        from: {
+          lat: originLocation.lat,
+          long: originLocation.long,
+          name_en: useCurrentLocation
+            ? "Current Location"
+            : fromStop?.displayName || "Origin",
+          name_tc: useCurrentLocation
+            ? "当前位置"
+            : fromStop?.displayName || "起点",
+          stop: "origin",
+          mode: "WALK",
+        },
+        to: startBusStop,
+        distance: Math.round(walkDistance),
+        duration: Math.round((walkDistance / 80) * 60),
+      });
+    }
+    if (startBusStop && transferBus) {
+      const busDistance = calculateDistance(
+        startBusStop.lat,
+        startBusStop.long,
+        transferBus.lat,
+        transferBus.long
+      );
+      transferJourneySteps.push({
+        type: "BUS",
+        from: startBusStop,
+        to: transferBus,
+        route: getRandomRoute("KMB"),
+        company: "KMB",
+        distance: Math.round(busDistance),
+        duration: Math.round((busDistance / 500) * 60),
+      });
+    }
+    if (transferBus && transferMtr) {
+      const walkDistance = calculateDistance(
+        transferBus.lat,
+        transferBus.long,
+        transferMtr.lat,
+        transferMtr.long
+      );
+      transferJourneySteps.push({
+        type: "WALK",
+        from: transferBus,
+        to: transferMtr,
+        distance: Math.round(walkDistance),
+        duration: Math.round((walkDistance / 80) * 60),
+      });
+    }
+    if (transferMtr && endMtrStation) {
+      const mtrDistance = calculateDistance(
+        transferMtr.lat,
+        transferMtr.long,
+        endMtrStation.lat,
+        endMtrStation.long
+      );
+      transferJourneySteps.push({
+        type: "MTR",
+        from: transferMtr,
+        to: endMtrStation,
+        route: getRandomRoute("MTR"),
+        company: "MTR",
+        distance: Math.round(mtrDistance),
+        duration: Math.round((mtrDistance / 1000) * 60),
+      });
+    }
+    if (!isDestinationMtr && endMtrStation) {
+      const walkDistance = calculateDistance(
+        endMtrStation.lat,
+        endMtrStation.long,
+        destinationLocation.lat,
+        destinationLocation.long
+      );
+      transferJourneySteps.push({
+        type: "WALK",
+        from: endMtrStation,
+        to: {
+          lat: destinationLocation.lat,
+          long: destinationLocation.long,
+          name_en: to.displayName,
+        },
+        distance: Math.round(walkDistance),
+        duration: Math.round((walkDistance / 80) * 60),
+      });
+    }
+
+    const busJourneyTotalDuration = busJourneySteps.reduce(
+      (sum, step) => sum + (step.duration || 0),
+      0
+    );
+    const busJourneyTotalDistance = busJourneySteps.reduce(
+      (sum, step) => sum + (step.distance || 0),
+      0
+    );
+    const mtrJourneyTotalDuration = mtrJourneySteps.reduce(
+      (sum, step) => sum + (step.duration || 0),
+      0
+    );
+    const mtrJourneyTotalDistance = mtrJourneySteps.reduce(
+      (sum, step) => sum + (step.distance || 0),
+      0
+    );
+    const transferJourneyTotalDuration = transferJourneySteps.reduce(
+      (sum, step) => sum + (step.duration || 0),
+      0
+    );
+    const transferJourneyTotalDistance = transferJourneySteps.reduce(
+      (sum, step) => sum + (step.distance || 0),
+      0
+    );
+
     return [
       {
         id: "1",
-        steps: [
-          {
-            type: "WALK",
-            from: {
-              ...from,
-              name_en: useCurrentLocation ? "Current Location" : from.name_en,
-            },
-            to: { ...getNearbyStop(from, "KMB"), name_en: "Nearby KMB Stop" },
-            distance: Math.round(distance * 0.1),
-            duration: Math.round(((distance * 0.1) / 80) * 60), // Walking at 80m per minute
-          },
-          {
-            type: "BUS",
-            from: getNearbyStop(from, "KMB"),
-            to: getNearbyStop(to, "KMB"),
-            route: getRandomRoute("KMB"),
-            company: "KMB",
-            distance: Math.round(distance * 0.9),
-            duration: Math.round(((distance * 0.9) / 500) * 60), // Bus at 500m per minute
-          },
-          {
-            type: "WALK",
-            from: getNearbyStop(to, "KMB"),
-            to: to,
-            distance: Math.round(distance * 0.05),
-            duration: Math.round(((distance * 0.05) / 80) * 60),
-          },
-        ],
-        totalDuration: Math.round((distance / 400) * 60), // Estimated total in minutes
-        totalDistance: Math.round(distance),
+        steps: busJourneySteps,
+        totalDuration: busJourneyTotalDuration,
+        totalDistance: busJourneyTotalDistance,
       },
       {
         id: "2",
-        steps: [
-          {
-            type: "WALK",
-            from: {
-              ...from,
-              name_en: useCurrentLocation ? "Current Location" : from.name_en,
-            },
-            to: {
-              ...getNearbyStop(from, "MTR"),
-              name_en: "Nearby MTR Station",
-            },
-            distance: Math.round(distance * 0.15),
-            duration: Math.round(((distance * 0.15) / 80) * 60),
-          },
-          {
-            type: "MTR",
-            from: getNearbyStop(from, "MTR"),
-            to: getNearbyStop(to, "MTR"),
-            route: getRandomRoute("MTR"),
-            company: "MTR",
-            distance: Math.round(distance * 0.7),
-            duration: Math.round(((distance * 0.7) / 1000) * 60), // MTR at 1000m per minute
-          },
-          {
-            type: "WALK",
-            from: getNearbyStop(to, "MTR"),
-            to: to,
-            distance: Math.round(distance * 0.15),
-            duration: Math.round(((distance * 0.15) / 80) * 60),
-          },
-        ],
-        totalDuration: Math.round((distance / 600) * 60),
-        totalDistance: Math.round(distance),
+        steps: mtrJourneySteps,
+        totalDuration: mtrJourneyTotalDuration,
+        totalDistance: mtrJourneyTotalDistance,
       },
       {
         id: "3",
-        steps: [
-          {
-            type: "WALK",
-            from: {
-              ...from,
-              name_en: useCurrentLocation ? "Current Location" : from.name_en,
-            },
-            to: { ...getNearbyStop(from, "KMB"), name_en: "Nearby KMB Stop" },
-            distance: Math.round(distance * 0.1),
-            duration: Math.round(((distance * 0.1) / 80) * 60),
-          },
-          {
-            type: "BUS",
-            from: getNearbyStop(from, "KMB"),
-            to: getNearbyStop(from, "MTR", 0.4), // Transfer point
-            route: getRandomRoute("KMB"),
-            company: "KMB",
-            distance: Math.round(distance * 0.4),
-            duration: Math.round(((distance * 0.4) / 400) * 60),
-          },
-          {
-            type: "WALK",
-            from: getNearbyStop(from, "MTR", 0.4), // Transfer point
-            to: getNearbyStop(from, "MTR", 0.45), // MTR station
-            distance: Math.round(distance * 0.05),
-            duration: Math.round(((distance * 0.05) / 80) * 60),
-          },
-          {
-            type: "MTR",
-            from: getNearbyStop(from, "MTR", 0.45), // MTR station
-            to: getNearbyStop(to, "MTR"),
-            route: getRandomRoute("MTR"),
-            company: "MTR",
-            distance: Math.round(distance * 0.35),
-            duration: Math.round(((distance * 0.35) / 1000) * 60),
-          },
-          {
-            type: "WALK",
-            from: getNearbyStop(to, "MTR"),
-            to: to,
-            distance: Math.round(distance * 0.1),
-            duration: Math.round(((distance * 0.1) / 80) * 60),
-          },
-        ],
-        totalDuration: Math.round((distance / 500) * 60),
-        totalDistance: Math.round(distance),
+        steps: transferJourneySteps,
+        totalDuration: transferJourneyTotalDuration,
+        totalDistance: transferJourneyTotalDistance,
       },
     ];
   };
 
-  // Helper functions
+  // 辅助函数
   const calculateDistance = (
     lat1: number,
     lon1: number,
     lat2: number,
     lon2: number
   ): number => {
-    const R = 6371e3; // Earth radius in meters
+    const R = 6371e3;
     const φ1 = (lat1 * Math.PI) / 180;
     const φ2 = (lat2 * Math.PI) / 180;
     const Δφ = ((lat2 - lat1) * Math.PI) / 180;
@@ -360,23 +566,7 @@ export default function RoutePlanScreen() {
       Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
-    return R * c; // Distance in meters
-  };
-
-  const getNearbyStop = (
-    location: any,
-    company: string,
-    offsetMultiplier = 0.2
-  ) => {
-    // In a real app, this would find the closest stop of the given company
-    // For this demo, just return a slightly offset location
-    const offset = (Math.random() - 0.5) * offsetMultiplier; // Random small offset
-    return {
-      ...location,
-      lat: location.lat + offset,
-      long: location.long + offset,
-      company,
-    };
+    return R * c;
   };
 
   const getRandomRoute = (company: string): string => {
@@ -386,9 +576,8 @@ export default function RoutePlanScreen() {
     } else if (company === "MTR") {
       const routes = ["TWL", "ISL", "TKL", "EAL", "SIL"];
       return routes[Math.floor(Math.random() * routes.length)];
-    } else {
-      return "";
     }
+    return "";
   };
 
   const getTransportIcon = (type: string) => {
@@ -435,7 +624,6 @@ export default function RoutePlanScreen() {
     return `${(meters / 1000).toFixed(1)}km`;
   };
 
-  // Navigate to transport details
   const navigateToTransportDetails = (step: JourneyStep) => {
     if (step.type === "BUS" && step.route) {
       router.push(`/bus/${step.route}?bound=O&serviceType=1`);
@@ -461,7 +649,7 @@ export default function RoutePlanScreen() {
     >
       <Stack.Screen options={{ title: t("routePlan") }} />
 
-      {/* Search Inputs */}
+      {/* 搜索输入框 */}
       <ThemedView style={styles.searchContainer}>
         <ThemedView style={styles.inputContainer}>
           <IconSymbol
@@ -478,12 +666,10 @@ export default function RoutePlanScreen() {
             onFocus={() => {
               setSearchingFrom(true);
               setSearchingTo(false);
-              if (fromText.trim()) {
-                handleSearch(fromText, true);
-              }
+              if (fromText.trim()) handleSearch(fromText, true);
             }}
           />
-          {fromText ? (
+          {fromText && (
             <TouchableOpacity
               onPress={() => {
                 setFromText("");
@@ -494,7 +680,7 @@ export default function RoutePlanScreen() {
             >
               <IconSymbol name="xmark.circle.fill" size={20} color="#999999" />
             </TouchableOpacity>
-          ) : null}
+          )}
         </ThemedView>
 
         <TouchableOpacity
@@ -522,12 +708,10 @@ export default function RoutePlanScreen() {
             onFocus={() => {
               setSearchingFrom(false);
               setSearchingTo(true);
-              if (toText.trim()) {
-                handleSearch(toText, false);
-              }
+              if (toText.trim()) handleSearch(toText, false);
             }}
           />
-          {toText ? (
+          {toText && (
             <TouchableOpacity
               onPress={() => {
                 setToText("");
@@ -537,7 +721,7 @@ export default function RoutePlanScreen() {
             >
               <IconSymbol name="xmark.circle.fill" size={20} color="#999999" />
             </TouchableOpacity>
-          ) : null}
+          )}
         </ThemedView>
 
         <TouchableOpacity
@@ -561,7 +745,7 @@ export default function RoutePlanScreen() {
         </TouchableOpacity>
       </ThemedView>
 
-      {/* Search Results */}
+      {/* 搜索结果 */}
       {(searchingFrom || searchingTo) && searchResults.length > 0 && (
         <ThemedView style={styles.searchResults}>
           <ScrollView>
@@ -609,10 +793,9 @@ export default function RoutePlanScreen() {
         </ThemedView>
       )}
 
-      {/* Journey Results */}
+      {/* 行程结果 */}
       {!loading && !loadingStops && journeys.length > 0 && (
         <ThemedView style={styles.resultsContainer}>
-          {/* Journey Options */}
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -647,7 +830,6 @@ export default function RoutePlanScreen() {
             ))}
           </ScrollView>
 
-          {/* Selected Journey Details */}
           {selectedJourney && (
             <ThemedView style={styles.journeyDetails}>
               <ThemedText style={styles.journeySummary}>
@@ -655,7 +837,6 @@ export default function RoutePlanScreen() {
                 {formatDistance(selectedJourney.totalDistance)}
               </ThemedText>
 
-              {/* Journey Map */}
               {Platform.OS !== "web" && fromStop && toStop && (
                 <View style={styles.mapContainer}>
                   <MapView
@@ -670,7 +851,6 @@ export default function RoutePlanScreen() {
                       longitudeDelta: Math.abs(fromStop.long - toStop.long) * 2,
                     }}
                   >
-                    {/* Origin Marker */}
                     <Marker
                       coordinate={{
                         latitude:
@@ -689,8 +869,6 @@ export default function RoutePlanScreen() {
                       }
                       pinColor="blue"
                     />
-
-                    {/* Destination Marker */}
                     <Marker
                       coordinate={{
                         latitude: toStop.lat,
@@ -699,8 +877,6 @@ export default function RoutePlanScreen() {
                       title={toStop.displayName}
                       pinColor="red"
                     />
-
-                    {/* Route line */}
                     {selectedJourney.steps.map((step, index) => (
                       <Polyline
                         key={index}
@@ -719,7 +895,6 @@ export default function RoutePlanScreen() {
                 </View>
               )}
 
-              {/* Journey Steps */}
               <ThemedView>
                 {selectedJourney.steps.map((step, index) => (
                   <ThemedView key={index} style={styles.journeyStep}>
@@ -744,7 +919,6 @@ export default function RoutePlanScreen() {
                           : `${t("take")} ${t("mtr")}`}
                         {step.route && ` ${step.route}`}
                       </ThemedText>
-
                       <ThemedText style={styles.stepFromTo}>
                         {language === "en"
                           ? step.from.name_en
@@ -752,13 +926,11 @@ export default function RoutePlanScreen() {
                         →{" "}
                         {language === "en" ? step.to.name_en : step.to.name_tc}
                       </ThemedText>
-
                       <ThemedView style={styles.stepMeta}>
                         <ThemedText style={styles.stepMetaText}>
                           {formatDuration(step.duration || 0)} ·{" "}
                           {formatDistance(step.distance || 0)}
                         </ThemedText>
-
                         {step.type !== "WALK" && (
                           <TouchableOpacity
                             style={styles.viewRouteButton}
@@ -779,7 +951,7 @@ export default function RoutePlanScreen() {
         </ThemedView>
       )}
 
-      {/* Empty State - No journeys */}
+      {/* 空状态 - 无行程 */}
       {!loading &&
         !loadingStops &&
         journeys.length === 0 &&
@@ -792,7 +964,7 @@ export default function RoutePlanScreen() {
           </ThemedView>
         )}
 
-      {/* Initial State */}
+      {/* 初始状态 */}
       {!loading &&
         !loadingStops &&
         journeys.length === 0 &&
@@ -811,32 +983,12 @@ export default function RoutePlanScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 16,
-  },
-  headerImageContainer: {
-    position: "absolute",
-    bottom: 0,
-    right: 20,
-    justifyContent: "flex-end",
-    alignItems: "flex-end",
-    height: 178,
-    width: 178,
-  },
   headerImage: {
     color: "#16b79c",
     bottom: -90,
     left: -35,
     position: "absolute",
     opacity: 0.7,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: "absolute",
   },
   searchContainer: {
     marginBottom: 16,
@@ -860,18 +1012,9 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     height: 52,
   },
-  inputIcon: {
-    marginRight: 8,
-  },
-  input: {
-    flex: 1,
-    height: 48,
-    fontSize: 16,
-    color: "#8B4513",
-  },
-  clearButton: {
-    padding: 8,
-  },
+  inputIcon: { marginRight: 8 },
+  input: { flex: 1, height: 48, fontSize: 16, color: "#8B4513" },
+  clearButton: { padding: 8 },
   currentLocationButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -879,11 +1022,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     marginLeft: 4,
   },
-  currentLocationText: {
-    marginLeft: 8,
-    color: "#8B4513",
-    fontWeight: "500",
-  },
+  currentLocationText: { marginLeft: 8, color: "#8B4513", fontWeight: "500" },
   planButton: {
     backgroundColor: "#8B4513",
     flexDirection: "row",
@@ -903,11 +1042,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0,
     elevation: 1,
   },
-  planButtonText: {
-    color: "white",
-    fontWeight: "600",
-    fontSize: 16,
-  },
+  planButtonText: { color: "white", fontWeight: "600", fontSize: 16 },
   searchResults: {
     position: "absolute",
     top: 150,
@@ -932,33 +1067,12 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#f0f0f0",
   },
-  resultIcon: {
-    marginRight: 12,
-  },
-  resultTextContainer: {
-    flex: 1,
-  },
-  resultText: {
-    fontSize: 16,
-    fontWeight: "500",
-    color: "#8B4513",
-  },
-  resultSubtext: {
-    fontSize: 12,
-    opacity: 0.7,
-    marginTop: 2,
-    color: "#8B4513",
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: "#8B4513",
-  },
+  resultIcon: { marginRight: 12 },
+  resultTextContainer: { flex: 1 },
+  resultText: { fontSize: 16, fontWeight: "500", color: "#8B4513" },
+  resultSubtext: { fontSize: 12, opacity: 0.7, marginTop: 2, color: "#8B4513" },
+  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
+  loadingText: { marginTop: 16, fontSize: 16, color: "#8B4513" },
   emptyStateContainer: {
     justifyContent: "center",
     alignItems: "center",
@@ -974,12 +1088,8 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     color: "#8B4513",
   },
-  resultsContainer: {
-    flex: 1,
-  },
-  journeyOptions: {
-    padding: 12,
-  },
+  resultsContainer: { flex: 1 },
+  journeyOptions: { padding: 12 },
   journeyOption: {
     backgroundColor: "#FFFFFF",
     borderRadius: 12,
@@ -1005,11 +1115,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  journeyDuration: {
-    fontSize: 17,
-    fontWeight: "600",
-    color: "#8B4513",
-  },
+  journeyDuration: { fontSize: 17, fontWeight: "600", color: "#8B4513" },
   journeyModeIcons: {
     flexDirection: "row",
     marginTop: 8,
@@ -1050,13 +1156,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#e0e0e0",
   },
-  map: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  journeyStep: {
-    flexDirection: "row",
-    marginBottom: 20,
-  },
+  map: { ...StyleSheet.absoluteFillObject },
+  journeyStep: { flexDirection: "row", marginBottom: 20 },
   stepIconContainer: {
     width: 42,
     height: 42,
@@ -1094,11 +1195,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 4,
   },
-  stepMetaText: {
-    fontSize: 14,
-    color: "#8B4513",
-    opacity: 0.7,
-  },
+  stepMetaText: { fontSize: 14, color: "#8B4513", opacity: 0.7 },
   viewRouteButton: {
     backgroundColor: "white",
     paddingHorizontal: 14,
@@ -1107,9 +1204,5 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(139, 69, 19, 0.3)",
   },
-  viewRouteText: {
-    fontSize: 13,
-    fontWeight: "500",
-    color: "#8B4513",
-  },
+  viewRouteText: { fontSize: 13, fontWeight: "500", color: "#8B4513" },
 });
