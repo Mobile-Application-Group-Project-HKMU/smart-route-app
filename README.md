@@ -1,170 +1,97 @@
-# Smart KMB App
-
-## Group Project for COMP S313F Mobile Application Programming
-
-### Hong Kong Metropolitan University - Spring Term 2025
-
----
-
-## Team Members
-
-- Li Yanpei (s13522245) - Frontend Development / Server Deploy
-- Chan Antony (s13830346) - Group Member
-- Lee Meng Hin (s13799930) - Group Member
-- Sze Tse Yam (s13852523) - Group Member
-- Li Yuan (s13549915) - Group Member
-- Poon Chun Him (s13810488) - Group Member
-
----
+# Smart KMB App: A Transportation Solution for Hong Kong
 
 ## Table of Contents
+- List of Figures
+- Abstract
+- Introduction
+- Methodology
+- Features and Functionality
+- Testing
+- Future Enhancements
+- Conclusion
+- Appendix
 
-- [Abstract](#abstract)
-- [Introduction](#introduction)
-- [Methodology](#methodology)
-- [Features and Functionality](#features-and-functionality)
-- [Testing](#testing)
-- [Future Enhancement](#future-enhancement)
-- [Conclusion](#conclusion)
-- [Appendix](#appendix)
-
----
+## List of Figures
+- Figure 1: Home Screen Layout
+- Figure 2: Nearby Screen Map Integration
+- Figure 3: Plan Screen Journey Visualization
 
 ## Abstract
-
-Smart KMB App is a comprehensive mobile application designed to enhance the public transportation experience in Hong Kong. This app integrates real-time data from various transportation services including KMB bus routes, MTR lines, and other public transport options. It offers users a unified platform to access route information, check arrival times, plan journeys, and find nearby transportation stops.
-
----
+The Smart KMB App is a React Native application developed with Expo and TypeScript, designed to enhance public transportation in Hong Kong. It integrates data from KMB, GMB, and MTR systems, offering real-time arrivals, journey planning, and location-based services across eight key screens. This report examines the app’s screen logic, shared implementation patterns, and addresses its background, challenges, and standout features.
 
 ## Introduction
-
-Public transportation in Hong Kong is extensive and efficient, but navigating the complex network of buses, trains, and ferries can be challenging for both residents and visitors. The Smart KMB App addresses this challenge by providing users with a user-friendly interface to access real-time information about public transportation services.
-
-Our application focuses on delivering accurate, timely information while offering intuitive navigation and a seamless user experience across different transportation modes. By integrating data from multiple transit providers, we aim to simplify journey planning and improve the overall public transport experience.
-
----
+The Smart KMB App provides a unified platform for navigating Hong Kong’s public transit, leveraging React Native for cross-platform functionality, Expo for streamlined development, and TypeScript for robust code quality. It caters to users by offering personalized favorites, multi-modal journey planning, and real-time transit updates, addressing the diverse needs of urban commuters.
 
 ## Methodology
-
-The Smart KMB App is built using the following technologies:
-
-- **Frontend:** React Expo 5 with Application Routing
-- **Language:** TypeScript
-- **State Management:** React Context API
-- **Version Control:** Git
-- **APIs:** Integration with Hong Kong public transportation APIs
-- **UI Components:** Custom components with responsive design
-- **Localization:** Multi-language support (English, Traditional Chinese, Simplified Chinese)
-
-Our development process followed an agile methodology, with regular sprints and iterative improvements based on user feedback and testing results.
-
----
+The app adopts Expo’s managed workflow for rapid development and deployment across iOS and Android. TypeScript ensures type safety for API responses, state, and props, reducing errors. A modular architecture organizes each screen with independent logic, utilizing libraries like `expo-location` and `react-native-maps` for location and visualization features.
 
 ## Features and Functionality
+The app includes the following screens with their paths, logic, and implementations:
 
-### Main Screens
+1. **Home Screen (`(tabs)/index`)**
+   - **Logic**: Displays user favorites (bus routes, stops, MTR stations) with multi-language support and auto-refresh on focus.
+   - **Implementation**: Uses state for favorites and loading, fetches data from local storage, and navigates to detail screens via handlers.
 
-#### Home Screen
+2. **Nearby Screen (`(tabs)/nearby`)**
+   - **Logic**: Locates nearby stops using user position, filters by distance and type, and shows results on a map.
+   - **Implementation**: Integrates `expo-location`, fetches KMB/MTR API data, and normalizes it into a `CombinedStop` type.
 
-- Displays favorite routes, stops, and MTR stations
-- Quick access to recently viewed routes
-- One-tap navigation to nearby stops
+3. **Plan Screen (`(tabs)/plan`)**
+   - **Logic**: Plans multi-modal journeys (walking, bus, MTR) with route options and map visualization.
+   - **Implementation**: Manages stop data, generates journeys using distance calculations, and displays step-by-step instructions.
 
-#### Transport Screen
+4. **Transport Screen (`(tabs)/transport`)**
+   - **Logic**: Offers search across transit providers with filtering and pagination.
+   - **Implementation**: Normalizes API data, applies filters, and customizes UI per provider.
 
-- Comprehensive listing of bus routes, MTR lines, and other transport options
-- Search functionality for finding specific routes
-- Filtering by transport type
+5. **Bus Route Detail Screen (`bus/[routeId]`)**
+   - **Logic**: Shows route details, stops, and nearest stop with favorites management.
+   - **Implementation**: Joins route and stop data, uses location services, and renders an interactive map.
 
-#### Journey Planner
+6. **MTR Station Screen (`mtr/[stationId]`)**
+   - **Logic**: Displays station info, real-time arrivals, and navigation options.
+   - **Implementation**: Fetches MTR data, manages favorites, and integrates device maps.
 
-- Point-to-point journey planning
-- Multiple route options with different transport modes
-- Walking directions between stops
-- Time and distance estimates
+7. **MTR Line Screen (`mtr/line/[lineId]`)**
+   - **Logic**: Visualizes an MTR line’s stations and route path.
+   - **Implementation**: Filters station data, uses line-specific styling, and maps the route.
 
-#### Nearby Stops
+8. **Bus Stop Detail Screen (`stop/[stopId]`)**
+   - **Logic**: Provides stop details, real-time arrivals, and navigation.
+   - **Implementation**: Loads stop and ETA data, supports favorites, and integrates maps.
 
-- Location-based discovery of nearby bus stops and MTR stations
-- Real-time distance information
-- Map view of surrounding transport options
+### Commonalities
+- **State Management**: All screens use state for data and UI updates.
+- **Data Fetching**: APIs or local storage provide dynamic content.
+- **Internationalization**: Multi-language support via `useLanguage`.
+- **Navigation**: Consistent routing to detail screens.
+- **Favorites**: Shared system with local storage persistence.
+- **Location Services**: Used in Nearby, Bus Route, and Stop screens.
+- **Map Integration**: Interactive maps in multiple screens.
+- **Real-Time Data**: Featured in MTR Station and Bus Stop screens.
+- **UI Consistency**: Reusable components like cards and buttons.
 
-### Transport Information
+### Background and Challenges
+- **Background**: A transportation app for Hong Kong, integrating bus (KMB, GMB) and rail (MTR) services.
+- **Challenges**: Unifying diverse API data, ensuring real-time accuracy, managing location permissions, and maintaining performance across screens.
 
-#### Bus Routes
-
-- Detailed route information including stops, direction, and frequency
-- Real-time ETA for upcoming buses
-- Route maps with stop indicators
-
-#### MTR Stations
-
-- Station details including exits, facilities, and interchange information
-- Real-time train arrival information
-- Line status updates
-
----
+### Significant Features
+- Multi-modal journey planning.
+- Real-time bus and train arrivals.
+- Interactive maps for routes and stops.
+- Personalized favorites system.
+- Multi-language support.
+- Device map navigation integration.
 
 ## Testing
+Unit tests with Jest validate component logic and functions, while manual end-to-end testing ensures a seamless user experience across devices. Edge cases like API failures and permission denials are addressed.
 
-Our testing strategy included:
-
-- Unit testing of core components
-- Integration testing of API calls and data processing
-- User acceptance testing across different devices
-- Performance testing for responsiveness and load times
-- Localization testing for all supported languages
-
----
-
-## Future Enhancement
-
-Planned future enhancements include:
-
-- Fare calculation for journeys
-- Push notifications for service updates
-- Offline mode for basic functionality
-- Personalized alerts for favorite routes
-- Integration with payment systems
-- Accessibility improvements
-
----
+## Future Enhancements
+Future updates could include additional transit operators, real-time traffic integration for journey planning, performance optimizations for large datasets, and enhanced accessibility features.
 
 ## Conclusion
-
-The Smart KMB App successfully addresses the need for a unified, user-friendly public transportation application in Hong Kong. By combining real-time data, intuitive navigation, and comprehensive coverage of transport options, the app provides significant value to daily commuters and visitors alike.
-
-The project demonstrates effective implementation of modern mobile development practices, with a focus on performance, reliability, and user experience. Through continuous iteration and user feedback, we have developed an application that simplifies the complexities of Hong Kong's public transportation system.
-
----
+The Smart KMB App delivers a robust, user-centric transportation solution, effectively integrating Hong Kong’s transit systems. Its modular design and modern tech stack ensure scalability and a high-quality user experience.
 
 ## Appendix
-
-### App Structure
-
-```
-- Main page
-  - /(tabs)/index
-  - /(tabs)/transport
-  - /(tabs)/plan
-  - /(tabs)/nearby
-- Transport pages
-  - /stop/[stopId]
-  - /bus/[routeId]
-  - /mtr/line/[lineId]
-  - /mtr/[stationId]
-- Settings page
-  - /settings
-- About page
-  - /about
-```
-
-### Technical Stack
-
-- React Native/Expo
-- TypeScript
-- Expo Router for navigation
-- React Native Maps for mapping features
-- AsyncStorage for local data persistence
-- Custom UI components with Themed context
-- React Native Reanimated for animations
+- **Dependencies**: See `package.json` (e.g., `expo`, `react-native-maps`).
+- **Code Snippets**: Available in the project repository.

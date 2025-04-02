@@ -23,7 +23,7 @@ const { width, height } = Dimensions.get("window");
 const LATITUDE_DELTA = 0.01;
 const LONGITUDE_DELTA = LATITUDE_DELTA * (width / height);
 
-// Combined stop type for both KMB and MTR
+
 type CombinedStop = {
   stop: string;
   name_en: string;
@@ -58,7 +58,7 @@ export default function NearbyScreen() {
       setLoading(true);
       setError(null);
 
-      // Get nearby KMB stops
+
       const kmbStops = await findNearbyStops(latitude, longitude, searchRadius);
       const kmbFormatted: CombinedStop[] = kmbStops.map((stop) => ({
         ...stop,
@@ -66,7 +66,6 @@ export default function NearbyScreen() {
         company: "KMB",
       }));
 
-      // Get nearby MTR stations
       const mtrStations = await findNearbyMtrStops(
         latitude,
         longitude,
@@ -84,7 +83,7 @@ export default function NearbyScreen() {
         type: "MTR",
       }));
 
-      // Combine and sort by distance
+
       const combined = [...kmbFormatted, ...mtrFormatted].sort(
         (a, b) => a.distance - b.distance
       );
