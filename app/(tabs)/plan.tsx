@@ -19,12 +19,10 @@ import { IconSymbol } from "@/components/ui/IconSymbol";
 import { useLanguage } from "@/contexts/LanguageContext";
 import ParallaxScrollView from "@/components/ParallaxScrollView";
 
-// 导入交通工具相关的工具函数
 import { getAllStops as getAllKmbStops } from "@/util/kmb";
 import { getAllStops as getAllMtrStops } from "@/util/mtr";
 import { TransportStop, TransportMode } from "@/types/transport-types";
 
-// 定义行程步骤和行程的类型
 type JourneyStep = {
   type: "WALK" | "BUS" | "MTR";
   from: TransportStop;
@@ -65,7 +63,6 @@ export default function RoutePlanScreen() {
   const [userLocation, setUserLocation] =
     useState<Location.LocationObject | null>(null);
 
-  // 在组件挂载时加载所有站点
   useEffect(() => {
     const loadAllStops = async () => {
       try {
@@ -100,7 +97,6 @@ export default function RoutePlanScreen() {
     loadAllStops();
   }, [language]);
 
-  // 处理搜索输入变化
   const handleSearch = (text: string, isFrom: boolean) => {
     if (isFrom) {
       setFromText(text);
@@ -130,7 +126,6 @@ export default function RoutePlanScreen() {
     setSearchResults(results);
   };
 
-  // 处理选择站点
   const handleSelectStop = (stop: SearchResult) => {
     if (searchingFrom) {
       setFromStop(stop);
@@ -145,7 +140,6 @@ export default function RoutePlanScreen() {
     setSearchingTo(false);
   };
 
-  // 使用当前位置
   const handleUseCurrentLocation = async () => {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
@@ -171,7 +165,6 @@ export default function RoutePlanScreen() {
     }
   };
 
-  // 规划行程
   const handlePlanJourney = async () => {
     if ((!fromStop && !useCurrentLocation) || !toStop) {
       Alert.alert(t("error"), t("select.both.locations"));
@@ -206,7 +199,6 @@ export default function RoutePlanScreen() {
     }
   };
 
-  // 查找最近的站点
   const findNearestStop = (
     location: { lat: number; long: number },
     company: string
@@ -229,7 +221,6 @@ export default function RoutePlanScreen() {
     }, null as { stop: SearchResult; distance: number } | null)!.stop;
   };
 
-  // 生成示例行程
   const generateSampleJourneys = (from: any, to: SearchResult): Journey[] => {
     const originLocation =
       useCurrentLocation && userLocation
@@ -247,7 +238,6 @@ export default function RoutePlanScreen() {
     const isDestinationKmb = to.company === "KMB";
     const isDestinationMtr = to.company === "MTR";
 
-    // **纯巴士行程**
     const startBusStop = isOriginKmb
       ? fromStop
       : findNearestStop(originLocation, "KMB");
@@ -322,7 +312,6 @@ export default function RoutePlanScreen() {
       });
     }
 
-    // **纯地铁行程**
     const startMtrStation = isOriginMtr
       ? fromStop
       : findNearestStop(originLocation, "MTR");
@@ -397,7 +386,6 @@ export default function RoutePlanScreen() {
       });
     }
 
-    // **巴士转地铁行程**
     const midLat = (originLocation.lat + destinationLocation.lat) / 2;
     const midLong = (originLocation.long + destinationLocation.long) / 2;
     const transferMtr = findNearestStop({ lat: midLat, long: midLong }, "MTR");
@@ -504,24 +492,12 @@ export default function RoutePlanScreen() {
       });
     }
 
-    const busJourneyTotalDuration = busJourneySteps.reduce(
-      (sum, step) => sum + (step.duration || 0),
-      0
-    );
     const busJourneyTotalDistance = busJourneySteps.reduce(
       (sum, step) => sum + (step.distance || 0),
       0
     );
-    const mtrJourneyTotalDuration = mtrJourneySteps.reduce(
-      (sum, step) => sum + (step.duration || 0),
-      0
-    );
     const mtrJourneyTotalDistance = mtrJourneySteps.reduce(
       (sum, step) => sum + (step.distance || 0),
-      0
-    );
-    const transferJourneyTotalDuration = transferJourneySteps.reduce(
-      (sum, step) => sum + (step.duration || 0),
       0
     );
     const transferJourneyTotalDistance = transferJourneySteps.reduce(
@@ -533,25 +509,24 @@ export default function RoutePlanScreen() {
       {
         id: "1",
         steps: busJourneySteps,
-        totalDuration: busJourneyTotalDuration,
+        totalDuration: 0,
         totalDistance: busJourneyTotalDistance,
       },
       {
         id: "2",
         steps: mtrJourneySteps,
-        totalDuration: mtrJourneyTotalDuration,
+        totalDuration: 0,
         totalDistance: mtrJourneyTotalDistance,
       },
       {
         id: "3",
         steps: transferJourneySteps,
-        totalDuration: transferJourneyTotalDuration,
+        totalDuration: 0,
         totalDistance: transferJourneyTotalDistance,
       },
     ];
   };
 
-  // 辅助函数
   const calculateDistance = (
     lat1: number,
     lon1: number,
@@ -609,17 +584,6 @@ export default function RoutePlanScreen() {
     }
   };
 
-  const formatDuration = (minutes: number) => {
-    if (minutes < 60) {
-      return `${minutes} ${t("min")}`;
-    }
-    const hours = Math.floor(minutes / 60);
-    const remainingMinutes = minutes % 60;
-    return `${hours} ${t("hour")}${
-      hours > 1 ? "s" : ""
-    } ${remainingMinutes} ${t("min")}`;
-  };
-
   const formatDistance = (meters: number) => {
     if (meters < 1000) {
       return `${meters}m`;
@@ -652,7 +616,6 @@ export default function RoutePlanScreen() {
     >
       <Stack.Screen options={{ title: t("routePlan") }} />
 
-      {/* 搜索输入框 */}
       <ThemedView style={styles.searchContainer}>
         <ThemedView style={styles.inputContainer}>
           <IconSymbol
@@ -748,7 +711,6 @@ export default function RoutePlanScreen() {
         </TouchableOpacity>
       </ThemedView>
 
-      {/* 搜索结果 */}
       {(searchingFrom || searchingTo) && searchResults.length > 0 && (
         <ThemedView style={styles.searchResults}>
           <ScrollView>
@@ -796,7 +758,6 @@ export default function RoutePlanScreen() {
         </ThemedView>
       )}
 
-      {/* 行程结果 */}
       {!loading && !loadingStops && journeys.length > 0 && (
         <ThemedView style={styles.resultsContainer}>
           <ScrollView
@@ -815,7 +776,7 @@ export default function RoutePlanScreen() {
                 onPress={() => setSelectedJourney(journey)}
               >
                 <ThemedText style={styles.journeyDuration}>
-                  {formatDuration(journey.totalDuration)}
+                  {formatDistance(journey.totalDistance)}
                 </ThemedText>
                 <ThemedView style={styles.journeyModeIcons}>
                   {journey.steps
@@ -836,7 +797,6 @@ export default function RoutePlanScreen() {
           {selectedJourney && (
             <ThemedView style={styles.journeyDetails}>
               <ThemedText style={styles.journeySummary}>
-                {formatDuration(selectedJourney.totalDuration)} ·{" "}
                 {formatDistance(selectedJourney.totalDistance)}
               </ThemedText>
 
@@ -931,7 +891,6 @@ export default function RoutePlanScreen() {
                       </ThemedText>
                       <ThemedView style={styles.stepMeta}>
                         <ThemedText style={styles.stepMetaText}>
-                          {formatDuration(step.duration || 0)} ·{" "}
                           {formatDistance(step.distance || 0)}
                         </ThemedText>
                         {step.type !== "WALK" && (
@@ -954,7 +913,6 @@ export default function RoutePlanScreen() {
         </ThemedView>
       )}
 
-      {/* 空状态 - 无行程 */}
       {!loading &&
         !loadingStops &&
         journeys.length === 0 &&
@@ -967,7 +925,6 @@ export default function RoutePlanScreen() {
           </ThemedView>
         )}
 
-      {/* 初始状态 */}
       {!loading &&
         !loadingStops &&
         journeys.length === 0 &&
