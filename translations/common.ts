@@ -2,7 +2,7 @@ import { Language } from '../contexts/LanguageContext';
 
 const commonTranslations: Record<string, Record<Language, string>> = {
   'app.name': {
-    'en': 'Smart KMB App',
+    'en': 'Smart Route App',
     'zh-Hant': '智能九巴應用',
     'zh-Hans': '智能九巴应用'
   },
