@@ -21,9 +21,12 @@ import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { IconSymbol } from "@/components/ui/IconSymbol";
+import { CrowdIndicator } from "@/components/CrowdIndicator";
 // Import MTR utility functions
 import { classifyStopETAs, getAllStops } from "@/util/mtr";
 import { MtrStation, MTR_COLORS } from "@/util/mtr";
+import { predictCrowdLevel } from "@/util/crowdPrediction";
+import { getSettings } from "@/util/settingsStorage";
 // Import type definitions
 import { ClassifiedTransportETA, TransportETA } from "@/types/transport-types";
 import { formatTransportTime } from "@/util/datetime";
@@ -58,6 +61,7 @@ export default function MtrStationScreen() {
   const mapRef = useRef<MapView | null>(null);
   // Language utilities from context
   const { t, language } = useLanguage();
+  const [showCrowdPredictions, setShowCrowdPredictions] = useState(true);
 
   /**
    * Checks if the current station is saved as a favorite
@@ -254,6 +258,73 @@ export default function MtrStationScreen() {
       : station.name_tc;
   };
 
+  useEffect(() => {
+    // Load settings
+    const loadSettings = async () => {
+      const settings = await getSettings();
+      setShowCrowdPredictions(settings.showCrowdPredictions);
+    };
+
+    loadSettings();
+  }, []);
+
+  const renderETA = (group: ClassifiedTransportETA) => {
+    return (
+      <ThemedView key={`${group.route}-${group.destination_en}`} style={styles.etaCard}>
+        <ThemedView style={styles.etaHeader}>
+          <View
+            style={[
+              styles.lineChip,
+              { backgroundColor: MTR_COLORS[group.route as keyof typeof MTR_COLORS] || "#999" },
+            ]}
+          >
+            <ThemedText style={styles.lineCode}>{group.route}</ThemedText>
+          </View>
+          <ThemedText style={styles.destination}>
+            {language === "en" ? group.destination_en : group.destination_tc}
+          </ThemedText>
+        </ThemedView>
+        <ThemedView style={styles.etaTimes}>
+          {group.etas.map((eta, etaIndex) => {
+            // Generate crowd prediction for this ETA
+            const crowdPrediction = showCrowdPredictions && eta.eta !== null ? 
+              predictCrowdLevel(group.route, stationId as string, new Date(eta.eta)) : 
+              null;
+              
+            return (
+              <ThemedView key={etaIndex} style={styles.etaTimeItem}>
+                <ThemedText style={styles.etaTime}>
+                    {eta.eta !== null 
+                      ? formatTransportTime(eta.eta, language)
+                      : t("stop.no.data")}
+                  </ThemedText>
+                {eta.platform && (
+                  <ThemedText style={styles.platformInfo}>
+                    {t("platform")} {eta.platform}
+                  </ThemedText>
+                )}
+                {(eta as any).remarks && (
+                  <ThemedText style={styles.etaRemark}>
+                    {(eta as any).remarks}
+                  </ThemedText>
+                )}
+                
+                {/* Add crowd indicator */}
+                {showCrowdPredictions && crowdPrediction && (
+                  <CrowdIndicator 
+                    level={crowdPrediction.level} 
+                    percentage={crowdPrediction.percentage}
+                    size="small"
+                  />
+                )}
+              </ThemedView>
+            );
+          })}
+        </ThemedView>
+      </ThemedView>
+    );
+  };
+
   return (
     <ThemedView style={styles.container}>
       <Stack.Screen
@@ -376,61 +447,7 @@ export default function MtrStationScreen() {
                 `${item.route}-${item.direction}-${item.destination_en}`
               }
               style={styles.etasList}
-              renderItem={({ item }) => (
-                <ThemedView style={styles.etaCard}>
-                  <View style={styles.etaHeader}>
-                    <ThemedView
-                      style={[
-                        styles.lineChip,
-                        {
-                          backgroundColor:
-                            MTR_COLORS[item.route as keyof typeof MTR_COLORS] ||
-                            "#666666",
-                          height: 28,
-                          width: 60,
-                        },
-                      ]}
-                    >
-                      <ThemedText style={styles.lineCode}>
-                        {item.route}
-                      </ThemedText>
-                    </ThemedView>
-                    <ThemedText style={styles.destination}>
-                      {language === "en"
-                        ? item.destination_en
-                        : item.destination_tc}
-                    </ThemedText>
-                  </View>
-
-                  <View style={styles.etaTimes}>
-                    {item.etas.map((eta, etaIndex) => (
-                      <ThemedView key={etaIndex} style={styles.etaTimeItem}>
-                        <ThemedText style={styles.etaTime}>
-                          {eta.eta
-                            ? formatTransportTime(
-                                eta.eta,
-                                language as "en" | "zh-Hant" | "zh-Hans",
-                                "relative"
-                              )
-                            : t("stop.no.data")}
-                        </ThemedText>
-                        {eta.platform && (
-                          <ThemedText style={styles.platformInfo}>
-                            {t("mtr.station.platform") ||
-                              t("transport.info.platform")}{" "}
-                            {eta.platform}
-                          </ThemedText>
-                        )}
-                        {eta.rmk_en && (
-                          <ThemedText style={styles.etaRemark}>
-                            {language === "en" ? eta.rmk_en : eta.rmk_tc}
-                          </ThemedText>
-                        )}
-                      </ThemedView>
-                    ))}
-                  </View>
-                </ThemedView>
-              )}
+              renderItem={({ item }) => renderETA(item)}
             />
           )}
         </>
@@ -561,10 +578,12 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   etaTimeItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    flexWrap: "wrap",
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
     gap: 8,
+    justifyContent: 'space-between',
+    marginBottom: 6,
   },
   etaTime: {
     fontSize: 16,

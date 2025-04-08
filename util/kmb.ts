@@ -222,6 +222,7 @@ function isValidCoordinate(lat: number, lon: number): boolean {
 }
 
 export interface ClassifiedETA {
+  dest_en: ReactNode;
   route: string;
   direction: 'Inbound' | 'Outbound';
   serviceType: string;
@@ -243,6 +244,7 @@ async function classifyStopETAs(stopId: string): Promise<ClassifiedETA[]> {
         
         if (!acc[key]) {
           acc[key] = {
+            dest_en: eta.dest_en,
             route: eta.route,
             direction: eta.dir === 'I' ? 'Inbound' : 'Outbound',
             serviceType: eta.service_type,

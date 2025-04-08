@@ -19,6 +19,7 @@ import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { IconSymbol } from "@/components/ui/IconSymbol";
+import { CrowdIndicator } from '@/components/CrowdIndicator';
 // Import utility functions for KMB data handling
 import {
   classifyStopETAs,
@@ -36,6 +37,8 @@ import {
 } from "@/util/favourite";
 // Import language context for localization
 import { useLanguage } from "@/contexts/LanguageContext";
+import { predictCrowdLevel } from '@/util/crowdPrediction';
+import { getSettings } from '@/util/settingsStorage';
 
 /**
  * StopETAScreen Component
@@ -58,6 +61,7 @@ export default function StopETAScreen() {
   const [refreshing, setRefreshing] = useState(false);
   // State to track if this stop is in favorites
   const [isFavorite, setIsFavorite] = useState(false);
+  const [showCrowdPredictions, setShowCrowdPredictions] = useState(true);
 
 
   /**
@@ -233,6 +237,92 @@ export default function StopETAScreen() {
     router.push(`/bus/${routeId}?bound=${bound}&serviceType=${serviceType}`);
   };
 
+  useEffect(() => {
+    // Load settings
+    const loadSettings = async () => {
+      const settings = await getSettings();
+      setShowCrowdPredictions(settings.showCrowdPredictions);
+    };
+    
+    loadSettings();
+  }, []);
+
+  const renderETA = (eta: ClassifiedETA, index: number) => {
+    return (
+      <ThemedView key={index} style={styles.etaCard}>
+        <ThemedView style={styles.routeHeader}>
+          <ThemedView style={styles.routeNumberContainer}>
+            <ThemedText style={styles.routeNumber}>{eta.route}</ThemedText>
+          </ThemedView>
+          <ThemedView style={styles.routeInfo}>
+            <ThemedText style={styles.destination}>
+              {language === "en" ? eta.destination_en : eta.destination_tc}
+            </ThemedText>
+            <TouchableOpacity
+              style={styles.viewRouteButton}
+              onPress={() => navigateToRoute(
+                eta.route,
+                eta.direction === "Inbound" ? "I" : "O",
+                eta.serviceType
+              )}
+            >
+              <ThemedText style={styles.viewRouteText}>
+                {t("viewRoute")}
+              </ThemedText>
+              <IconSymbol
+                name="arrow.right.circle"
+                size={16}
+                color="#8B4513"
+                style={{ marginLeft: 4 }}
+              />
+            </TouchableOpacity>
+          </ThemedView>
+        </ThemedView>
+
+        <ThemedView style={styles.etaList}>
+          {eta.etas.map((etaItem, etaIndex) => {
+            const formattedTime = etaItem.eta !== null 
+              ? formatTransportTime(etaItem.eta, language)
+              : t("stop.no.data");
+            
+            // Generate crowd prediction for this ETA
+            const crowdPrediction = showCrowdPredictions && etaItem.eta !== null ? 
+              predictCrowdLevel(eta.route, stopId as string, new Date(etaItem.eta)) : 
+              null;
+              
+            return (
+              <ThemedView key={etaIndex} style={styles.etaItem}>
+                <ThemedText
+                  style={[
+                    styles.etaTime,
+                    etaItem.eta === null ? { color: "#999" } : null,
+                  ]}
+                >
+                  {formattedTime}
+                </ThemedText>
+                
+                {etaItem.rmk_en && (
+                  <ThemedText style={styles.etaRemark}>
+                    {language === "en" ? etaItem.rmk_en : etaItem.rmk_tc}
+                  </ThemedText>
+                )}
+                
+                {/* Add crowd indicator */}
+                {showCrowdPredictions && crowdPrediction && (
+                  <CrowdIndicator 
+                    level={crowdPrediction.level} 
+                    percentage={crowdPrediction.percentage}
+                    size="small"
+                  />
+                )}
+              </ThemedView>
+            );
+          })}
+        </ThemedView>
+      </ThemedView>
+    );
+  };
+
   return (
     <ThemedView style={styles.container}>
       <Stack.Screen
@@ -396,20 +486,34 @@ export default function StopETAScreen() {
                   </TouchableOpacity>
 
                   <ThemedView style={styles.etaList}>
-                    {item.etas.map((eta, index) => (
-                      <ThemedView key={index} style={styles.etaItem}>
-                        <ThemedText style={styles.etaTime}>
-                          {eta.eta
-                            ? formatTransportTime(eta.eta, language, "relative")
-                            : t("stop.no.data")}
-                        </ThemedText>
-                        {eta.rmk_en && (
-                          <ThemedText style={styles.etaRemark}>
-                            {language === "en" ? eta.rmk_en : eta.rmk_tc}
+                    {item.etas.map((eta, index) => {
+                      // Generate crowd prediction for this ETA
+                      const crowdPrediction = showCrowdPredictions && eta.eta !== null ? 
+                        predictCrowdLevel(item.route, stopId as string, new Date(eta.eta)) : 
+                        null;
+                        
+                      return (
+                        <ThemedView key={index} style={styles.etaItem}>
+                          <ThemedText style={styles.etaTime}>
+                            {eta.eta
+                              ? formatTransportTime(eta.eta, language, "relative")
+                              : t("stop.no.data")}
                           </ThemedText>
-                        )}
-                      </ThemedView>
-                    ))}
+                          {eta.rmk_en && (
+                            <ThemedText style={styles.etaRemark}>
+                              {language === "en" ? eta.rmk_en : eta.rmk_tc}
+                            </ThemedText>
+                          )}
+                          {showCrowdPredictions && crowdPrediction && (
+                            <CrowdIndicator 
+                              level={crowdPrediction.level} 
+                              percentage={crowdPrediction.percentage}
+                              size="small"
+                            />
+                          )}
+                        </ThemedView>
+                      );
+                    })}
                   </ThemedView>
                 </ThemedView>
               )}
@@ -544,9 +648,11 @@ const styles = StyleSheet.create({
     marginLeft: 24,
   },
   etaItem: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 8,
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
   },
   etaTime: {
     fontSize: 16,
