@@ -1,5 +1,5 @@
 // Import necessary React and React Native components
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   TextInput,
@@ -29,6 +29,8 @@ import { getAllStops as getAllKmbStops } from "@/util/kmb";
 import { getAllStops as getAllMtrStops } from "@/util/mtr";
 import { TransportStop, TransportMode } from "@/types/transport-types";
 import { calculateDistance } from "@/util/calculateDistance";
+import { getWeatherForLocation, calculateWeatherScore } from "@/util/weather";
+import { WeatherInfo } from "@/components/WeatherInfo";
 
 // Define type for each step in a journey (walk, bus, or MTR)
 type JourneyStep = {
@@ -47,6 +49,8 @@ type Journey = {
   steps: JourneyStep[];
   totalDuration: number;
   totalDistance: number;
+  weatherAdjusted?: boolean;
+  weatherProtected?: boolean;
 };
 
 // Define type for search results with additional display information
@@ -81,6 +85,8 @@ export default function RoutePlanScreen() {
   const [useCurrentLocation, setUseCurrentLocation] = useState(false);
   const [userLocation, setUserLocation] =
     useState<Location.LocationObject | null>(null);
+  const [weatherData, setWeatherData] = useState<any | null>(null);
+  const [isWeatherAware, setIsWeatherAware] = useState(true);
 
   // Load all stops (KMB and MTR) when the component mounts or language changes
   useEffect(() => {
@@ -116,6 +122,25 @@ export default function RoutePlanScreen() {
 
     loadAllStops();
   }, [language]);
+
+  // Fetch weather data when location changes
+  useEffect(() => {
+    async function fetchWeatherData() {
+      if (!userLocation) return;
+      
+      try {
+        const data = await getWeatherForLocation(
+          userLocation.coords.latitude,
+          userLocation.coords.longitude
+        );
+        setWeatherData(data);
+      } catch (error) {
+        console.error('Failed to fetch weather data:', error);
+      }
+    }
+    
+    fetchWeatherData();
+  }, [userLocation]);
 
   // Handle search input changes and update search results
   const handleSearch = (text: string, isFrom: boolean) => {
@@ -531,26 +556,73 @@ export default function RoutePlanScreen() {
       0
     );
 
-    return [
+    let journeys = [
       {
         id: "1",
         steps: busJourneySteps,
         totalDuration: 0,
         totalDistance: busJourneyTotalDistance,
+        weatherAdjusted: false,
+        weatherProtected: false,
       },
       {
         id: "2",
         steps: mtrJourneySteps,
         totalDuration: 0,
         totalDistance: mtrJourneyTotalDistance,
+        weatherAdjusted: false,
+        weatherProtected: false,
       },
       {
         id: "3",
         steps: transferJourneySteps,
         totalDuration: 0,
         totalDistance: transferJourneyTotalDistance,
+        weatherAdjusted: false,
+        weatherProtected: false,
       },
     ];
+
+    // Apply weather considerations if enabled
+    if (isWeatherAware && weatherData) {
+      // Calculate weather score (0-100)
+      const weatherScore = calculateWeatherScore(weatherData);
+      
+      // Adjust journeys based on weather conditions
+      journeys = journeys.map(journey => {
+        // Calculate total outdoor walking distance
+        const totalWalkingDistance = journey.steps
+          .filter(step => step.type === "WALK")
+          .reduce((sum, step) => sum + (step.distance ?? 0), 0);
+        
+        // For rainy weather, penalize journeys with more walking
+        if (weatherScore < 50 && totalWalkingDistance > 500) {
+          // Apply penalty to journeys with significant walking in bad weather
+          journey.totalDuration += Math.floor(totalWalkingDistance / 100);
+          journey.weatherAdjusted = true;
+        }
+        
+        // For very bad weather, prioritize indoor/covered routes (MTR)
+        if (weatherScore < 30) {
+          const hasMTR = journey.steps.some(step => step.type === "MTR");
+          if (hasMTR) {
+            // Boost MTR journeys in bad weather
+            journey.totalDuration -= 5;
+            journey.weatherProtected = true;
+          }
+        }
+        
+        return journey;
+      });
+      
+      // Re-sort journeys after applying weather adjustments
+      journeys.sort((a, b) => a.totalDuration - b.totalDuration);
+    }
+    
+    setJourneys(journeys);
+    setSelectedJourney(journeys[0]);
+    
+    return journeys;
   };
 
   // Get a random route for a specific company (KMB or MTR)
@@ -701,6 +773,29 @@ export default function RoutePlanScreen() {
           )}
         </ThemedView>
 
+        {weatherData && (
+          <View style={styles.weatherContainer}>
+            <WeatherInfo weatherData={weatherData} compact={true} />
+            <TouchableOpacity 
+              style={styles.weatherToggle}
+              onPress={() => setIsWeatherAware(!isWeatherAware)}
+            >
+              <ThemedView style={[
+                styles.toggleSwitch, 
+                isWeatherAware ? styles.toggleActive : {}
+              ]}>
+                <View style={[
+                  styles.toggleKnob,
+                  isWeatherAware ? styles.toggleKnobActive : {}
+                ]} />
+              </ThemedView>
+              <ThemedText style={styles.weatherToggleText}>
+                {t('weatherAwareRouting')}
+              </ThemedText>
+            </TouchableOpacity>
+          </View>
+        )}
+
         <TouchableOpacity
           style={[
             styles.planButton,
@@ -801,6 +896,23 @@ export default function RoutePlanScreen() {
                       />
                     ))}
                 </ThemedView>
+                {journey.weatherAdjusted && (
+                  <ThemedView style={styles.weatherBadge}>
+                    <IconSymbol name="umbrella.fill" size={14} color="#FFF" />
+                    <ThemedText style={styles.weatherBadgeText}>
+                      {t('routeAdjustedForWeather')}
+                    </ThemedText>
+                  </ThemedView>
+                )}
+                
+                {journey.weatherProtected && (
+                  <ThemedView style={[styles.weatherBadge, styles.protectedBadge]}>
+                    <IconSymbol name="checkmark.circle.fill" size={14} color="#FFF" />
+                    <ThemedText style={styles.weatherBadgeText}>
+                      {t('weatherProtectedRoute')}
+                    </ThemedText>
+                  </ThemedView>
+                )}
               </TouchableOpacity>
             ))}
           </ScrollView>
@@ -868,6 +980,8 @@ export default function RoutePlanScreen() {
                   </MapView>
                 </View>
               )}
+
+              {weatherData && <WeatherInfo weatherData={weatherData} />}
 
               <ThemedView>
                 {selectedJourney.steps.map((step, index) => (
@@ -1176,6 +1290,57 @@ const styles = StyleSheet.create({
     borderColor: "rgba(139, 69, 19, 0.3)",
   },
   viewRouteText: { fontSize: 13, fontWeight: "500", color: "#8B4513" },
+  weatherContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  weatherToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  toggleSwitch: {
+    width: 36,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#E0E0E0',
+    padding: 2,
+  },
+  toggleActive: {
+    backgroundColor: '#0a7ea4',
+  },
+  toggleKnob: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: 'white',
+  },
+  toggleKnobActive: {
+    transform: [{ translateX: 16 }],
+  },
+  weatherToggleText: {
+    marginLeft: 8,
+    fontSize: 14,
+  },
+  weatherBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#0a7ea4',
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    marginTop: 4,
+  },
+  protectedBadge: {
+    backgroundColor: '#4CAF50',
+  },
+  weatherBadgeText: {
+    color: 'white',
+    fontSize: 10,
+    marginLeft: 4,
+  },
 });
 
 
