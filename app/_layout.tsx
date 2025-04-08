@@ -7,14 +7,12 @@ import { useEffect } from 'react';
 import 'react-native-reanimated';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { LanguageProvider } from '@/contexts/LanguageContext';
-
-// Customize the navigation themes to match our color constants
 import { Colors } from '@/constants/Colors';
 
-// Prevent the splash screen from auto-hiding before asset loading is complete.
+
 SplashScreen.preventAutoHideAsync();
 
-// Customize the navigation themes
+
 const CustomDefaultTheme = {
   ...DefaultTheme,
   colors: {

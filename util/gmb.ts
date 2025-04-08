@@ -2,6 +2,7 @@ import { TransportRoute, TransportStop, TransportRouteStop, TransportETA, Classi
 import axios, { AxiosError } from 'axios';
 import { isSafari } from './transport';
 import { appConfig } from './config';
+import { calculateDistance } from './calculateDistance';
 
 export type Route = TransportRoute;
 export type Stop = TransportStop;
@@ -234,28 +235,9 @@ async function getStopETA(
   }
 }
 
-// Calculate distance between two coordinates
-function calculateDistance(
-  lat1: number,
-  lon1: number,
-  lat2: number,
-  lon2: number
-): number {
-  const R = 6371e3; // Earth radius in meters
-  const φ1 = lat1 * Math.PI / 180;
-  const φ2 = lat2 * Math.PI / 180;
-  const Δφ = (lat2 - lat1) * Math.PI / 180;
-  const Δλ = (lon2 - lon1) * Math.PI / 180;
 
-  const a =
-    Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-    Math.cos(φ1) * Math.cos(φ2) *
-    Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
 
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
 
-// Find nearby stops
 async function findNearbyStops(
   targetLat: number,
   targetLon: number,

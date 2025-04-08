@@ -40,7 +40,7 @@ export default function StopETAScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
 
-  // Check if stop is in favorites
+
   useEffect(() => {
     const checkFavorite = async () => {
       const favorites = (await getFromLocalStorage(
@@ -54,7 +54,6 @@ export default function StopETAScreen() {
     checkFavorite();
   }, [stopId]);
 
-  // Fetch stop information
   useEffect(() => {
     const fetchStopInfo = async () => {
       try {
@@ -71,7 +70,7 @@ export default function StopETAScreen() {
     fetchStopInfo();
   }, [stopId]);
 
-  // Fetch ETAs when screen gains focus
+
   useFocusEffect(
     useCallback(() => {
       let isMounted = true;
@@ -126,10 +125,10 @@ export default function StopETAScreen() {
       }
 
       if (isFavorite) {
-        // Remove from favorites
+
         favorites.stationID = favorites.stationID.filter((id) => id !== stopId);
       } else {
-        // Add to favorites
+
         favorites.stationID.push(stopId as string);
       }
 
@@ -164,10 +163,10 @@ export default function StopETAScreen() {
 
     let url = "";
     if (Platform.OS === "ios") {
-      // Apple Maps on iOS
+
       url = `maps:?q=${label}&ll=${lat},${long}`;
     } else {
-      // Google Maps on Android and others
+
       url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${long}&destination_place_id=${label}`;
     }
 

@@ -63,9 +63,8 @@ export default function HomeScreen() {
         setFavoriteRoutes([]);
       }
 
-      // Load KMB stop and MTR station favorites
+
       if (stopFavorites?.stationID?.length) {
-        // Split station IDs into KMB and MTR based on their format
         const mtrStationIds = stopFavorites.stationID.filter(
           (id) => id.length === 3
         );
@@ -73,14 +72,12 @@ export default function HomeScreen() {
           (id) => id.length !== 3
         );
 
-        // Load KMB stops
         const allStops = await getAllStops();
         const stops = kmbStopIds
           .map((id) => allStops.find((s) => s.stop === id))
           .filter((s): s is Stop => s !== undefined);
         setFavoriteStops(stops);
 
-        // Load MTR stations
         const allMtrStations = await getAllMtrStops();
         const mtrStations = mtrStationIds
           .map((id) => allMtrStations.find((s) => s.stop === id))
@@ -123,12 +120,6 @@ export default function HomeScreen() {
     router.push("/about?fromIndex=true");
   };
 
-  // Update the route planner navigation to work with tab navigation
-  const navigateToRoutePlanner = () => {
-    // Use the tab navigation instead of pushing to a new screen
-    router.navigate("/(tabs)/plan");
-  };
-
   return (
     <ParallaxScrollView
       headerBackgroundColor={{ light: "#A1CEDC", dark: "#1D3D47" }}
@@ -166,7 +157,7 @@ export default function HomeScreen() {
               </ThemedText>
             ) : (
               <>
-                {/* Routes section */}
+
                 {favoriteRoutes.length > 0 && (
                   <ThemedView style={styles.subsection}>
                     <ThemedText style={styles.subsectionTitle}>
@@ -209,7 +200,7 @@ export default function HomeScreen() {
                   </ThemedView>
                 )}
 
-                {/* Bus stops section */}
+
                 {favoriteStops.length > 0 && (
                   <ThemedView style={styles.subsection}>
                     <ThemedText style={styles.subsectionTitle}>
@@ -248,7 +239,7 @@ export default function HomeScreen() {
                   </ThemedView>
                 )}
 
-                {/* MTR stations section */}
+
                 {favoriteMtrStations.length > 0 && (
                   <ThemedView style={styles.subsection}>
                     <ThemedText style={styles.subsectionTitle}>

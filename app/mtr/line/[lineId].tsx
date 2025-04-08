@@ -47,14 +47,12 @@ export default function MtrLineScreen() {
 
         setLineData(line);
 
-        // Fetch stations on this line
         const allStations = await getAllStops();
         const lineStations = allStations.filter((station) =>
           station.line_codes.includes(lineId as string)
         );
 
-        // Sort stations by sequence (this is a placeholder - in a real app,
-        // you'd need actual sequence data from the API)
+
         setStations(lineStations);
       } catch (error) {
         console.error("Failed to load line data:", error);
@@ -67,7 +65,7 @@ export default function MtrLineScreen() {
     loadLineData();
   }, [lineId]);
 
-  // Navigate to station details
+
   const navigateToStation = (stationId: string) => {
     router.push({
       pathname: "/mtr/[stationId]",
@@ -75,7 +73,7 @@ export default function MtrLineScreen() {
     });
   };
 
-  // Get origin and destination names based on language
+
   const getLineOrigin = () => {
     if (!lineData) return "";
     return language === "en" ? lineData.orig_en : lineData.orig_tc;
@@ -86,12 +84,12 @@ export default function MtrLineScreen() {
     return language === "en" ? lineData.dest_en : lineData.dest_tc;
   };
 
-  // Get the color for the current line
+
   const getLineColor = () => {
     return MTR_COLORS[lineId as keyof typeof MTR_COLORS] || "#666666";
   };
 
-  // Get station name based on language
+
   const getStationName = (station: MtrStation) => {
     return language === "en"
       ? station.name_en
@@ -100,11 +98,11 @@ export default function MtrLineScreen() {
       : station.name_tc;
   };
 
-  // Get the line name based on the language
+
   const getLineName = () => {
     if (!lineData) return `${lineId} Line`;
 
-    // Use the translation system
+
     return t(`line.${lineId}`);
   };
 
@@ -121,7 +119,7 @@ export default function MtrLineScreen() {
         <ActivityIndicator size="large" style={styles.loader} />
       ) : lineData ? (
         <>
-          {/* Line information header */}
+
           <ThemedView style={styles.lineHeader}>
             <ThemedView
               style={[styles.lineChip, { backgroundColor: getLineColor() }]}
@@ -136,7 +134,7 @@ export default function MtrLineScreen() {
             </ThemedText>
           </ThemedView>
 
-          {/* Map view - only on native platforms */}
+
           {Platform.OS !== "web" && stations.length > 0 && (
             <View style={styles.mapContainer}>
               <MapView
@@ -146,14 +144,14 @@ export default function MtrLineScreen() {
                   Platform.OS === "android" ? PROVIDER_GOOGLE : undefined
                 }
                 initialRegion={{
-                  // Center the map on the first station
+
                   latitude: stations[0].lat,
                   longitude: stations[0].long,
                   latitudeDelta: 0.1,
                   longitudeDelta: 0.1,
                 }}
               >
-                {/* Line connecting all stations */}
+
                 <Polyline
                   coordinates={stations.map((s) => ({
                     latitude: s.lat,
@@ -163,7 +161,7 @@ export default function MtrLineScreen() {
                   strokeWidth={4}
                 />
 
-                {/* Station markers */}
+
                 {stations.map((station) => (
                   <Marker
                     key={station.stop}
@@ -182,7 +180,7 @@ export default function MtrLineScreen() {
             </View>
           )}
 
-          {/* Stations list */}
+
           <ThemedText style={styles.stationsTitle}>
             {t("mtr.station.stations")} ({stations.length})
           </ThemedText>

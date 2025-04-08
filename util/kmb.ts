@@ -1,6 +1,7 @@
 import axios, { AxiosError } from 'axios';
 import { ReactNode } from 'react';
 import { appConfig } from './config';
+import { calculateDistance } from './calculateDistance';
 
 export interface Route {
   dest_tc: ReactNode;
@@ -157,28 +158,7 @@ async function getStopETA(stopId: string, retries = 2): Promise<ETA[]> {
   }
 }
 
-/**
- * Calculates distance between two geographic coordinates
- */
-function calculateDistance(
-  lat1: number,
-  lon1: number,
-  lat2: number,
-  lon2: number
-): number {
-  const R = 6371e3; // Earth radius in meters
-  const φ1 = lat1 * Math.PI / 180;
-  const φ2 = lat2 * Math.PI / 180;
-  const Δφ = (lat2 - lat1) * Math.PI / 180;
-  const Δλ = (lon2 - lon1) * Math.PI / 180;
 
-  const a = 
-    Math.sin(Δφ/2) * Math.sin(Δφ/2) +
-    Math.cos(φ1) * Math.cos(φ2) *
-    Math.sin(Δλ/2) * Math.sin(Δλ/2);
-  
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-}
 
 /**
  * Finds stops near a specified location within a radius

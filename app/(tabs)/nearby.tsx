@@ -197,7 +197,7 @@ export default function NearbyScreen() {
             <MapView
               ref={mapRef}
               style={styles.map}
-              // Only use PROVIDER_GOOGLE on Android
+
               provider={Platform.OS === "android" ? PROVIDER_GOOGLE : undefined}
               initialRegion={{
                 latitude: location.coords.latitude,
@@ -206,7 +206,7 @@ export default function NearbyScreen() {
                 longitudeDelta: LONGITUDE_DELTA,
               }}
             >
-              {/* User location marker */}
+
               <Marker
                 coordinate={{
                   latitude: location.coords.latitude,
@@ -216,7 +216,7 @@ export default function NearbyScreen() {
                 title="Your Location"
               />
 
-              {/* Stops markers */}
+
               {filteredStops.map((stop) => (
                 <Marker
                   key={`${stop.type}-${stop.stop}`}
@@ -269,7 +269,7 @@ export default function NearbyScreen() {
           </TouchableOpacity>
         </ThemedView>
 
-        {/* Transport type filter */}
+
         <ThemedView style={styles.transportFilter}>
           <TouchableOpacity
             style={[
@@ -414,8 +414,8 @@ const styles = StyleSheet.create({
     width: "100%",
     borderRadius: 12,
     overflow: "hidden",
-    position: "relative", // Change from fixed positioning
-    zIndex: 1, // Lower z-index
+    position: "relative", 
+    zIndex: 1, 
   },
 
   contentWithMap: {

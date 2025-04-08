@@ -66,7 +66,7 @@ export default function ParallaxScrollView({
           {headerImage}
         </Animated.View>
         <ThemedView style={styles.content}>
-          {/* Render children directly without nesting a FlatList in a ScrollView */}
+ 
           {children}
         </ThemedView>
       </Animated.ScrollView>

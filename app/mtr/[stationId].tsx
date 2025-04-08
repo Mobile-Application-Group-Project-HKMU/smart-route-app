@@ -66,10 +66,10 @@ export default function MtrStationScreen() {
 
     let url = "";
     if (Platform.OS === "ios") {
-      // Apple Maps on iOS
+
       url = `maps:?q=${label}&ll=${lat},${long}`;
     } else {
-      // Google Maps on Android and others
+
       url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${long}&destination_place_id=${label}`;
     }
 
@@ -93,12 +93,12 @@ export default function MtrStationScreen() {
       }
 
       if (isFavorite) {
-        // Remove from favorites
+
         favorites.stationID = favorites.stationID.filter(
           (id) => id !== stationId
         );
       } else {
-        // Add to favorites
+
         favorites.stationID.push(stationId as string);
       }
 
@@ -123,7 +123,7 @@ export default function MtrStationScreen() {
     try {
       setLoading(true);
 
-      // Fetch station details
+
       const stations = await getAllStops();
       const stationData = stations.find((s) => s.stop === stationId);
 
@@ -135,11 +135,11 @@ export default function MtrStationScreen() {
 
       setStation(stationData);
 
-      // Fetch ETAs for this station
+
       const stationEtas = await classifyStopETAs(stationId as string);
       setEtas(stationEtas);
 
-      // Check favorite status
+
       await checkFavorite();
     } catch (error) {
       console.error("Failed to load station data:", error);
@@ -153,7 +153,7 @@ export default function MtrStationScreen() {
     useCallback(() => {
       loadStationData();
       return () => {
-        // Cleanup function if needed
+
       };
     }, [stationId])
   );
@@ -182,7 +182,7 @@ export default function MtrStationScreen() {
     }
   };
 
-  // Navigate to a line's route details
+
   const navigateToLine = (lineCode: string) => {
     router.push({
       pathname: "/mtr/line/[lineId]",
@@ -231,7 +231,7 @@ export default function MtrStationScreen() {
         <ActivityIndicator size="large" style={styles.loader} />
       ) : station ? (
         <>
-          {/* Station information section */}
+
           <ThemedView style={styles.infoCard}>
             <ThemedText style={styles.stationId}>
               {t("mtr.station.id") || t("transport.station.id")}: {stationId}
@@ -264,7 +264,7 @@ export default function MtrStationScreen() {
             )}
           </ThemedView>
 
-          {/* Map section */}
+
           {Platform.OS !== "web" && (
             <View style={styles.mapContainer}>
               <MapView
@@ -305,7 +305,7 @@ export default function MtrStationScreen() {
             </View>
           )}
 
-          {/* ETAs section */}
+
           <ThemedText style={styles.sectionTitle}>
             {t("mtr.station.nextTrain") || t("transport.station.arrivals")}
           </ThemedText>
