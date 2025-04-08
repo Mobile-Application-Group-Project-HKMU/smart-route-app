@@ -1,3 +1,4 @@
+// Import necessary dependencies from libraries
 import { useLocalSearchParams, Stack, router } from "expo-router";
 import { useEffect, useState, useCallback } from "react";
 import {
@@ -14,33 +15,55 @@ import {
 import { useFocusEffect } from "@react-navigation/native";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 
+// Import custom components
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { IconSymbol } from "@/components/ui/IconSymbol";
+// Import utility functions for KMB data handling
 import {
   classifyStopETAs,
   getAllStops,
   type ClassifiedETA,
   type Stop,
 } from "@/util/kmb";
+// Import datetime formatting utility
 import { formatTransportTime } from "@/util/datetime";
+// Import favorites functionality
 import {
   FavRouteStation,
   saveToLocalStorage,
   getFromLocalStorage,
 } from "@/util/favourite";
+// Import language context for localization
 import { useLanguage } from "@/contexts/LanguageContext";
 
+/**
+ * StopETAScreen Component
+ * 
+ * This screen displays information about a bus stop and the estimated arrival times
+ * for buses that service this stop. It includes a map showing the stop location,
+ * favorite functionality, and navigation options.
+ */
 export default function StopETAScreen() {
+  // Get language context for translations
   const { t, language } = useLanguage();
+  // Get stop ID from route parameters
   const { stopId } = useLocalSearchParams();
+  // State for storing estimated arrival times
   const [etas, setEtas] = useState<ClassifiedETA[]>([]);
+  // State for storing bus stop information
   const [stopInfo, setStopInfo] = useState<Stop | null>(null);
+  // Loading states
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  // State to track if this stop is in favorites
   const [isFavorite, setIsFavorite] = useState(false);
 
 
+  /**
+   * Check if the current stop is in the user's favorites
+   * This runs when the component mounts or when the stopId changes
+   */
   useEffect(() => {
     const checkFavorite = async () => {
       const favorites = (await getFromLocalStorage(
@@ -54,6 +77,10 @@ export default function StopETAScreen() {
     checkFavorite();
   }, [stopId]);
 
+  /**
+   * Fetch detailed information about the current bus stop
+   * This retrieves data like name, coordinates, etc.
+   */
   useEffect(() => {
     const fetchStopInfo = async () => {
       try {
@@ -70,7 +97,10 @@ export default function StopETAScreen() {
     fetchStopInfo();
   }, [stopId]);
 
-
+  /**
+   * Fetch estimated arrival times (ETAs) for buses at the current stop
+   * This runs when the component gains focus or when the stopId changes
+   */
   useFocusEffect(
     useCallback(() => {
       let isMounted = true;
@@ -101,6 +131,9 @@ export default function StopETAScreen() {
     }, [stopId])
   );
 
+  /**
+   * Refresh the estimated arrival times (ETAs) for buses at the current stop
+   */
   const refreshETAs = async () => {
     try {
       setRefreshing(true);
@@ -114,6 +147,10 @@ export default function StopETAScreen() {
     }
   };
 
+  /**
+   * Toggle the current stop as a favorite
+   * Adds or removes the stop from the user's favorites list
+   */
   const toggleFavorite = async () => {
     try {
       let favorites = (await getFromLocalStorage(
@@ -125,10 +162,10 @@ export default function StopETAScreen() {
       }
 
       if (isFavorite) {
-
+        // Remove from favorites
         favorites.stationID = favorites.stationID.filter((id) => id !== stopId);
       } else {
-
+        // Add to favorites
         favorites.stationID.push(stopId as string);
       }
 
@@ -149,6 +186,9 @@ export default function StopETAScreen() {
     }
   };
 
+  /**
+   * Open navigation to the current stop using the device's map application
+   */
   const openNavigation = () => {
     if (!stopInfo) return;
 
@@ -163,10 +203,10 @@ export default function StopETAScreen() {
 
     let url = "";
     if (Platform.OS === "ios") {
-
+      // Use Apple Maps for iOS
       url = `maps:?q=${label}&ll=${lat},${long}`;
     } else {
-
+      // Use Google Maps for Android
       url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${long}&destination_place_id=${label}`;
     }
 
@@ -179,6 +219,12 @@ export default function StopETAScreen() {
     });
   };
 
+  /**
+   * Navigate to the route details screen for a specific bus route
+   * @param routeId - The ID of the bus route
+   * @param bound - The direction of the route (Inbound/Outbound)
+   * @param serviceType - The type of service for the route
+   */
   const navigateToRoute = (
     routeId: string,
     bound: string,

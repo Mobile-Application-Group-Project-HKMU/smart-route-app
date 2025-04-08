@@ -1,3 +1,4 @@
+// Import necessary React and React Native components
 import { useState, useRef } from "react";
 import {
   StyleSheet,
@@ -11,6 +12,7 @@ import { router } from "expo-router";
 import * as Location from "expo-location";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 
+// Import custom components and utilities
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { IconSymbol } from "@/components/ui/IconSymbol";
@@ -19,36 +21,46 @@ import { findNearbyStops as findNearbyMtrStops } from "@/util/mtr";
 import ParallaxScrollView from "@/components/ParallaxScrollView";
 import { useLanguage } from "@/contexts/LanguageContext";
 
+// Define map display constants based on screen dimensions
 const { width, height } = Dimensions.get("window");
 const LATITUDE_DELTA = 0.01;
 const LONGITUDE_DELTA = LATITUDE_DELTA * (width / height);
 
 
+// Define a unified type for all transit stops (both KMB bus and MTR)
 type CombinedStop = {
-  stop: string;
-  name_en: string;
-  name_tc: string;
-  name_sc: string;
-  lat: number;
-  long: number;
-  distance: number;
-  company: string;
-  type: "KMB" | "MTR";
+  stop: string;         // Stop ID
+  name_en: string;      // English name
+  name_tc: string;      // Traditional Chinese name
+  name_sc: string;      // Simplified Chinese name
+  lat: number;          // Latitude coordinate
+  long: number;         // Longitude coordinate
+  distance: number;     // Distance from user in meters
+  company: string;      // Transit company
+  type: "KMB" | "MTR";  // Type of transit
 };
 
 export default function NearbyScreen() {
+  // State for managing loading status and errors
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // State for storing user's current location
   const [location, setLocation] = useState<Location.LocationObject | null>(
     null
   );
+  // State for storing nearby transit stops
   const [nearbyStops, setNearbyStops] = useState<CombinedStop[]>([]);
-  const [radius, setRadius] = useState(500); // Default 500m radius
+  // State for managing search radius (default: 500m)
+  const [radius, setRadius] = useState(500);
+  // States for filtering transit types
   const [showMTR, setShowMTR] = useState(true);
   const [showBus, setShowBus] = useState(true);
+  // Reference to the map component for programmatic control
   const mapRef = useRef<MapView | null>(null);
+  // Get translation function and current language from context
   const { t, language } = useLanguage();
 
+  // Function to fetch nearby stops from both KMB and MTR APIs
   const fetchNearbyStops = async (
     latitude: number,
     longitude: number,
@@ -59,6 +71,7 @@ export default function NearbyScreen() {
       setError(null);
 
 
+      // Fetch KMB bus stops within the specified radius
       const kmbStops = await findNearbyStops(latitude, longitude, searchRadius);
       const kmbFormatted: CombinedStop[] = kmbStops.map((stop) => ({
         ...stop,
@@ -66,6 +79,7 @@ export default function NearbyScreen() {
         company: "KMB",
       }));
 
+      // Fetch MTR stations within the specified radius
       const mtrStations = await findNearbyMtrStops(
         latitude,
         longitude,
@@ -84,6 +98,7 @@ export default function NearbyScreen() {
       }));
 
 
+      // Combine and sort stops by distance
       const combined = [...kmbFormatted, ...mtrFormatted].sort(
         (a, b) => a.distance - b.distance
       );
@@ -96,6 +111,7 @@ export default function NearbyScreen() {
     }
   };
 
+  // Function to request location permission and get current location
   const requestLocationPermission = async () => {
     try {
       setLoading(true);
@@ -126,10 +142,12 @@ export default function NearbyScreen() {
     }
   };
 
+  // Function to refresh location and fetch nearby stops
   const refreshLocation = async () => {
     await requestLocationPermission();
   };
 
+  // Function to change search radius and fetch nearby stops
   const changeRadius = (newRadius: number) => {
     setRadius(newRadius);
     if (location) {
@@ -141,6 +159,7 @@ export default function NearbyScreen() {
     }
   };
 
+  // Function to handle stop press and navigate to stop details
   const handleStopPress = (stop: CombinedStop) => {
     if (stop.type === "MTR") {
       router.push({
@@ -155,6 +174,7 @@ export default function NearbyScreen() {
     }
   };
 
+  // Function to animate map to a specific stop
   const goToStop = (stop: CombinedStop) => {
     if (mapRef.current && location) {
       mapRef.current.animateToRegion({
@@ -166,6 +186,7 @@ export default function NearbyScreen() {
     }
   };
 
+  // Filter stops based on selected transit types
   const filteredStops = nearbyStops.filter(
     (stop) =>
       (showMTR && stop.type === "MTR") || (showBus && stop.type === "KMB")

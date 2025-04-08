@@ -1,3 +1,4 @@
+// Import necessary React and React Native components
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -9,21 +10,27 @@ import {
   ScrollView,
   Platform,
 } from "react-native";
+// Import Expo routing and location services
 import { Stack, router } from "expo-router";
 import * as Location from "expo-location";
+// Import map components for route visualization
 import MapView, { Marker, PROVIDER_GOOGLE, Polyline } from "react-native-maps";
 
+// Import custom UI components
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { IconSymbol } from "@/components/ui/IconSymbol";
+// Import language context for multilingual support
 import { useLanguage } from "@/contexts/LanguageContext";
 import ParallaxScrollView from "@/components/ParallaxScrollView";
 
+// Import utility functions for fetching transportation data
 import { getAllStops as getAllKmbStops } from "@/util/kmb";
 import { getAllStops as getAllMtrStops } from "@/util/mtr";
 import { TransportStop, TransportMode } from "@/types/transport-types";
 import { calculateDistance } from "@/util/calculateDistance";
 
+// Define type for each step in a journey (walk, bus, or MTR)
 type JourneyStep = {
   type: "WALK" | "BUS" | "MTR";
   from: TransportStop;
@@ -34,6 +41,7 @@ type JourneyStep = {
   company?: string;
 };
 
+// Define type for a complete journey, consisting of multiple steps
 type Journey = {
   id: string;
   steps: JourneyStep[];
@@ -41,29 +49,40 @@ type Journey = {
   totalDistance: number;
 };
 
+// Define type for search results with additional display information
 type SearchResult = TransportStop & {
   displayName: string;
   company: string;
 };
 
+// Main component for route planning functionality
 export default function RoutePlanScreen() {
+  // Access translation and language functions from context
   const { t, language } = useLanguage();
+  // State for input text fields
   const [fromText, setFromText] = useState("");
   const [toText, setToText] = useState("");
+  // State for selected origin and destination stops
   const [fromStop, setFromStop] = useState<SearchResult | null>(null);
   const [toStop, setToStop] = useState<SearchResult | null>(null);
+  // State for tracking which search field is active
   const [searchingFrom, setSearchingFrom] = useState(false);
   const [searchingTo, setSearchingTo] = useState(false);
+  // State for search results and all available stops
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [allStops, setAllStops] = useState<SearchResult[]>([]);
+  // Loading states
   const [loading, setLoading] = useState(false);
   const [loadingStops, setLoadingStops] = useState(true);
+  // State for journey planning results
   const [journeys, setJourneys] = useState<Journey[]>([]);
   const [selectedJourney, setSelectedJourney] = useState<Journey | null>(null);
+  // State for user's current location functionality
   const [useCurrentLocation, setUseCurrentLocation] = useState(false);
   const [userLocation, setUserLocation] =
     useState<Location.LocationObject | null>(null);
 
+  // Load all stops (KMB and MTR) when the component mounts or language changes
   useEffect(() => {
     const loadAllStops = async () => {
       try {
@@ -98,6 +117,7 @@ export default function RoutePlanScreen() {
     loadAllStops();
   }, [language]);
 
+  // Handle search input changes and update search results
   const handleSearch = (text: string, isFrom: boolean) => {
     if (isFrom) {
       setFromText(text);
@@ -127,6 +147,7 @@ export default function RoutePlanScreen() {
     setSearchResults(results);
   };
 
+  // Handle selection of a stop from search results
   const handleSelectStop = (stop: SearchResult) => {
     if (searchingFrom) {
       setFromStop(stop);
@@ -141,6 +162,7 @@ export default function RoutePlanScreen() {
     setSearchingTo(false);
   };
 
+  // Handle use of current location as the origin
   const handleUseCurrentLocation = async () => {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
@@ -166,6 +188,7 @@ export default function RoutePlanScreen() {
     }
   };
 
+  // Handle journey planning based on selected stops or current location
   const handlePlanJourney = async () => {
     if ((!fromStop && !useCurrentLocation) || !toStop) {
       Alert.alert(t("error"), t("select.both.locations"));
@@ -200,6 +223,7 @@ export default function RoutePlanScreen() {
     }
   };
 
+  // Find the nearest stop of a specific company to a given location
   const findNearestStop = (
     location: { lat: number; long: number },
     company: string
@@ -222,6 +246,7 @@ export default function RoutePlanScreen() {
     }, null as { stop: SearchResult; distance: number } | null)!.stop;
   };
 
+  // Generate sample journeys based on origin and destination
   const generateSampleJourneys = (from: any, to: SearchResult): Journey[] => {
     const originLocation =
       useCurrentLocation && userLocation
@@ -528,8 +553,7 @@ export default function RoutePlanScreen() {
     ];
   };
 
-
-
+  // Get a random route for a specific company (KMB or MTR)
   const getRandomRoute = (company: string): string => {
     if (company === "KMB") {
       const routes = ["1", "1A", "5", "5C", "6", "7", "9"];
@@ -541,6 +565,7 @@ export default function RoutePlanScreen() {
     return "";
   };
 
+  // Get the appropriate icon for a transport type
   const getTransportIcon = (type: string) => {
     switch (type) {
       case "WALK":
@@ -554,6 +579,7 @@ export default function RoutePlanScreen() {
     }
   };
 
+  // Get the appropriate color for a transport type
   const getTransportColor = (type: string) => {
     switch (type) {
       case "WALK":
@@ -567,6 +593,7 @@ export default function RoutePlanScreen() {
     }
   };
 
+  // Format distance in meters to a readable string
   const formatDistance = (meters: number) => {
     if (meters < 1000) {
       return `${meters}m`;
@@ -574,6 +601,7 @@ export default function RoutePlanScreen() {
     return `${(meters / 1000).toFixed(1)}km`;
   };
 
+  // Navigate to transport details screen based on journey step
   const navigateToTransportDetails = (step: JourneyStep) => {
     if (step.type === "BUS" && step.route) {
       router.push(`/bus/${step.route}?bound=O&serviceType=1`);

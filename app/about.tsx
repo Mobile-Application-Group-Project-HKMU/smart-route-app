@@ -1,3 +1,4 @@
+// Import necessary React and React Native components
 import { useEffect } from "react";
 import {
   StyleSheet,
@@ -6,14 +7,19 @@ import {
   useColorScheme,
   ScrollView,
 } from "react-native";
+// Import navigation tools from Expo Router
 import { router, useLocalSearchParams } from "expo-router";
 
+// Import custom themed components from local directories
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
+// Import language context for multilingual support
 import { useLanguage } from "@/contexts/LanguageContext";
 
+// Define content for multiple languages (English, Traditional Chinese, Simplified Chinese)
 const CONTENT = {
   en: {
+    // English language content
     title: "Project Overview",
     teamTitle: "Technical Team Composition",
     termsTitle: "Usage Policy & Terms",
@@ -53,6 +59,7 @@ const CONTENT = {
     },
   },
   "zh-Hant": {
+    // Traditional Chinese content
     title: "項目概況",
     teamTitle: "技術團隊構成",
     termsTitle: "使用條款與政策",
@@ -92,6 +99,7 @@ const CONTENT = {
     },
   },
   "zh-Hans": {
+    // Simplified Chinese content
     title: "项目概况",
     teamTitle: "技术团队构成",
     termsTitle: "使用条款与政策",
@@ -132,6 +140,7 @@ const CONTENT = {
   },
 };
 
+// Array containing team member information
 const TEAM_MEMBERS = [
   {
     name: "Li Yanpei",
@@ -171,28 +180,37 @@ const TEAM_MEMBERS = [
   },
 ];
 
+// Main component for the About screen
 export default function AboutScreen() {
+  // Get navigation parameters
   const { fromIndex } = useLocalSearchParams();
+  // Get current language from context
   const { language } = useLanguage();
+  // Select content based on current language
   const content = CONTENT[language];
+  // Get current color scheme (light/dark)
   const colorScheme = useColorScheme();
 
+  // Effect to prevent direct navigation to this page
   useEffect(() => {
-    // Prevent direct navigation to this page
+    // Redirect to home if not navigated from index
     if (fromIndex !== "true") {
       router.replace("/");
     }
   }, [fromIndex]);
 
+  // Function to open external links when team member is clicked
   const openLink = (url: string) => {
     if (url) {
       Linking.openURL(url);
     }
   };
 
+  // Render the about screen UI
   return (
     <ThemedView style={styles.container}>
       <ScrollView style={styles.scrollView}>
+        {/* University and project context section */}
         <ThemedView style={styles.section}>
           <ThemedText style={styles.schoolName}>{content.school}</ThemedText>
           <ThemedView style={styles.contextBox}>
@@ -214,10 +232,12 @@ export default function AboutScreen() {
           </ThemedText>
         </ThemedView>
 
+        {/* Key features section */}
         <ThemedView style={styles.section}>
           <ThemedText style={styles.sectionTitle}>
             {content.keyFeatures.title}
           </ThemedText>
+          {/* Map through and display all feature items */}
           {content.keyFeatures.items.map((item, index) => (
             <ThemedText key={index} style={styles.listItem}>
               • {item}
@@ -225,6 +245,7 @@ export default function AboutScreen() {
           ))}
         </ThemedView>
 
+        {/* Technical specifications section */}
         <ThemedView style={styles.section}>
           <ThemedText style={styles.sectionTitle}>
             {content.technicalSpecifications.title}
@@ -236,6 +257,7 @@ export default function AboutScreen() {
           ))}
         </ThemedView>
 
+        {/* Team members section with clickable profiles */}
         <ThemedView style={styles.section}>
           <ThemedText style={styles.sectionTitle}>
             {content.teamTitle}
@@ -257,6 +279,7 @@ export default function AboutScreen() {
           </ThemedView>
         </ThemedView>
 
+        {/* Policy and terms section */}
         <ThemedView style={[styles.section, styles.policySection]}>
           <ThemedText style={styles.sectionTitle}>
             {content.termsTitle}
@@ -272,11 +295,13 @@ export default function AboutScreen() {
   );
 }
 
+// Styles for the about screen
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingTop: 50,
   },
+  // Header styles for navigation and language switcher
   header: {
     flexDirection: "row",
     alignItems: "center",

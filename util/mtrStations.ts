@@ -1,25 +1,29 @@
+// This file contains MTR (Mass Transit Railway) station data for Hong Kong's rail network
+// Each station includes details such as name in different languages, coordinates, line information, and facilities
 import { MtrStation } from "./mtr";
 
 /**
  * Gets all MTR stations
+ * @returns Promise containing array of MTR stations across all lines
  */
 export async function getAllStations(): Promise<MtrStation[]> {
+  // Array containing all MTR stations with their details
   const stations: MtrStation[] = [
-    // Airport Express (AEL)
+    // Airport Express (AEL) - High-speed line connecting Hong Kong International Airport to the city
     { stop: 'HOK', name_en: 'Hong Kong', name_tc: '香港', name_sc: '香港', lat: 22.2849, long: 114.1587, company: 'MTR', mode: 'MTR', line_codes: ['AEL', 'TCL'], is_interchange: true, facilities: ['Elevator', 'Escalator', 'Washroom'], exit_info: [{ exit: 'A', destination_en: 'IFC Mall', destination_tc: '國際金融中心商場' }, { exit: 'D', destination_en: 'Central Ferry Piers', destination_tc: '中環渡輪碼頭' }] },
     { stop: 'KOW', name_en: 'Kowloon', name_tc: '九龍', name_sc: '九龙', lat: 22.3045, long: 114.1615, company: 'MTR', mode: 'MTR', line_codes: ['AEL', 'TCL'], is_interchange: true, facilities: [], exit_info: [] },
     { stop: 'TSY', name_en: 'Tsing Yi', name_tc: '青衣', name_sc: '青衣', lat: 22.3586, long: 114.1075, company: 'MTR', mode: 'MTR', line_codes: ['AEL', 'TCL'], is_interchange: true, facilities: [], exit_info: [] },
     { stop: 'AIR', name_en: 'Airport', name_tc: '機場', name_sc: '机场', lat: 22.3160, long: 113.9365, company: 'MTR', mode: 'MTR', line_codes: ['AEL'], is_interchange: false, facilities: [], exit_info: [] },
     { stop: 'AWE', name_en: 'AsiaWorld-Expo', name_tc: '博覽館', name_sc: '博览馆', lat: 22.3215, long: 113.9435, company: 'MTR', mode: 'MTR', line_codes: ['AEL'], is_interchange: false, facilities: [], exit_info: [] },
 
-    // Tung Chung Line (TCL)
+    // Tung Chung Line (TCL) - Serves the western New Territories and Lantau Island
     { stop: 'OLY', name_en: 'Olympic', name_tc: '奧運', name_sc: '奥运', lat: 22.3178, long: 114.1602, company: 'MTR', mode: 'MTR', line_codes: ['TCL'], is_interchange: false, facilities: [], exit_info: [] },
     { stop: 'NAC', name_en: 'Nam Cheong', name_tc: '南昌', name_sc: '南昌', lat: 22.3269, long: 114.1540, company: 'MTR', mode: 'MTR', line_codes: ['TCL', 'TML'], is_interchange: true, facilities: [], exit_info: [] },
     { stop: 'LAK', name_en: 'Lai King', name_tc: '荔景', name_sc: '荔景', lat: 22.3486, long: 114.1262, company: 'MTR', mode: 'MTR', line_codes: ['TCL', 'TWL'], is_interchange: true, facilities: [], exit_info: [] },
     { stop: 'SUN', name_en: 'Sunny Bay', name_tc: '欣澳', name_sc: '欣澳', lat: 22.3318, long: 114.0289, company: 'MTR', mode: 'MTR', line_codes: ['TCL'], is_interchange: false, facilities: [], exit_info: [] },
     { stop: 'TUC', name_en: 'Tung Chung', name_tc: '東涌', name_sc: '东涌', lat: 22.2896, long: 113.9415, company: 'MTR', mode: 'MTR', line_codes: ['TCL'], is_interchange: false, facilities: [], exit_info: [] },
 
-    // Tuen Ma Line (TML)
+    // Tuen Ma Line (TML) - A major east-west line connecting the New Territories
     { stop: 'WKS', name_en: 'Wu Kai Sha', name_tc: '烏溪沙', name_sc: '乌溪沙', lat: 22.4290, long: 114.2435, company: 'MTR', mode: 'MTR', line_codes: ['TML'], is_interchange: false, facilities: [], exit_info: [] },
     { stop: 'MOS', name_en: 'Ma On Shan', name_tc: '馬鞍山', name_sc: '马鞍山', lat: 22.4248, long: 114.2320, company: 'MTR', mode: 'MTR', line_codes: ['TML'], is_interchange: false, facilities: [], exit_info: [] },
     { stop: 'HEO', name_en: 'Heng On', name_tc: '恆安', name_sc: '恒安', lat: 22.4175, long: 114.2258, company: 'MTR', mode: 'MTR', line_codes: ['TML'], is_interchange: false, facilities: [], exit_info: [] },
@@ -47,7 +51,7 @@ export async function getAllStations(): Promise<MtrStation[]> {
     { stop: 'SIH', name_en: 'Siu Hong', name_tc: '兆康', name_sc: '兆康', lat: 22.4115, long: 113.9785, company: 'MTR', mode: 'MTR', line_codes: ['TML'], is_interchange: false, facilities: [], exit_info: [] },
     { stop: 'TUM', name_en: 'Tuen Mun', name_tc: '屯門', name_sc: '屯门', lat: 22.3950, long: 113.9735, company: 'MTR', mode: 'MTR', line_codes: ['TML'], is_interchange: false, facilities: [], exit_info: [] },
 
-    // Tseung Kwan O Line (TKL)
+    // Tseung Kwan O Line (TKL) - Connects the eastern Kowloon area of Tseung Kwan O to Hong Kong Island
     { stop: 'NOP', name_en: 'North Point', name_tc: '北角', name_sc: '北角', lat: 22.2875, long: 114.1915, company: 'MTR', mode: 'MTR', line_codes: ['TKL', 'ISL'], is_interchange: true, facilities: [], exit_info: [] },
     { stop: 'QUB', name_en: 'Quarry Bay', name_tc: '鰂魚涌', name_sc: '鲗鱼涌', lat: 22.2870, long: 114.2095, company: 'MTR', mode: 'MTR', line_codes: ['TKL', 'ISL'], is_interchange: true, facilities: [], exit_info: [] },
     { stop: 'YAT', name_en: 'Yau Tong', name_tc: '油塘', name_sc: '油塘', lat: 22.2975, long: 114.2365, company: 'MTR', mode: 'MTR', line_codes: ['TKL', 'KTL'], is_interchange: true, facilities: [], exit_info: [] },
@@ -57,7 +61,7 @@ export async function getAllStations(): Promise<MtrStation[]> {
     { stop: 'HAH', name_en: 'Hang Hau', name_tc: '坑口', name_sc: '坑口', lat: 22.3155, long: 114.2645, company: 'MTR', mode: 'MTR', line_codes: ['TKL'], is_interchange: false, facilities: [], exit_info: [] },
     { stop: 'POA', name_en: 'Po Lam', name_tc: '寶琳', name_sc: '宝琳', lat: 22.3225, long: 114.2580, company: 'MTR', mode: 'MTR', line_codes: ['TKL'], is_interchange: false, facilities: [], exit_info: [] },
 
-    // East Rail Line (EAL)
+    // East Rail Line (EAL) - Connects the urban areas to the northeastern New Territories and mainland China
     { stop: 'ADM', name_en: 'Admiralty', name_tc: '金鐘', name_sc: '金钟', lat: 22.2790, long: 114.1645, company: 'MTR', mode: 'MTR', line_codes: ['EAL', 'TWL', 'ISL', 'SIL'], is_interchange: true, facilities: [], exit_info: [] },
     { stop: 'EXC', name_en: 'Exhibition Centre', name_tc: '會展', name_sc: '会展', lat: 22.2810, long: 114.1750, company: 'MTR', mode: 'MTR', line_codes: ['EAL'], is_interchange: false, facilities: [], exit_info: [] },
     { stop: 'MKK', name_en: 'Mong Kok East', name_tc: '旺角東', name_sc: '旺角东', lat: 22.3220, long: 114.1725, company: 'MTR', mode: 'MTR', line_codes: ['EAL'], is_interchange: false, facilities: [], exit_info: [] },

@@ -1,36 +1,51 @@
+// Import necessary React hooks and React Native components
 import { useState, useCallback } from "react";
 import { Image, StyleSheet, FlatList, TouchableOpacity } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 
+// Import custom components from the application
 import { HelloWave } from "@/components/HelloWave";
 import ParallaxScrollView from "@/components/ParallaxScrollView";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { IconSymbol } from "@/components/ui/IconSymbol";
+// Import utility functions and types for favorites management
 import {
   FavRouteKMB,
   FavRouteStation,
   getFromLocalStorage,
 } from "@/util/favourite";
+// Import utilities for KMB bus routes and stops
 import { Route, getAllRoutes, Stop, getAllStops } from "@/util/kmb";
+// Import utilities for MTR stations
 import { MtrStation, getAllStops as getAllMtrStops } from "@/util/mtr";
+// Import language context for internationalization
 import { useLanguage } from "@/contexts/LanguageContext";
 
+// Main HomeScreen component that displays the app's home screen
 export default function HomeScreen() {
+  // Get translation function and current language from context
   const { t, language } = useLanguage();
+  // State for storing user's favorite bus routes
   const [favoriteRoutes, setFavoriteRoutes] = useState<
     Array<Route & { key: string }>
   >([]);
+  // State for storing user's favorite bus stops
   const [favoriteStops, setFavoriteStops] = useState<Stop[]>([]);
+  // State for storing user's favorite MTR stations
   const [favoriteMtrStations, setFavoriteMtrStations] = useState<MtrStation[]>(
     []
   );
+  // Loading state to show loading indicator while fetching data
   const [loading, setLoading] = useState(true);
 
+  // Function to load user's favorite routes and stops from local storage
   const loadFavorites = useCallback(async () => {
     try {
+      // Set loading state to true while fetching data
       setLoading(true);
 
+      // Retrieve favorite routes and stops from local storage
       const routeFavorites = (await getFromLocalStorage(
         "kmbFavorites"
       )) as FavRouteKMB | null;
@@ -38,12 +53,16 @@ export default function HomeScreen() {
         "stationFavorites"
       )) as FavRouteStation | null;
 
-      // Load KMB route favorites
+      // Process and load KMB route favorites if they exist
       if (routeFavorites?.kmbID?.length) {
+        // Fetch all available routes
         const allRoutes = await getAllRoutes();
+        // Map favorite route IDs to actual route objects
         const routes = routeFavorites.kmbID
           .map((key) => {
+            // Split the key into route ID, bound, and service type
             const [routeId, bound, serviceType] = key.split("-");
+            // Find the matching route from all routes
             const route = allRoutes.find(
               (r) =>
                 r.route === routeId &&
@@ -51,20 +70,25 @@ export default function HomeScreen() {
                 r.service_type === serviceType
             );
 
+            // If the route is found, return it with the key
             if (route) {
               return { ...route, key };
             }
             return null;
           })
+          // Filter out any null values (routes that weren't found)
           .filter((r): r is Route & { key: string } => r !== null);
 
+        // Update state with the found favorite routes
         setFavoriteRoutes(routes);
       } else {
+        // If no favorite routes, set empty array
         setFavoriteRoutes([]);
       }
 
-
+      // Process and load favorite stops if they exist
       if (stopFavorites?.stationID?.length) {
+        // Separate MTR station IDs and KMB stop IDs
         const mtrStationIds = stopFavorites.stationID.filter(
           (id) => id.length === 3
         );
@@ -72,43 +96,56 @@ export default function HomeScreen() {
           (id) => id.length !== 3
         );
 
+        // Fetch all available KMB stops
         const allStops = await getAllStops();
+        // Map favorite stop IDs to actual stop objects
         const stops = kmbStopIds
           .map((id) => allStops.find((s) => s.stop === id))
           .filter((s): s is Stop => s !== undefined);
+        // Update state with the found favorite stops
         setFavoriteStops(stops);
 
+        // Fetch all available MTR stations
         const allMtrStations = await getAllMtrStops();
+        // Map favorite MTR station IDs to actual station objects
         const mtrStations = mtrStationIds
           .map((id) => allMtrStations.find((s) => s.stop === id))
           .filter((s): s is MtrStation => s !== undefined);
+        // Update state with the found favorite MTR stations
         setFavoriteMtrStations(mtrStations);
       } else {
+        // If no favorite stops, set empty arrays
         setFavoriteStops([]);
         setFavoriteMtrStations([]);
       }
     } catch (error) {
+      // Log any errors that occur during the loading process
       console.error("Failed to load favorites:", error);
     } finally {
+      // Set loading state to false after fetching data
       setLoading(false);
     }
   }, []);
 
+  // Use focus effect to load favorites when the screen is focused
   useFocusEffect(
     useCallback(() => {
       loadFavorites();
     }, [loadFavorites])
   );
 
+  // Handle press event for a favorite route
   const handleRoutePress = (route: Route & { key: string }) => {
     const [routeId, bound, serviceType] = route.key.split("-");
     router.push(`/bus/${routeId}?bound=${bound}&serviceType=${serviceType}`);
   };
 
+  // Handle press event for a favorite stop
   const handleStopPress = (stop: Stop) => {
     router.push(`/stop/${stop.stop}`);
   };
 
+  // Handle press event for a favorite MTR station
   const handleMtrStationPress = (station: MtrStation) => {
     router.push({
       pathname: "/mtr/[stationId]",
@@ -116,6 +153,7 @@ export default function HomeScreen() {
     });
   };
 
+  // Navigate to the About screen
   const navigateToAbout = () => {
     router.push("/about?fromIndex=true");
   };

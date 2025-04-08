@@ -1,5 +1,11 @@
+// This file implements the bus route detail screen that displays route information, stops, and a map
+// The [routeId] in the filename allows dynamic routing based on the bus route ID
+
+// Import necessary navigation components from Expo Router
 import { useLocalSearchParams, Stack, router } from "expo-router";
+// Import React hooks for state management and side effects
 import { useEffect, useState, useRef } from "react";
+// Import React Native UI components
 import {
   StyleSheet,
   ActivityIndicator,
@@ -9,12 +15,16 @@ import {
   View,
   Platform,
 } from "react-native";
+// Import location services for tracking user position
 import * as Location from "expo-location";
+// Import map components for displaying route and stops
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from "react-native-maps";
 
+// Import themed UI components for consistent styling
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { IconSymbol } from "@/components/ui/IconSymbol";
+// Import KMB API utility functions and type definitions
 import {
   getRouteStops,
   getRouteDetails,
@@ -22,14 +32,17 @@ import {
   type Stop,
   getAllStops,
 } from "@/util/kmb";
+// Import favorites functionality for saving preferred routes
 import {
   FavRouteKMB,
   saveToLocalStorage,
   getFromLocalStorage,
 } from "@/util/favourite";
+// Import language context for internationalization
 import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function RouteDetailScreen() {
+  // Extract route parameters from the URL
   const {
     routeId,
     bound,
@@ -37,9 +50,13 @@ export default function RouteDetailScreen() {
     company: companyParam,
     region,
   } = useLocalSearchParams();
+  // State for storing the list of bus stops with their details
   const [stops, setStops] = useState<Array<RouteStop & Stop>>([]);
+  // State for tracking loading status
   const [loading, setLoading] = useState(true);
+  // State for tracking if the route is marked as favorite
   const [isFavorite, setIsFavorite] = useState(false);
+  // State for storing route information like origin and destination
   const [routeInfo, setRouteInfo] = useState<{
     origin: string;
     destination: string;
@@ -55,22 +72,29 @@ export default function RouteDetailScreen() {
     orig_sc: "",
     dest_sc: "",
   });
+  // State for storing the user's current location
   const [userLocation, setUserLocation] =
     useState<Location.LocationObject | null>(null);
+  // State for tracking which stop is closest to the user
   const [nearestStopIndex, setNearestStopIndex] = useState<number | null>(null);
+  // Reference to the map component for programmatic control
   const mapRef = useRef<MapView>(null);
 
+  // Access translation function and current language from context
   const { t, language } = useLanguage();
 
+  // Determine if the route is inbound or outbound based on the 'bound' parameter
   const direction = bound === "I" ? "inbound" : "outbound";
   const routeKey = `${routeId}-${bound}-${serviceType}`;
 
+  // Function to get localized text based on the current language
   const getLocalizedText = (en: string, tc: string, sc: string): string => {
     if (language === "zh-Hant") return tc;
     if (language === "zh-Hans") return sc;
     return en;
   };
 
+  // Check if the route is marked as favorite when the component mounts
   useEffect(() => {
     const checkFavorite = async () => {
       const favorites = (await getFromLocalStorage(
@@ -84,11 +108,13 @@ export default function RouteDetailScreen() {
     checkFavorite();
   }, [routeKey]);
 
+  // Fetch route details and stops when the route parameters change
   useEffect(() => {
     const fetchRouteDetails = async () => {
       try {
         setLoading(true);
 
+        // Request location permissions and get the user's current location
         const { status } = await Location.requestForegroundPermissionsAsync();
         if (status === "granted") {
           const location = (await Location.getCurrentPositionAsync(
@@ -97,6 +123,7 @@ export default function RouteDetailScreen() {
           setUserLocation(location);
         }
 
+        // Determine the bus company (default to KMB)
         const company = (
           Array.isArray(companyParam) ? companyParam[0] : companyParam || "KMB"
         ).toUpperCase();
@@ -257,6 +284,7 @@ export default function RouteDetailScreen() {
     }
   }, [routeId, bound, serviceType, direction, companyParam, region]);
 
+  // Toggle the favorite status of the route
   const toggleFavorite = async () => {
     try {
       let favorites = (await getFromLocalStorage(
@@ -286,10 +314,12 @@ export default function RouteDetailScreen() {
     }
   };
 
+  // Handle press on a stop to navigate to the stop detail screen
   const handleStopPress = (stop: RouteStop & Stop) => {
     router.push(`/stop/${stop.stop}`);
   };
 
+  // Animate the map to focus on a specific stop
   const goToStop = (index: number) => {
     if (mapRef.current && stops[index]) {
       mapRef.current.animateToRegion(

@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from "react-native-maps";
 
+// Import custom components and utilities
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { IconSymbol } from "@/components/ui/IconSymbol";
@@ -20,52 +21,71 @@ import { MTR_COLORS, MtrStation, getAllRoutes, getAllStops } from "@/util/mtr";
 import { TransportRoute } from "@/types/transport-types";
 import { useLanguage } from "@/contexts/LanguageContext";
 
+// Main component for displaying MTR line details and stations
 export default function MtrLineScreen() {
+  // Get the line ID from URL parameters
   const { lineId } = useLocalSearchParams();
+  // State for tracking loading status
   const [loading, setLoading] = useState(true);
+  // State for storing line data information
   const [lineData, setLineData] = useState<TransportRoute | null>(null);
+  // State for storing stations on this line
   const [stations, setStations] = useState<MtrStation[]>([]);
+  // Reference to the map component for programmatic control
   const mapRef = useRef<MapView | null>(null);
+  // Get language translation functions and current language setting
   const { t, language } = useLanguage();
 
+  // Effect hook to load line data when component mounts or lineId changes
   useEffect(() => {
+    // Function to fetch and process line data
     const loadLineData = async () => {
+      // Exit early if no line ID is provided
       if (!lineId) return;
 
       try {
+        // Set loading state to show loading indicator
         setLoading(true);
 
-        // Fetch line details
+        // Fetch all MTR routes
         const lines = await getAllRoutes();
+        // Find the specific line that matches the requested lineId
         const line = lines.find((l) => l.route === lineId);
 
+        // If line not found, show error and navigate back
         if (!line) {
           Alert.alert("Error", "Line not found");
           router.back();
           return;
         }
 
+        // Store the line data in state
         setLineData(line);
 
+        // Fetch all MTR stations
         const allStations = await getAllStops();
+        // Filter stations to include only those on the current line
         const lineStations = allStations.filter((station) =>
           station.line_codes.includes(lineId as string)
         );
 
-
+        // Store the filtered stations in state
         setStations(lineStations);
       } catch (error) {
+        // Handle any errors that occur during data fetching
         console.error("Failed to load line data:", error);
         Alert.alert("Error", "Could not load line information");
       } finally {
+        // Set loading to false when data fetching is complete (success or failure)
         setLoading(false);
       }
     };
 
+    // Immediately invoke the function to load data
     loadLineData();
-  }, [lineId]);
+  }, [lineId]); // Re-run this effect if lineId changes
 
-
+  // Function to navigate to a specific station's details
   const navigateToStation = (stationId: string) => {
     router.push({
       pathname: "/mtr/[stationId]",
@@ -73,23 +93,24 @@ export default function MtrLineScreen() {
     });
   };
 
-
+  // Function to get the origin station name based on the current language
   const getLineOrigin = () => {
     if (!lineData) return "";
     return language === "en" ? lineData.orig_en : lineData.orig_tc;
   };
 
+  // Function to get the destination station name based on the current language
   const getLineDestination = () => {
     if (!lineData) return "";
     return language === "en" ? lineData.dest_en : lineData.dest_tc;
   };
 
-
+  // Function to get the color associated with the current line
   const getLineColor = () => {
     return MTR_COLORS[lineId as keyof typeof MTR_COLORS] || "#666666";
   };
 
-
+  // Function to get the station name based on the current language
   const getStationName = (station: MtrStation) => {
     return language === "en"
       ? station.name_en
@@ -98,11 +119,9 @@ export default function MtrLineScreen() {
       : station.name_tc;
   };
 
-
+  // Function to get the line name based on the current language
   const getLineName = () => {
     if (!lineData) return `${lineId} Line`;
-
-
     return t(`line.${lineId}`);
   };
 
@@ -119,7 +138,6 @@ export default function MtrLineScreen() {
         <ActivityIndicator size="large" style={styles.loader} />
       ) : lineData ? (
         <>
-
           <ThemedView style={styles.lineHeader}>
             <ThemedView
               style={[styles.lineChip, { backgroundColor: getLineColor() }]}
@@ -134,7 +152,6 @@ export default function MtrLineScreen() {
             </ThemedText>
           </ThemedView>
 
-
           {Platform.OS !== "web" && stations.length > 0 && (
             <View style={styles.mapContainer}>
               <MapView
@@ -144,14 +161,12 @@ export default function MtrLineScreen() {
                   Platform.OS === "android" ? PROVIDER_GOOGLE : undefined
                 }
                 initialRegion={{
-
                   latitude: stations[0].lat,
                   longitude: stations[0].long,
                   latitudeDelta: 0.1,
                   longitudeDelta: 0.1,
                 }}
               >
-
                 <Polyline
                   coordinates={stations.map((s) => ({
                     latitude: s.lat,
@@ -160,7 +175,6 @@ export default function MtrLineScreen() {
                   strokeColor={getLineColor()}
                   strokeWidth={4}
                 />
-
 
                 {stations.map((station) => (
                   <Marker
@@ -179,7 +193,6 @@ export default function MtrLineScreen() {
               </MapView>
             </View>
           )}
-
 
           <ThemedText style={styles.stationsTitle}>
             {t("mtr.station.stations")} ({stations.length})

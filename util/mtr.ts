@@ -1,9 +1,14 @@
+// Import configuration settings from config utility
 import { appConfig } from './config';
+// Import browser detection utility
 import { isSafari } from './transport';
+// Import transport-related type definitions
 import { TransportRoute, TransportStop, TransportETA, ClassifiedTransportETA } from '@/types/transport-types';
+// Import MTR station data utility
 import {getAllStations} from './mtrStations'
+// Import utility for calculating distance between coordinates
 import { calculateDistance } from './calculateDistance';
-// MTR line colors
+// MTR line colors - Color hex codes for each MTR line for UI display
 export const MTR_COLORS = {
   'AEL': '#00888E', // Airport Express
   'TCL': '#F3982D', // Tung Chung Line
@@ -17,31 +22,36 @@ export const MTR_COLORS = {
   'DRL': '#B5A45D'  // Disneyland Resort Line (not included in API v1.6)
 };
 
-// MTR station information
+// MTR station information interface - Extends TransportStop with MTR-specific properties
 export interface MtrStation extends TransportStop {
-  line_codes: string[];
-  is_interchange: boolean;
-  facilities: string[];
-  exit_info: {
-    exit: string;
-    destination_en: string;
-    destination_tc: string;
+  line_codes: string[];      // MTR line codes that serve this station
+  is_interchange: boolean;   // Whether the station is an interchange between multiple lines
+  facilities: string[];      // Available facilities at the station
+  exit_info: {              // Information about station exits
+    exit: string;            // Exit identifier
+    destination_en: string;  // Destination in English
+    destination_tc: string;  // Destination in Traditional Chinese
   }[];
 }
 
-// API endpoints
+// API endpoints - Base URL for MTR real-time data API
 const API_BASE = 'https://rt.data.gov.hk/v1/transport/mtr/';
 
-// Cache system
+// Cache system - Stores API responses with timestamps to reduce repeated requests
 const apiCache = new Map<string, { timestamp: number; data: unknown }>();
+// Cache time-to-live in milliseconds - How long to keep responses in cache
 const CACHE_TTL = appConfig.apiCacheTTL || 60000; // Default to 60 seconds if not specified
 
 /**
  * Makes a cached API request
+ * @param url - The API endpoint to call
+ * @returns Promise with the response data
+ * @description Fetches data from the MTR API with caching to reduce redundant requests
  */
 async function cachedApiGet<T>(url: string): Promise<T> {
   const now = Date.now();
   
+  // Check if we have a valid cached response
   if (apiCache.has(url)) {
     const entry = apiCache.get(url)!;
     if (now - entry.timestamp < CACHE_TTL) {
@@ -50,13 +60,15 @@ async function cachedApiGet<T>(url: string): Promise<T> {
   }
 
   try {
+    // Make a new request if cache is invalid or missing
     const response = await fetch(API_BASE + url, {
-      cache: isSafari ? "default" : "no-store",
+      cache: isSafari ? "default" : "no-store", // Safari has different caching behavior
     });
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     const data = await response.json();
+    // Store the new response in cache
     apiCache.set(url, { timestamp: now, data });
     return data;
   } catch (error) {
@@ -67,6 +79,9 @@ async function cachedApiGet<T>(url: string): Promise<T> {
 
 /**
  * Gets all MTR lines (routes)
+ * @param language - The language code for the response ('en', 'zh-Hant', 'zh-Hans')
+ * @returns Promise with an array of TransportRoute objects
+ * @description Fetches all MTR lines with route information in the specified language
  */
 export async function getAllLines(language: 'en' | 'zh-Hant' | 'zh-Hans' = 'en'): Promise<TransportRoute[]> {
   if (language === 'zh-Hans') {
@@ -111,6 +126,11 @@ export async function getAllLines(language: 'en' | 'zh-Hant' | 'zh-Hans' = 'en')
 
 /**
  * Finds MTR stations near a specified location
+ * @param latitude - Latitude of the location
+ * @param longitude - Longitude of the location
+ * @param radiusMeters - Search radius in meters (default: 500)
+ * @returns Promise with an array of nearby MtrStation objects with distance
+ * @description Finds MTR stations within a specified radius of a given location
  */
 export async function findNearbyStations(
   latitude: number,
@@ -142,10 +162,11 @@ export async function findNearbyStations(
   }
 }
 
-
-
 /**
  * Gets train arrival times for a station 
+ * @param stationId - The ID of the station
+ * @returns Promise with an array of TransportETA objects
+ * @description Fetches real-time train arrival times for a specified MTR station
  */
 export async function getStationETAs(stationId: string): Promise<TransportETA[]> {
   try {
@@ -231,6 +252,9 @@ export async function getStationETAs(stationId: string): Promise<TransportETA[]>
 
 /**
  * Organizes ETAs for a station by lines
+ * @param stationId - The ID of the station
+ * @returns Promise with an array of ClassifiedTransportETA objects
+ * @description Classifies real-time train arrival times by line and direction for a specified MTR station
  */
 export async function classifyStationETAs(stationId: string): Promise<ClassifiedTransportETA[]> {
   try {
@@ -264,6 +288,7 @@ export async function classifyStationETAs(stationId: string): Promise<Classified
 
 /**
  * Clears the MTR API cache
+ * @description Empties the cache of stored API responses
  */
 export function clearCache(): void {
   apiCache.clear();

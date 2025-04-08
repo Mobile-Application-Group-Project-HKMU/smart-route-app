@@ -1,3 +1,4 @@
+// Import necessary modules from Expo and React
 import { useLocalSearchParams, Stack, router } from "expo-router";
 import { useEffect, useState, useRef, useCallback } from "react";
 import {
@@ -11,32 +12,57 @@ import {
   Linking,
   Platform,
 } from "react-native";
+// Navigation hooks
 import { useFocusEffect } from "@react-navigation/native";
+// Map components
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 
+// Import custom UI components
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { IconSymbol } from "@/components/ui/IconSymbol";
+// Import MTR utility functions
 import { classifyStopETAs, getAllStops } from "@/util/mtr";
 import { MtrStation, MTR_COLORS } from "@/util/mtr";
+// Import type definitions
 import { ClassifiedTransportETA, TransportETA } from "@/types/transport-types";
 import { formatTransportTime } from "@/util/datetime";
+// Import favorite handling utilities
 import {
   FavRouteStation,
   saveToLocalStorage,
   getFromLocalStorage,
 } from "@/util/favourite";
+// Import language context
 import { useLanguage } from "@/contexts/LanguageContext";
 
+/**
+ * MTR Station Screen Component
+ * Displays detailed information about a specific MTR station including:
+ * - Station details
+ * - Map location
+ * - Real-time train arrival information
+ */
 export default function MtrStationScreen() {
+  // Get station ID from URL parameters
   const { stationId } = useLocalSearchParams();
+  // State for station data
   const [station, setStation] = useState<MtrStation | null>(null);
+  // State for estimated time of arrivalsS
   const [etas, setEtas] = useState<ClassifiedTransportETA[]>([]);
+  // Loading state
   const [loading, setLoading] = useState(true);
+  // Favorite state
   const [isFavorite, setIsFavorite] = useState(false);
+  // Reference to the map component
   const mapRef = useRef<MapView | null>(null);
+  // Language utilities from context
   const { t, language } = useLanguage();
 
+  /**
+   * Checks if the current station is saved as a favorite
+   * Updates the isFavorite state accordingly
+   */
   const checkFavorite = async () => {
     try {
       const favorites = (await getFromLocalStorage(
@@ -52,10 +78,16 @@ export default function MtrStationScreen() {
     }
   };
 
+  /**
+   * Opens navigation to the station in the device's maps app
+   * Handles platform-specific map URLs (iOS vs Android)
+   * Uses the station's coordinates and name based on current language
+   */
   const openNavigation = () => {
     if (!station) return;
 
     const { lat, long } = station;
+    // Encode station name based on current language setting
     const label = encodeURI(
       language === "en"
         ? station.name_en
@@ -66,10 +98,10 @@ export default function MtrStationScreen() {
 
     let url = "";
     if (Platform.OS === "ios") {
-
+      // iOS-specific URL scheme
       url = `maps:?q=${label}&ll=${lat},${long}`;
     } else {
-
+      // Android-specific URL scheme
       url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${long}&destination_place_id=${label}`;
     }
 
@@ -82,6 +114,11 @@ export default function MtrStationScreen() {
     });
   };
 
+  /**
+   * Toggles the favorite status of the current station
+   * Updates local storage and the isFavorite state
+   * Displays an alert to confirm the action
+   */
   const toggleFavorite = async () => {
     try {
       let favorites = (await getFromLocalStorage(
@@ -93,12 +130,12 @@ export default function MtrStationScreen() {
       }
 
       if (isFavorite) {
-
+        // Remove station from favorites
         favorites.stationID = favorites.stationID.filter(
           (id) => id !== stationId
         );
       } else {
-
+        // Add station to favorites
         favorites.stationID.push(stationId as string);
       }
 
@@ -117,13 +154,19 @@ export default function MtrStationScreen() {
     }
   };
 
+  /**
+   * Loads station data including:
+   * - Station details
+   * - Real-time train arrival information
+   * - Favorite status
+   */
   const loadStationData = async () => {
     if (!stationId) return;
 
     try {
       setLoading(true);
 
-
+      // Fetch all stations and find the current station by ID
       const stations = await getAllStops();
       const stationData = stations.find((s) => s.stop === stationId);
 
@@ -135,11 +178,11 @@ export default function MtrStationScreen() {
 
       setStation(stationData);
 
-
+      // Fetch and classify estimated time of arrivals for the station
       const stationEtas = await classifyStopETAs(stationId as string);
       setEtas(stationEtas);
 
-
+      // Check if the station is a favorite
       await checkFavorite();
     } catch (error) {
       console.error("Failed to load station data:", error);
@@ -149,15 +192,20 @@ export default function MtrStationScreen() {
     }
   };
 
+  // Use focus effect to load station data when the screen is focused
   useFocusEffect(
     useCallback(() => {
       loadStationData();
       return () => {
-
+        // Cleanup if necessary
       };
     }, [stationId])
   );
 
+  /**
+   * Opens the station location in the device's maps app
+   * Handles platform-specific map URLs (iOS vs Android)
+   */
   const openInMaps = () => {
     if (!station) return;
 
@@ -182,7 +230,10 @@ export default function MtrStationScreen() {
     }
   };
 
-
+  /**
+   * Navigates to the MTR line screen for the specified line code
+   * @param lineCode - The code of the MTR line to navigate to
+   */
   const navigateToLine = (lineCode: string) => {
     router.push({
       pathname: "/mtr/line/[lineId]",
@@ -190,6 +241,10 @@ export default function MtrStationScreen() {
     });
   };
 
+  /**
+   * Gets the station name based on the current language setting
+   * @returns The station name in the appropriate language
+   */
   const getStationName = () => {
     if (!station) return "";
     return language === "en"
@@ -231,7 +286,7 @@ export default function MtrStationScreen() {
         <ActivityIndicator size="large" style={styles.loader} />
       ) : station ? (
         <>
-
+          {/* Station Information Card */}
           <ThemedView style={styles.infoCard}>
             <ThemedText style={styles.stationId}>
               {t("mtr.station.id") || t("transport.station.id")}: {stationId}
@@ -264,7 +319,7 @@ export default function MtrStationScreen() {
             )}
           </ThemedView>
 
-
+          {/* Map View */}
           {Platform.OS !== "web" && (
             <View style={styles.mapContainer}>
               <MapView
@@ -305,7 +360,7 @@ export default function MtrStationScreen() {
             </View>
           )}
 
-
+          {/* Estimated Time of Arrivals (ETAs) */}
           <ThemedText style={styles.sectionTitle}>
             {t("mtr.station.nextTrain") || t("transport.station.arrivals")}
           </ThemedText>

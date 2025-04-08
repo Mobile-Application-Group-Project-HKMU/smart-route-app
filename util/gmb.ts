@@ -1,20 +1,40 @@
+/**
+ * GMB (Green Minibus) API Integration Module
+ * This file provides functionality to interact with the GMB data API for Hong Kong.
+ * It includes functions to fetch routes, stops, and estimated arrival times.
+ */
 import { TransportRoute, TransportStop, TransportRouteStop, TransportETA, ClassifiedTransportETA, TransportApiResponse } from '@/types/transport-types';
 import axios, { AxiosError } from 'axios';
 import { isSafari } from './transport';
 import { appConfig } from './config';
 import { calculateDistance } from './calculateDistance';
 
+/**
+ * Export types for use in other modules
+ */
 export type Route = TransportRoute;
 export type Stop = TransportStop;
 export type RouteStop = TransportRouteStop;
 export type ETA = TransportETA;
 export type ClassifiedETA = ClassifiedTransportETA;
 
+/**
+ * API configuration constants
+ */
 const API_BASE = 'https://data.etagmb.gov.hk'; // GMB API base URL
 const CACHE_TTL = appConfig.apiCacheTTL; // Use global cache TTL
 
+/**
+ * In-memory cache for API responses to minimize redundant requests
+ */
 const apiCache = new Map<string, { timestamp: number; data: unknown }>();
 
+/**
+ * Makes a cached API request to the GMB endpoints
+ * Checks the cache first and only makes a network request if needed
+ * @param url - The API endpoint URL
+ * @returns Promise with the response data
+ */
 async function cachedApiGet<T>(url: string): Promise<T> {
   const now = Date.now();
   
@@ -41,7 +61,11 @@ async function cachedApiGet<T>(url: string): Promise<T> {
   }
 }
 
-// Get all routes, optionally filtered by region
+/**
+ * Retrieves all GMB routes, optionally filtered by region
+ * @param region - Optional region filter (HKI = Hong Kong Island, KLN = Kowloon, NT = New Territories)
+ * @returns Promise with an array of Route objects
+ */
 async function getAllRoutes(region?: 'HKI' | 'KLN' | 'NT'): Promise<Route[]> {
   const url = region ? `${API_BASE}/route/${region}` : `${API_BASE}/route`;
   const response = await cachedApiGet<any>(url);
@@ -68,7 +92,12 @@ async function getAllRoutes(region?: 'HKI' | 'KLN' | 'NT'): Promise<Route[]> {
   return routes;
 }
 
-// Get detailed route information
+/**
+ * Retrieves detailed information for a specific route
+ * @param region - The region of the route (HKI, KLN, NT)
+ * @param routeCode - The route code
+ * @returns Promise with a Route object containing detailed information
+ */
 async function getRouteDetails(
   region: 'HKI' | 'KLN' | 'NT',
   routeCode: string
@@ -94,7 +123,12 @@ async function getRouteDetails(
   };
 }
 
-// Get route stops
+/**
+ * Retrieves stops for a specific route and direction
+ * @param routeId - The route ID
+ * @param routeSeq - The route sequence (1 for outbound, 2 for inbound)
+ * @returns Promise with an array of RouteStop objects
+ */
 async function getRouteStops(
   routeId: string,
   routeSeq: '1' | '2'
@@ -109,7 +143,11 @@ async function getRouteStops(
   }));
 }
 
-// Get all stops
+/**
+ * Retrieves all stops for GMB routes
+ * Since the GMB API doesn't have a direct /stop endpoint, stops are fetched by region
+ * @returns Promise with an array of Stop objects
+ */
 async function getAllStops(): Promise<Stop[]> {
   try {
     // The GMB API doesn't have a direct /stop endpoint like KMB
@@ -235,9 +273,13 @@ async function getStopETA(
   }
 }
 
-
-
-
+/**
+ * Finds nearby stops within a specified radius from a target location
+ * @param targetLat - Target latitude
+ * @param targetLon - Target longitude
+ * @param radiusMeters - Radius in meters to search for stops (default is 500 meters)
+ * @returns Promise with an array of Stop objects including distance from target location
+ */
 async function findNearbyStops(
   targetLat: number,
   targetLon: number,
@@ -257,7 +299,12 @@ async function findNearbyStops(
     .sort((a, b) => a.distance - b.distance);
 }
 
-// Validate coordinates
+/**
+ * Validates latitude and longitude coordinates
+ * @param lat - Latitude
+ * @param lon - Longitude
+ * @returns Boolean indicating if the coordinates are valid
+ */
 function isValidCoordinate(lat: number, lon: number): boolean {
   return (
     typeof lat === 'number' &&
@@ -272,7 +319,10 @@ function isValidCoordinate(lat: number, lon: number): boolean {
 }
 
 /**
- * Classify ETAs for a stop, updated to use the same pattern as src/gmb.ts
+ * Classifies ETAs for a stop, updated to use the same pattern as src/gmb.ts
+ * @param stopId - Stop ID
+ * @param routeId - Optional route ID
+ * @returns Promise with an array of ClassifiedETA objects
  */
 async function classifyStopETAs(stopId: string, routeId?: string): Promise<ClassifiedETA[]> {
   try {

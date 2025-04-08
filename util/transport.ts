@@ -17,12 +17,19 @@ import {
   TransportMode
 } from '@/types/transport-types';
 
-// Cache management
+/**
+ * API cache system to reduce redundant network requests.
+ * Stores API responses with timestamps for TTL-based expiration.
+ */
 const apiCache = new Map<string, { timestamp: number; data: unknown }>();
 
 /**
  * Makes a cached API request - prevents redundant requests to the same URL
- * within the cache TTL period
+ * within the cache TTL period. Improves performance and reduces API load.
+ * 
+ * @param url - The URL to request
+ * @param ttl - Time to live for the cache in milliseconds
+ * @returns The API response data
  */
 export async function cachedApiGet<T>(url: string, ttl = appConfig.apiCacheTTL): Promise<T> {
   const now = Date.now();
@@ -45,7 +52,8 @@ export async function cachedApiGet<T>(url: string, ttl = appConfig.apiCacheTTL):
 }
 
 /**
- * Clears the API cache
+ * Clears the API cache.
+ * Useful when forcing fresh data retrieval or managing memory usage.
  */
 export function clearApiCache(): void {
   apiCache.clear();
@@ -54,7 +62,12 @@ export function clearApiCache(): void {
 
 
 /**
- * Determines if coordinates are valid
+ * Determines if coordinates are valid geographic coordinates.
+ * Verifies that latitude and longitude values are within acceptable ranges.
+ * 
+ * @param lat - Latitude to validate
+ * @param lon - Longitude to validate
+ * @returns True if coordinates are valid
  */
 export function isValidCoordinate(lat: number, lon: number): boolean {
   return (
@@ -70,7 +83,8 @@ export function isValidCoordinate(lat: number, lon: number): boolean {
 }
 
 /**
- * Detect if the current browser is Safari
+ * Detects if the current browser is Safari.
+ * Safari requires different caching strategies for optimal performance.
  */
 export const isSafari = (() => {
   try {
@@ -91,7 +105,13 @@ export const isSafari = (() => {
 })();
 
 /**
- * Find nearby stops from multiple transport providers
+ * Finds nearby stops from multiple transport providers.
+ * Combines results from different providers and sorts by distance.
+ * 
+ * @param latitude - Current latitude
+ * @param longitude - Current longitude
+ * @param radiusMeters - Search radius in meters
+ * @returns Array of nearby stops with distance information
  */
 export async function findAllNearbyStops(
   latitude: number,
@@ -121,7 +141,12 @@ export async function findAllNearbyStops(
 }
 
 /**
- * Format ETA as a user-friendly string
+ * Formats ETA (Estimated Time of Arrival) as a user-friendly string.
+ * Supports multiple languages for internationalization.
+ * 
+ * @param eta - ISO timestamp string or null
+ * @param language - Language for the formatted output
+ * @returns User-friendly ETA string
  */
 export function formatETA(
   eta: string | null, 
@@ -135,7 +160,12 @@ export function formatETA(
 }
 
 /**
- * Get ETAs for a stop from multiple transport providers
+ * Gets ETAs for a stop from multiple transport providers.
+ * Combines and sorts results for unified presentation.
+ * 
+ * @param stopId - ID of the stop
+ * @param companies - Array of transport companies to query
+ * @returns Classified ETAs sorted by arrival time
  */
 export async function getStopETAs(
   stopId: string,
@@ -181,7 +211,10 @@ export async function getStopETAs(
 }
 
 /**
- * Get CTB routes
+ * Gets CTB (Citybus) routes.
+ * Currently a placeholder implementation.
+ * 
+ * @returns Array of CTB routes
  */
 async function getCtbRoutes(): Promise<TransportRoute[]> {
   // Placeholder implementation - replace with actual CTB API call
@@ -189,7 +222,10 @@ async function getCtbRoutes(): Promise<TransportRoute[]> {
 }
 
 /**
- * Get MTR routes
+ * Gets MTR (Mass Transit Railway) routes.
+ * Retrieves and formats MTR line information.
+ * 
+ * @returns Array of MTR routes
  */
 async function getMtrRoutes(): Promise<TransportRoute[]> {
   try {
@@ -205,7 +241,13 @@ async function getMtrRoutes(): Promise<TransportRoute[]> {
 }
 
 /**
- * Find nearby KMB stops
+ * Finds nearby KMB (Kowloon Motor Bus) stops.
+ * Uses the KMB utility to find stops and adds mode information.
+ * 
+ * @param latitude - Current latitude
+ * @param longitude - Current longitude
+ * @param radiusMeters - Search radius in meters
+ * @returns Array of nearby KMB stops with distance information
  */
 async function findNearbyKmbStops(
   latitude: number,
@@ -220,7 +262,13 @@ async function findNearbyKmbStops(
 }
 
 /**
- * Find nearby MTR stations
+ * Finds nearby MTR stations.
+ * Uses the MTR utility to find stations and adds mode information.
+ * 
+ * @param latitude - Current latitude
+ * @param longitude - Current longitude
+ * @param radiusMeters - Search radius in meters
+ * @returns Array of nearby MTR stations with distance information
  */
 async function findNearbyMtrStations(
   latitude: number,
@@ -240,7 +288,12 @@ async function findNearbyMtrStations(
 }
 
 /**
- * Get combined transport data from multiple providers
+ * Gets combined transport data from multiple providers.
+ * Allows filtering by mode and company for flexible data retrieval.
+ * 
+ * @param modes - Array of transport modes to include
+ * @param companies - Array of transport companies to include
+ * @returns Combined array of transport routes
  */
 export async function getUnifiedTransportData(
   modes: TransportMode[] = ['BUS'], 
@@ -279,7 +332,14 @@ export async function getUnifiedTransportData(
 }
 
 /**
- * Enhanced nearby stops search
+ * Enhanced nearby stops search across multiple transport modes.
+ * Combines results from different modes and providers, sorting by distance.
+ * 
+ * @param latitude - Current latitude
+ * @param longitude - Current longitude
+ * @param radiusMeters - Search radius in meters
+ * @param modes - Array of transport modes to include
+ * @returns Combined array of nearby stops with distance information
  */
 export async function findUnifiedNearbyStops(
   latitude: number,
@@ -313,7 +373,8 @@ export async function findUnifiedNearbyStops(
 }
 
 /**
- * Export existing transport utilities
+ * Re-exports from various transport utility modules.
+ * Provides a unified interface for accessing transport-specific functions.
  */
 export { 
   // Re-export from KMB utilities

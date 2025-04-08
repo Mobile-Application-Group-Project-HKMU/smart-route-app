@@ -16,8 +16,10 @@ export const isAndroid = Platform.OS === 'android';
 export const isWeb = Platform.OS === 'web';
 
 /**
- * Executes different functions based on platform
- * @param options Object containing platform-specific implementations
+ * Executes different functions based on platform.
+ * This provides a cleaner alternative to platform-specific conditionals throughout the code.
+ * 
+ * @param options - Object containing platform-specific function implementations
  * @returns Result of the platform-specific function
  */
 export function platformSelect<T>({ 
@@ -39,8 +41,10 @@ export function platformSelect<T>({
 }
 
 /**
- * Returns a platform-specific value
- * @param options Object containing platform-specific values
+ * Returns a platform-specific value.
+ * Similar to platformSelect but works with values instead of functions.
+ * 
+ * @param options - Object containing platform-specific values
  * @returns The platform-specific value
  */
 export function platformValue<T>({ 

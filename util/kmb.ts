@@ -1,64 +1,86 @@
+/**
+ * KMB API utility module
+ * Provides functions and interfaces for interacting with the KMB bus data API
+ */
 import axios, { AxiosError } from 'axios';
 import { ReactNode } from 'react';
 import { appConfig } from './config';
 import { calculateDistance } from './calculateDistance';
 
+/**
+ * Represents a KMB bus route with origin, destination and route information
+ */
 export interface Route {
-  dest_tc: ReactNode;
-  orig_tc: ReactNode;
-  co: 'KMB';
-  route: string;
-  bound: 'I' | 'O';
-  service_type: string;
-  orig_en: string;
-  dest_en: string;
-  data_timestamp: string;
+  dest_tc: ReactNode;  // Destination in Traditional Chinese
+  orig_tc: ReactNode;  // Origin in Traditional Chinese
+  co: 'KMB';           // Company identifier (KMB only)
+  route: string;       // Route number/code
+  bound: 'I' | 'O';    // Direction: 'I' for Inbound, 'O' for Outbound
+  service_type: string; // Service type identifier
+  orig_en: string;     // Origin in English
+  dest_en: string;     // Destination in English
+  data_timestamp: string; // Timestamp when data was generated
 }
 
+/**
+ * Represents a KMB bus stop with location and name information
+ */
 interface Stop {
-  distance: number;
-  stop: string;
-  name_en: string;
-  name_tc: string;
-  name_sc: string;
-  lat: number;
-  long: number;
-  data_timestamp: string;
+  distance: number;    // Distance from a reference point (in meters)
+  stop: string;        // Stop identifier
+  name_en: string;     // Stop name in English
+  name_tc: string;     // Stop name in Traditional Chinese
+  name_sc: string;     // Stop name in Simplified Chinese
+  lat: number;         // Latitude coordinate
+  long: number;        // Longitude coordinate
+  data_timestamp: string; // Timestamp when data was generated
 }
 
+/**
+ * Represents a stop in a specific route with sequence information
+ */
 interface RouteStop {
-  co: 'KMB';
-  route: string;
-  bound: 'I' | 'O';
-  service_type: string;
-  seq: number;
-  stop: string;
-  data_timestamp: string;
+  co: 'KMB';           // Company identifier (KMB only)
+  route: string;       // Route number/code
+  bound: 'I' | 'O';    // Direction: 'I' for Inbound, 'O' for Outbound
+  service_type: string; // Service type identifier
+  seq: number;         // Sequence number of the stop in the route
+  stop: string;        // Stop identifier
+  data_timestamp: string; // Timestamp when data was generated
 }
 
+/**
+ * Represents Estimated Time of Arrival information for a bus at a stop
+ */
 export interface ETA {
-  rmk_tc: ReactNode;
-  dest_tc: string;
-  co: 'KMB';
-  route: string;
-  dir: 'I' | 'O';
-  service_type: string;
-  seq: number;
-  stop: string;
-  dest_en: string;
-  eta_seq: number;
-  eta: string | null;
-  rmk_en: string;
-  data_timestamp: string;
+  rmk_tc: ReactNode;   // Remarks in Traditional Chinese
+  dest_tc: string;     // Destination in Traditional Chinese
+  co: 'KMB';           // Company identifier (KMB only)
+  route: string;       // Route number/code
+  dir: 'I' | 'O';      // Direction: 'I' for Inbound, 'O' for Outbound
+  service_type: string; // Service type identifier
+  seq: number;         // Sequence number
+  stop: string;        // Stop identifier
+  dest_en: string;     // Destination in English
+  eta_seq: number;     // ETA sequence number
+  eta: string | null;  // Estimated arrival time (ISO format) or null if unavailable
+  rmk_en: string;      // Remarks in English
+  data_timestamp: string; // Timestamp when data was generated
 }
 
+/**
+ * Standard response structure from the KMB API
+ */
 interface ApiResponse<T> {
-  type: string;
-  version: string;
-  generated_timestamp: string;
-  data: T;
+  type: string;        // Response type
+  version: string;     // API version
+  generated_timestamp: string; // When the response was generated
+  data: T;             // The actual data payload
 }
 
+/**
+ * Base URL for the KMB API endpoints
+ */
 const API_BASE = 'https://data.etabus.gov.hk/v1/transport/kmb';
 
 // Cache system with expiration
