@@ -43,6 +43,8 @@ import { useLanguage } from "@/contexts/LanguageContext";
 // Import JourneyRecorder component
 import JourneyRecorder from "@/components/JourneyRecorder";
 import { TransportRoute } from "@/types/transport-types";
+// Import TripImpactRecorder component
+import TripImpactRecorder from "@/components/TripImpactRecorder";
 
 export default function RouteDetailScreen() {
   // Extract route parameters from the URL
@@ -342,6 +344,34 @@ export default function RouteDetailScreen() {
     router.push("/achievements");
   };
 
+  // Calculate route distance more accurately using the Haversine formula
+  const calculateRouteDistance = (stops: Array<RouteStop & Stop>): number => {
+    if (stops.length <= 1) return 0;
+
+    let totalDistance = 0;
+    for (let i = 1; i < stops.length; i++) {
+      const prevStop = stops[i - 1];
+      const currentStop = stops[i];
+
+      // Haversine formula to calculate distance between two points on Earth
+      const R = 6371; // Radius of Earth in kilometers
+      const dLat = (currentStop.lat - prevStop.lat) * Math.PI / 180;
+      const dLon = (currentStop.long - prevStop.long) * Math.PI / 180;
+
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(prevStop.lat * Math.PI / 180) *
+          Math.cos(currentStop.lat * Math.PI / 180) *
+          Math.sin(dLon / 2) * Math.sin(dLon / 2);
+
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      const distance = R * c; // Distance in km
+
+      totalDistance += distance;
+    }
+    return totalDistance;
+  };
+
   return (
     <ThemedView style={styles.container}>
       <Stack.Screen
@@ -368,7 +398,7 @@ export default function RouteDetailScreen() {
         <ActivityIndicator size="large" style={styles.loader} />
       ) : (
         <>
-          {typeof routeId === 'string' && (
+          {typeof routeId === "string" && (
             <JourneyRecorder
               route={routeId as unknown as TransportRoute}
               onAchievementUnlocked={navigateToAchievements}
@@ -396,6 +426,14 @@ export default function RouteDetailScreen() {
               )}
             </ThemedText>
           </ThemedView>
+
+          {stops.length > 0 && (
+            <TripImpactRecorder
+              mode="BUS"
+              distance={calculateRouteDistance(stops)}
+              duration={stops.length * 2 + 5} // Rough estimate: 2 min per stop + 5 min
+            />
+          )}
 
           {stops.length > 0 && (
             <View style={styles.mapContainer}>

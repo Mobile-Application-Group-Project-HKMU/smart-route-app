@@ -1,6 +1,6 @@
 import React from "react";
 import { Tabs } from "expo-router";
-import { useColorScheme, Platform, TouchableOpacity } from "react-native";
+import { useColorScheme, Platform, TouchableOpacity, View } from "react-native";
 import { Colors } from "@/constants/Colors";
 import TabBarBackground, {
   useBottomTabOverflow,
@@ -11,11 +11,15 @@ import { router } from "expo-router";
 
 export default function TabLayout() {
   const colorScheme = useColorScheme() ?? "light";
+  const bottomTabOverflow = useBottomTabOverflow();
   const { t } = useLanguage();
-  const overflow = useBottomTabOverflow();
 
   const navigateToAchievements = () => {
-    router.push('/achievements');
+    router.push("/achievements");
+  };
+  
+  const navigateToImpact = () => {
+    router.push("/impact");
   };
 
   return (
@@ -24,25 +28,46 @@ export default function TabLayout() {
         tabBarActiveTintColor: Colors[colorScheme].tint,
         tabBarInactiveTintColor: Colors[colorScheme].tabIconDefault,
         tabBarStyle: {
-          position: "absolute",
-          borderTopWidth: 0,
-          elevation: 0,
-          height: 60 + overflow,
-          paddingBottom: overflow,
-          backgroundColor:
-            Platform.OS === "ios" ? "transparent" : Colors[colorScheme].card,
+          // Default tab bar style on Android and Web
+          ...Platform.select({
+            ios: {
+              padding: 0,
+              paddingBottom: 0,
+            },
+            default: {
+              backgroundColor: Colors[colorScheme].card,
+              // Handle the necessary safe area spacing
+              height: 56 + bottomTabOverflow,
+              paddingBottom: bottomTabOverflow,
+            },
+          }),
         },
-        tabBarBackground:
-          Platform.OS === "ios" ? () => <TabBarBackground /> : undefined,
-        tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: "500",
+        // iOS-specific tab bar background
+        tabBarBackground: () =>
+          Platform.OS === "ios" ? (
+            <TabBarBackground />
+          ) : (
+            // Android and Web use a simple background
+            // Background is set on tabBarStyle instead
+            null
+          ),
+        // All screens share the same header configuration
+        headerStyle: {
+          backgroundColor: Colors[colorScheme].background,
         },
-        headerShown: false,
+        headerTintColor: Colors[colorScheme].text,
+        headerTitleStyle: {
+          fontWeight: "bold",
+        },
         headerRight: () => (
-          <TouchableOpacity onPress={navigateToAchievements} style={{ marginRight: 16 }}>
-            <IconSymbol name="trophy.fill" size={24} color={Colors[colorScheme].tint} />
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row' }}>
+            <TouchableOpacity onPress={navigateToImpact} style={{ marginRight: 16 }}>
+              <IconSymbol name="leaf.fill" size={24} color={Colors[colorScheme].tint} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={navigateToAchievements} style={{ marginRight: 16 }}>
+              <IconSymbol name="trophy.fill" size={24} color={Colors[colorScheme].tint} />
+            </TouchableOpacity>
+          </View>
         ),
       }}
     >
