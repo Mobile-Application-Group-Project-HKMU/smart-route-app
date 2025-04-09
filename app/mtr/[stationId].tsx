@@ -22,7 +22,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { IconSymbol } from "@/components/ui/IconSymbol";
 import { CrowdIndicator } from "@/components/CrowdIndicator";
-import TripImpactRecorder from "@/components/TripImpactRecorder";
+
 // Import MTR utility functions
 import { classifyStopETAs, getAllStops } from "@/util/mtr";
 import { MtrStation, MTR_COLORS } from "@/util/mtr";
@@ -390,14 +390,6 @@ export default function MtrStationScreen() {
               </ThemedText>
             )}
           </ThemedView>
-
-          {/* Trip Impact Recorder */}
-          {station && (
-            <TripImpactRecorder 
-              mode="MTR" 
-              distance={0} // Will be estimated
-            />
-          )}
 
           {/* Map View */}
           {Platform.OS !== "web" && (

@@ -1,6 +1,6 @@
 import React from "react";
 import { Tabs } from "expo-router";
-import { useColorScheme, Platform, TouchableOpacity, View } from "react-native";
+import { useColorScheme, Platform, TouchableOpacity, View, Text } from "react-native";
 import { Colors } from "@/constants/Colors";
 import TabBarBackground, {
   useBottomTabOverflow,
@@ -18,10 +18,6 @@ export default function TabLayout() {
     router.push("/achievements");
   };
   
-  const navigateToImpact = () => {
-    router.push("/impact");
-  };
-
   return (
     <Tabs
       screenOptions={{
@@ -61,11 +57,9 @@ export default function TabLayout() {
         },
         headerRight: () => (
           <View style={{ flexDirection: 'row' }}>
-            <TouchableOpacity onPress={navigateToImpact} style={{ marginRight: 16 }}>
-              <IconSymbol name="leaf.fill" size={24} color={Colors[colorScheme].tint} />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={navigateToAchievements} style={{ marginRight: 16 }}>
+            <TouchableOpacity onPress={navigateToAchievements} style={{ marginRight: 16, flexDirection: 'row', alignItems: 'center' }}>
               <IconSymbol name="trophy.fill" size={24} color={Colors[colorScheme].tint} />
+              <Text style={{ marginLeft: 4, color: Colors[colorScheme].tint }}>{t("achievements.title")}</Text>
             </TouchableOpacity>
           </View>
         ),

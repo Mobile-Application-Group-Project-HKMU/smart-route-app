@@ -44,7 +44,6 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import JourneyRecorder from "@/components/JourneyRecorder";
 import { TransportRoute } from "@/types/transport-types";
 // Import TripImpactRecorder component
-import TripImpactRecorder from "@/components/TripImpactRecorder";
 
 export default function RouteDetailScreen() {
   // Extract route parameters from the URL
@@ -427,13 +426,6 @@ export default function RouteDetailScreen() {
             </ThemedText>
           </ThemedView>
 
-          {stops.length > 0 && (
-            <TripImpactRecorder
-              mode="BUS"
-              distance={calculateRouteDistance(stops)}
-              duration={stops.length * 2 + 5} // Rough estimate: 2 min per stop + 5 min
-            />
-          )}
 
           {stops.length > 0 && (
             <View style={styles.mapContainer}>

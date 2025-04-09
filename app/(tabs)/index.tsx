@@ -336,7 +336,7 @@ export default function HomeScreen() {
         )}
       </ThemedView>
 
-      {/* Add achievements section before About section */}
+
       <ThemedView style={styles.achievementsSection}>
         <TouchableOpacity
           style={styles.achievementsButton}
