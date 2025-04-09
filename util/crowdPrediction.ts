@@ -44,11 +44,7 @@ export const getCrowdLevelIcon = (level: CrowdLevel): string => {
 
 /**
  * Predict crowd level based on route, time, and day of week
- * This is a simplified model - in a real app, this would use:
- * - Historical data
- * - Real-time passenger counts (if available from APIs)
- * - Weather conditions
- * - Special events
+ * This is a simplified model.
  */
 export const predictCrowdLevel = (
   routeId: string,
