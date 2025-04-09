@@ -158,6 +158,11 @@ export default function HomeScreen() {
     router.push("/about?fromIndex=true");
   };
 
+  // Add navigate to achievements function
+  const navigateToAchievements = () => {
+    router.push('/achievements');
+  };
+
   return (
     <ParallaxScrollView
       headerBackgroundColor={{ light: "#A1CEDC", dark: "#1D3D47" }}
@@ -331,6 +336,19 @@ export default function HomeScreen() {
         )}
       </ThemedView>
 
+      {/* Add achievements section before About section */}
+      <ThemedView style={styles.achievementsSection}>
+        <TouchableOpacity
+          style={styles.achievementsButton}
+          onPress={navigateToAchievements}
+        >
+          <IconSymbol name="trophy.fill" size={24} color="#8B4513" />
+          <ThemedText style={styles.achievementsButtonText}>
+            {t("achievements.title")}
+          </ThemedText>
+        </TouchableOpacity>
+      </ThemedView>
+
       <ThemedView style={styles.aboutSection}>
         <TouchableOpacity style={styles.aboutButton} onPress={navigateToAbout}>
           <IconSymbol name="info.circle.fill" size={20} color="#8B4513" />
@@ -478,5 +496,24 @@ const styles = StyleSheet.create({
     color: "white",
     fontWeight: "bold",
     fontSize: 12,
+  },
+  achievementsSection: {
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  achievementsButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFD580",
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 24,
+    justifyContent: "center",
+  },
+  achievementsButtonText: {
+    marginLeft: 8,
+    fontSize: 16,
+    fontWeight: "500",
+    color: "#8B4513",
   },
 });

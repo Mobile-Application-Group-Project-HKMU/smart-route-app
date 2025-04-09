@@ -40,6 +40,9 @@ import {
 } from "@/util/favourite";
 // Import language context for internationalization
 import { useLanguage } from "@/contexts/LanguageContext";
+// Import JourneyRecorder component
+import JourneyRecorder from "@/components/JourneyRecorder";
+import { TransportRoute } from "@/types/transport-types";
 
 export default function RouteDetailScreen() {
   // Extract route parameters from the URL
@@ -334,6 +337,11 @@ export default function RouteDetailScreen() {
     }
   };
 
+  // Navigate to achievements screen
+  const navigateToAchievements = () => {
+    router.push("/achievements");
+  };
+
   return (
     <ThemedView style={styles.container}>
       <Stack.Screen
@@ -360,6 +368,13 @@ export default function RouteDetailScreen() {
         <ActivityIndicator size="large" style={styles.loader} />
       ) : (
         <>
+          {typeof routeId === 'string' && (
+            <JourneyRecorder
+              route={routeId as unknown as TransportRoute}
+              onAchievementUnlocked={navigateToAchievements}
+            />
+          )}
+
           <ThemedView style={styles.routeHeader}>
             <ThemedText type="title" style={styles.routeNumber}>
               {t("route")} {routeId}

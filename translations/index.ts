@@ -1,14 +1,12 @@
-
 import homeTranslations from './home';
-
 import { planTranslations } from './plan';
-
 import stopTranslations from './stop';
 import tabsTranslations from './tabs';
 import mtrTranslations from './mtr';
 import settingsTranslations from './settings';
 import busTranslations from './bus';
 import nearbyTranslations from './nearby';
+import achievementsTranslations from './achievements';
 
 // Merge all translations
 export const translations = {
@@ -20,6 +18,7 @@ export const translations = {
   ...planTranslations,
   ...tabsTranslations,
   ...mtrTranslations,
+  ...achievementsTranslations,
 };
 
 // Export types for type safety

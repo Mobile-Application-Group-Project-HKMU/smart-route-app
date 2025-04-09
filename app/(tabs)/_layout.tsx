@@ -1,17 +1,22 @@
 import React from "react";
 import { Tabs } from "expo-router";
-import { useColorScheme, Platform } from "react-native";
+import { useColorScheme, Platform, TouchableOpacity } from "react-native";
 import { Colors } from "@/constants/Colors";
 import TabBarBackground, {
   useBottomTabOverflow,
 } from "@/components/ui/TabBarBackground";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { IconSymbol } from "@/components/ui/IconSymbol";
+import { router } from "expo-router";
 
 export default function TabLayout() {
   const colorScheme = useColorScheme() ?? "light";
   const { t } = useLanguage();
   const overflow = useBottomTabOverflow();
+
+  const navigateToAchievements = () => {
+    router.push('/achievements');
+  };
 
   return (
     <Tabs
@@ -34,6 +39,11 @@ export default function TabLayout() {
           fontWeight: "500",
         },
         headerShown: false,
+        headerRight: () => (
+          <TouchableOpacity onPress={navigateToAchievements} style={{ marginRight: 16 }}>
+            <IconSymbol name="trophy.fill" size={24} color={Colors[colorScheme].tint} />
+          </TouchableOpacity>
+        ),
       }}
     >
       <Tabs.Screen
