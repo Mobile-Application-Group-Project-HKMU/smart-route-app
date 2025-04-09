@@ -260,11 +260,15 @@ export default function HomeScreen() {
                           onPress={() => handleStopPress(item)}
                         >
                           <ThemedView style={styles.favoriteCardContent}>
+                            {/* Bus icon displayed for KMB bus stops
+                                巴士图标用于显示九巴巴士站 */}
                             <IconSymbol
                               name="bus.fill"
                               size={24}
                               color="#8B4513"
                             />
+                            {/* Display stop name based on user's language preference
+                                根据用户的语言偏好显示巴士站名称 */}
                             <ThemedText
                               style={styles.stopName}
                               numberOfLines={2}
@@ -283,11 +287,15 @@ export default function HomeScreen() {
                 )}
 
 
+                {/* Section for favorite MTR stations - only visible if user has favorites
+                    港铁站收藏部分 - 仅当用户有收藏的港铁站时显示 */}
                 {favoriteMtrStations.length > 0 && (
                   <ThemedView style={styles.subsection}>
                     <ThemedText style={styles.subsectionTitle}>
                       {t("home.favorites.mtr.stations")}
                     </ThemedText>
+                    {/* Horizontal scrollable list of favorite MTR stations
+                        收藏的港铁站水平滚动列表 */}
                     <FlatList
                       data={favoriteMtrStations}
                       horizontal
@@ -300,7 +308,7 @@ export default function HomeScreen() {
                         >
                           <ThemedView style={styles.favoriteCardContent}>
                             <ThemedView style={styles.mtrLineContainer}>
-                              {/* Render MTR line codes (limited to first 2 lines for space) 
+                              {/* Render MTR line codes (limited to first 2 lines for space)
                                   渲染港铁线路代码（由于空间限制，最多显示前两条线路） */}
                               {item.line_codes.slice(0, 2).map((line) => (
                                 <ThemedView
@@ -310,13 +318,15 @@ export default function HomeScreen() {
                                     { backgroundColor: "#0075C2" },
                                   ]}
                                 >
+                                  {/* Display individual MTR line code (e.g. TML, TCL)
+                                      显示各条港铁线路代码（例如 TML, TCL） */}
                                   <ThemedText style={styles.mtrLineText}>
                                     {line}
                                   </ThemedText>
                                 </ThemedView>
                               ))}
                             </ThemedView>
-                            {/* Display station name based on selected language 
+                            {/* Display station name based on selected language
                                 根据用户选择的语言显示车站名称 */}
                             <ThemedText
                               style={styles.stopName}
