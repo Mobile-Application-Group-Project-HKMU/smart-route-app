@@ -2,16 +2,18 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 /**
  * Interface for KMB favorite routes
+ * 九巴收藏路线的接口
  */
 export interface FavRouteKMB {
-  kmbID: string[];
+  kmbID: string[];  // Array of KMB route IDs - 九巴路线ID数组
 }
 
 /**
  * Interface for favorite stations
+ * 收藏车站的接口
  */
 export interface FavRouteStation {
-  stationID: string[];
+  stationID: string[];  // Array of station IDs - 车站ID数组
 }
 
 /**
@@ -52,6 +54,9 @@ export const FavStationExampleData: FavRouteStation = {
 /**
  * Initializes storage with default empty arrays if not already present.
  * Should be called when the app starts.
+ * 
+ * 初始化存储，如果尚未存在则使用默认的空数组。
+ * 应在应用启动时调用。
  */
 const initializeStorage = async () => {
   try {
@@ -75,9 +80,10 @@ initializeStorage();
 
 /**
  * Saves favorite data to AsyncStorage.
+ * 将收藏数据保存到AsyncStorage。
  * 
- * @param key - The storage key to save under
- * @param data - The favorite data to save
+ * @param key - The storage key to save under - 要保存在其下的存储键
+ * @param data - The favorite data to save - 要保存的收藏数据
  */
 export async function saveToLocalStorage(key: string, data: FavRouteStation | FavRouteKMB): Promise<void> {
   try {
@@ -119,10 +125,11 @@ export async function getFromLocalStorage(key: string): Promise<FavRouteStation 
 
 /**
  * Deletes a specific value from an array in AsyncStorage.
+ * 从AsyncStorage中的数组删除特定值。
  * 
- * @param key - The storage key containing the array
- * @param arrayKey - The property name of the array within the stored object
- * @param valueToDelete - The value to remove from the array
+ * @param key - The storage key containing the array - 包含数组的存储键
+ * @param arrayKey - The property name of the array within the stored object - 存储对象中数组的属性名
+ * @param valueToDelete - The value to remove from the array - 要从数组中删除的值
  */
 export async function deleteFromLocalStorageArray(
   key: string,

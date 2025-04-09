@@ -375,49 +375,53 @@ export async function findUnifiedNearbyStops(
 /**
  * Re-exports from various transport utility modules.
  * Provides a unified interface for accessing transport-specific functions.
+ * 从各种交通工具模块重新导出函数，提供统一的接口来访问特定交通工具的功能。
  */
 export { 
   // Re-export from KMB utilities
-  getAllRoutes as getAllKmbRoutes,
-  getRouteDetails as getKmbRouteDetails,
-  getRouteStops as getKmbRouteStops,
-  getAllStops as getAllKmbStops,
-  getStopETA as getKmbStopETA,
-  classifyStopETAs as classifyKmbStopETAs,
+  // 从九巴（KMB）工具重新导出功能
+  getAllRoutes as getAllKmbRoutes,       // 获取所有九巴路线
+  getRouteDetails as getKmbRouteDetails, // 获取九巴路线详情
+  getRouteStops as getKmbRouteStops,     // 获取九巴路线站点
+  getAllStops as getAllKmbStops,         // 获取所有九巴站点
+  getStopETA as getKmbStopETA,           // 获取九巴站点到达时间预估
+  classifyStopETAs as classifyKmbStopETAs, // 分类九巴站点到达时间预估
 } from './kmb';
 
 export {
   // Re-export from GMB utilities
-  getAllRoutes as getAllGmbRoutes,
-  getRouteDetails as getGmbRouteDetails,
-  getRouteStops as getGmbRouteStops,
-  getAllStops as getAllGmbStops,
-  getStopETA as getGmbStopETA,
-  classifyStopETAs as classifyGmbStopETAs,
+  // 从绿色小巴（GMB）工具重新导出功能
+  getAllRoutes as getAllGmbRoutes,       // 获取所有绿色小巴路线
+  getRouteDetails as getGmbRouteDetails, // 获取绿色小巴路线详情
+  getRouteStops as getGmbRouteStops,     // 获取绿色小巴路线站点
+  getAllStops as getAllGmbStops,         // 获取所有绿色小巴站点
+  getStopETA as getGmbStopETA,           // 获取绿色小巴站点到达时间预估
+  classifyStopETAs as classifyGmbStopETAs, // 分类绿色小巴站点到达时间预估
 } from './gmb';
 
 export {
   // Re-export from CTB utilities
-  getStopETA as getCtbStopETA,
-  classifyStopETAs as classifyCtbStopETAs,
+  // 从城巴（CTB）工具重新导出功能
+  getStopETA as getCtbStopETA,           // 获取城巴站点到达时间预估
+  classifyStopETAs as classifyCtbStopETAs, // 分类城巴站点到达时间预估
 } from './ctb';
 
 // export {
-//   // Re-export from NLB utilities
-//   getStopETA as getNlbStopETA,
-//   classifyStopETAs as classifyNlbStopETAs,
+//   getStopETA as getNlbStopETA,           // 获取新大屿山巴士站点到达时间预估
+//   classifyStopETAs as classifyNlbStopETAs, // 分类新大屿山巴士站点到达时间预估
 // } from './nlb';
 
 // export {
-//   // Re-export from HKKF utilities
-//   getScheduledDepartures as getHkkfScheduledDepartures,
-//   classifyScheduledDepartures as classifyHkkfScheduledDepartures,
+
+//   getScheduledDepartures as getHkkfScheduledDepartures, // 获取香港街渡计划出发时间
+//   classifyScheduledDepartures as classifyHkkfScheduledDepartures, // 分类香港街渡计划出发时间
 // } from './hkkf';
 
 // Re-export from MTR utilities using proper naming 
+// 从港铁（MTR）工具重新导出功能，使用恰当的命名
 export {
-  getAllRoutes as getAllMtrRoutes,
-  getAllStops as getAllMtrStops,
-  getStopETA as getMtrStopETA,
-  classifyStopETAs as classifyMtrStopETAs,
+  getAllRoutes as getAllMtrRoutes,       // 获取所有港铁路线
+  getAllStops as getAllMtrStops,         // 获取所有港铁站点
+  getStopETA as getMtrStopETA,           // 获取港铁站点到达时间预估
+  classifyStopETAs as classifyMtrStopETAs, // 分类港铁站点到达时间预估
 } from './mtr';

@@ -2,10 +2,14 @@
  * Formats transport time strings into user-friendly displays in different languages.
  * Supports both absolute time (clock time) and relative time (minutes from now).
  * 
- * @param isoString - ISO-formatted date string to format
+ * 将交通时间字符串格式化为不同语言的用户友好显示。
+ * 支持绝对时间（时钟时间）和相对时间（距现在的分钟数）。
+ * 
+ * @param isoString - ISO-formatted date string to format - 要格式化的ISO格式日期字符串
  * @param lang - Language for the formatted output (English, Traditional Chinese, or Simplified Chinese)
- * @param type - Whether to display as absolute time or relative time
- * @returns Formatted time string in the specified language
+ *               格式化输出的语言（英文、繁体中文或简体中文）
+ * @param type - Whether to display as absolute time or relative time - 是显示为绝对时间还是相对时间
+ * @returns Formatted time string in the specified language - 指定语言的格式化时间字符串
  */
 export const formatTransportTime = (
     isoString: string,

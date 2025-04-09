@@ -9,17 +9,18 @@ import {getAllStations} from './mtrStations'
 // Import utility for calculating distance between coordinates
 import { calculateDistance } from './calculateDistance';
 // MTR line colors - Color hex codes for each MTR line for UI display
+// 港铁线路颜色 - 每条港铁线路的十六进制颜色代码，用于UI显示
 export const MTR_COLORS = {
-  'AEL': '#00888E', // Airport Express
-  'TCL': '#F3982D', // Tung Chung Line
-  'TML': '#9C2E00', // Tuen Ma Line
-  'TKL': '#7E3C99', // Tseung Kwan O Line
-  'EAL': '#5EB7E8', // East Rail Line
-  'TWL': '#C41E3A', // Tsuen Wan Line
-  'ISL': '#0075C2', // Island Line
-  'KTL': '#00A040', // Kwun Tong Line
-  'SIL': '#CBD300', // South Island Line
-  'DRL': '#B5A45D'  // Disneyland Resort Line (not included in API v1.6)
+  'AEL': '#00888E', // Airport Express - 机场快线
+  'TCL': '#F3982D', // Tung Chung Line - 东涌线
+  'TML': '#9C2E00', // Tuen Ma Line - 屯马线
+  'TKL': '#7E3C99', // Tseung Kwan O Line - 将军澳线
+  'EAL': '#5EB7E8', // East Rail Line - 东铁线
+  'TWL': '#C41E3A', // Tsuen Wan Line - 荃湾线
+  'ISL': '#0075C2', // Island Line - 港岛线
+  'KTL': '#00A040', // Kwun Tong Line - 观塘线
+  'SIL': '#CBD300', // South Island Line - 南港岛线
+  'DRL': '#B5A45D'  // Disneyland Resort Line - 迪士尼线 (not included in API v1.6)
 };
 
 // MTR station information interface - Extends TransportStop with MTR-specific properties
@@ -44,9 +45,14 @@ const CACHE_TTL = appConfig.apiCacheTTL || 60000; // Default to 60 seconds if no
 
 /**
  * Makes a cached API request
+ * 发起带缓存的API请求
+ * 
  * @param url - The API endpoint to call
+ * @param url - 要调用的API端点
  * @returns Promise with the response data
+ * @returns 包含响应数据的Promise
  * @description Fetches data from the MTR API with caching to reduce redundant requests
+ * @description 从港铁API获取数据，带缓存以减少重复请求
  */
 async function cachedApiGet<T>(url: string): Promise<T> {
   const now = Date.now();
@@ -79,9 +85,14 @@ async function cachedApiGet<T>(url: string): Promise<T> {
 
 /**
  * Gets all MTR lines (routes)
+ * 获取所有港铁线路（路线）
+ * 
  * @param language - The language code for the response ('en', 'zh-Hant', 'zh-Hans')
+ * @param language - 响应的语言代码（'en'英文, 'zh-Hant'繁体中文, 'zh-Hans'简体中文）
  * @returns Promise with an array of TransportRoute objects
+ * @returns 包含TransportRoute对象数组的Promise
  * @description Fetches all MTR lines with route information in the specified language
+ * @description 获取指定语言的所有港铁线路信息
  */
 export async function getAllLines(language: 'en' | 'zh-Hant' | 'zh-Hans' = 'en'): Promise<TransportRoute[]> {
   if (language === 'zh-Hans') {
@@ -126,11 +137,18 @@ export async function getAllLines(language: 'en' | 'zh-Hant' | 'zh-Hans' = 'en')
 
 /**
  * Finds MTR stations near a specified location
+ * 查找指定位置附近的港铁站
+ * 
  * @param latitude - Latitude of the location
+ * @param latitude - 位置的纬度
  * @param longitude - Longitude of the location
+ * @param longitude - 位置的经度
  * @param radiusMeters - Search radius in meters (default: 500)
+ * @param radiusMeters - 搜索半径，单位为米（默认：500）
  * @returns Promise with an array of nearby MtrStation objects with distance
+ * @returns 包含附近MtrStation对象及距离信息的数组Promise
  * @description Finds MTR stations within a specified radius of a given location
+ * @description 查找给定位置指定半径内的港铁站
  */
 export async function findNearbyStations(
   latitude: number,

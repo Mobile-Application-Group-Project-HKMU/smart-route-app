@@ -18,8 +18,6 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import {
   KmbRouteCard,
   CtbRouteCard,
-  HkkfRouteCard,
-  NlbRouteCard,
   MtrRouteCard,
 } from "@/components/transport";
 
@@ -308,24 +306,6 @@ export default function BusRoutesScreen() {
       case "CTB":
         return (
           <CtbRouteCard
-            key={key}
-            route={route}
-            onPress={() => handleRoutePress(route)}
-            language={language}
-          />
-        );
-      case "HKKF":
-        return (
-          <HkkfRouteCard
-            key={key}
-            route={route}
-            onPress={() => handleRoutePress(route)}
-            language={language}
-          />
-        );
-      case "NLB":
-        return (
-          <NlbRouteCard
             key={key}
             route={route}
             onPress={() => handleRoutePress(route)}

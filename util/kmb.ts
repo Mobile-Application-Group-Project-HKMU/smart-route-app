@@ -1,6 +1,9 @@
 /**
  * KMB API utility module
  * Provides functions and interfaces for interacting with the KMB bus data API
+ * 
+ * 九巴API工具模块
+ * 提供与九巴巴士数据API交互的函数和接口
  */
 import axios, { AxiosError } from 'axios';
 import { ReactNode } from 'react';
@@ -9,17 +12,18 @@ import { calculateDistance } from './calculateDistance';
 
 /**
  * Represents a KMB bus route with origin, destination and route information
+ * 表示九巴巴士路线，包含起点、终点和路线信息
  */
 export interface Route {
-  dest_tc: ReactNode;  // Destination in Traditional Chinese
-  orig_tc: ReactNode;  // Origin in Traditional Chinese
-  co: 'KMB';           // Company identifier (KMB only)
-  route: string;       // Route number/code
-  bound: 'I' | 'O';    // Direction: 'I' for Inbound, 'O' for Outbound
-  service_type: string; // Service type identifier
-  orig_en: string;     // Origin in English
-  dest_en: string;     // Destination in English
-  data_timestamp: string; // Timestamp when data was generated
+  dest_tc: ReactNode;  // Destination in Traditional Chinese - 繁体中文目的地名称
+  orig_tc: ReactNode;  // Origin in Traditional Chinese - 繁体中文起点名称
+  co: 'KMB';           // Company identifier (KMB only) - 公司标识符（仅限九巴）
+  route: string;       // Route number/code - 路线编号/代码
+  bound: 'I' | 'O';    // Direction: 'I' for Inbound, 'O' for Outbound - 方向：'I'为入站，'O'为出站
+  service_type: string; // Service type identifier - 服务类型标识符
+  orig_en: string;     // Origin in English - 英文起点名称
+  dest_en: string;     // Destination in English - 英文目的地名称
+  data_timestamp: string; // Timestamp when data was generated - 数据生成的时间戳
 }
 
 /**
@@ -180,10 +184,14 @@ async function getStopETA(stopId: string, retries = 2): Promise<ETA[]> {
   }
 }
 
-
-
 /**
  * Finds stops near a specified location within a radius
+ * 在指定半径内查找靠近特定位置的巴士站
+ * 
+ * @param targetLat - Target latitude - 目标纬度
+ * @param targetLon - Target longitude - 目标经度
+ * @param radiusMeters - Search radius in meters (default: 500) - 搜索半径，单位为米（默认：500）
+ * @returns Array of stops with distance information - 包含距离信息的巴士站数组
  */
 async function findNearbyStops(
   targetLat: number,
@@ -233,6 +241,10 @@ export interface ClassifiedETA {
 
 /**
  * Organizes ETAs for a stop by routes
+ * 按路线整理巴士站的预计到达时间
+ * 
+ * @param stopId - ID of the bus stop - 巴士站ID
+ * @returns Array of classified ETAs grouped by route and direction - 按路线和方向分类的预计到达时间数组
  */
 async function classifyStopETAs(stopId: string): Promise<ClassifiedETA[]> {
   try {
