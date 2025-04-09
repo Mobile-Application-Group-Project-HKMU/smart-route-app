@@ -1,66 +1,43 @@
-# Smart KMB App
+# Smart KMB App - Hong Kong Transportation Guide
 
-A comprehensive mobile application for Hong Kong's transportation system, providing real-time information for KMB buses and MTR trains, route planning, nearby stops, and achievements tracking.
-
-## Table of Contents
-
-- [Features](#features)
-- [Prerequisites](#prerequisites)
-- [Installation](#installation)
-- [Running the App](#running-the-app)
-- [Important Note: Web Support](#important-note-web-support)
-- [Technical Architecture](#technical-architecture)
-- [Screen Implementations](#screen-implementations)
-  - [Home Screen](#home-screen)
-  - [Transport Screen](#transport-screen)
-  - [Route Planning Screen](#route-planning-screen)
-  - [Nearby Screen](#nearby-screen)
-  - [Bus Route Detail Screen](#bus-route-detail-screen)
-  - [MTR Station Screen](#mtr-station-screen)
-  - [MTR Line Screen](#mtr-line-screen)
-  - [Achievements System](#achievements-system)
-- [Contributors](#contributors)
+A comprehensive mobile application for navigating Hong Kong's public transportation system, featuring real-time bus and MTR information, journey planning, and location-based services.
 
 ## Features
 
-- **Real-time transit data** for KMB buses and MTR trains
-- **Multi-language support** (English, Traditional Chinese, Simplified Chinese)
-- **Journey planning** with multi-modal transportation options
-- **Location-based services** to find nearby bus stops and MTR stations
-- **Favorites system** to save frequently used routes and stops
-- **Achievements system** to track your transit usage
-- **Weather-aware route planning** that adapts to current conditions
-- **Interactive maps** for all transportation routes
+- **Multi-transport Support**: Integrated KMB bus and MTR railway information
+- **Real-time Arrivals**: Up-to-date estimated arrival times
+- **Route Planning**: Plan journeys with combined transportation modes
+- **Location Services**: Find nearby stops and stations
+- **Favorites System**: Save frequently used routes and stops
+- **Achievements System**: Gamified travel experience
+- **Multi-language Support**: English, Traditional Chinese, and Simplified Chinese
 
-## Prerequisites
+## Installation Requirements
 
-- Node.js (LTS version)
-- Yarn package manager
-- iOS or Android development environment
+- Node.js (v14.0 or newer)
+- Yarn (v1.22 or newer)
 - Expo CLI
+- iOS Simulator (for Mac) or Android Emulator
+- Physical iOS/Android device (for testing)
 
-## Installation
+## Setup Instructions
 
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/your-username/smart-kmb-app.git
+git clone https://github.com/Mobile-Application-Group-Project-HKMU/smart-kmb-app.git
 cd smart-kmb-app
 ```
 
-2. Install dependencies using Yarn (npm is not recommended for this project):
+2. Install dependencies (using Yarn exclusively):
 
 ```bash
 yarn install
 ```
 
-3. Setup environment (if needed):
+> **Important**: This project requires Yarn package manager. NPM is not supported and may cause dependency conflicts.
 
-```bash
-yarn expo prebuild --platform all --clean
-```
-
-## Running the App
+## Running the Application
 
 ### Development Mode
 
@@ -70,209 +47,277 @@ Start the development server:
 yarn start
 ```
 
-Run on specific platforms:
+### iOS Simulator:
 
 ```bash
-# For iOS
 yarn ios
+```
 
-# For Android
+### Android Emulator:
+
+```bash
 yarn android
 ```
 
-### Building for Production
-
-To create a production build:
+### Building for Production:
 
 ```bash
-# Build for all platforms
 yarn build
+```
 
-# Build APK for Android testing
+### Build APK for Testing:
+
+```bash
 yarn apk
 ```
 
-## Important Note: Web Support
+> **Important Note**: Web browser support is **NOT available** for this application due to platform-specific native module dependencies, including mapping features and location services. The app must be run on physical devices or simulators.
 
-**This application does NOT support web browsers** due to several platform-specific dependencies:
+## Project Structure
 
-- Native map integration using `react-native-maps`
-- Location services via `expo-location`
-- Platform-specific navigation features
+```
+smart-kmb-app/
+├── app/                   # Main application screens
+│   ├── (tabs)/           # Tab-based navigation screens
+│   ├── bus/              # Bus route screens
+│   ├── mtr/              # MTR station screens
+│   └── achievements.tsx  # Achievements screen
+├── components/           # Reusable UI components
+├── constants/            # App constants and theme definitions
+├── contexts/             # React contexts (language, etc.)
+├── hooks/                # Custom React hooks
+├── types/                # TypeScript type definitions
+├── translations/         # Localization files
+└── util/                 # Utility functions and API clients
+```
 
-The app is designed exclusively for iOS and Android mobile devices. Attempting to run in web browsers will result in compilation errors or missing functionality.
+## Implementation Details
 
-## Technical Architecture
+### Tab-based Navigation
 
-- **Frontend Framework**: React Native with Expo SDK 52
-- **Navigation**: Expo Router with tab-based navigation
-- **State Management**: React Hooks for local state
-- **Storage**: AsyncStorage for persistent data
-- **Maps**: React Native Maps with Google Maps integration
-- **Styling**: StyleSheet for component-specific styling
-- **Internationalization**: Custom context-based language system
-- **APIs**: Integration with KMB and MTR data services
+The app uses Expo Router's tab-based navigation system defined in `app/(tabs)/_layout.tsx`, providing a consistent bottom tab interface for the main sections of the application:
 
-## Screen Implementations
+```typescript
+// Main tab sections
+<Tabs.Screen name="index" options={{ title: t("tabs.home") }} />
+<Tabs.Screen name="transport" options={{ title: t("tabs.routes") }} />
+<Tabs.Screen name="plan" options={{ title: t("tabs.plan") }} />
+<Tabs.Screen name="nearby" options={{ title: t("tabs.nearby") }} />
+```
 
-### Home Screen
+### Home Screen (`app/(tabs)/index.tsx`)
 
-**File:** `app/(tabs)/index.tsx`
+The home screen serves as the main entry point, displaying:
 
-**Functionality:**
-- Displays user's favorite bus routes, stops, and MTR stations
-- Implements auto-refresh when the screen comes into focus
-- Uses horizontal scroll lists for each category of favorites
-- Provides quick navigation to settings and achievements
+1. **Favorite Management**:
+   - Loads user favorites (routes, stops, MTR stations) from AsyncStorage
+   - Uses `useFocusEffect` to refresh data when navigating back to the screen
+   - Separates MTR and KMB items for categorized display
 
-**Implementation Details:**
-- Uses `useFocusEffect` to reload favorites when the screen becomes active
-- Retrieves favorites from AsyncStorage using `getFromLocalStorage`
-- Displays different UI elements based on the favorite type (bus route/stop/MTR station)
-- Handles proper localization of names based on the selected language
+2. **UI Components**:
+   - Scrollable horizontal lists for each favorite category
+   - Color-coded cards with dynamic information based on the data type
+   - Quick access buttons for achievements and app information
 
-### Transport Screen
+3. **Internationalization**:
+   - Uses language context to display content in the user's preferred language
+   - Handles conditional rendering for different language options
 
-**File:** `app/(tabs)/transport.tsx`
+### Transport Screen (`app/(tabs)/transport.tsx`)
 
-**Functionality:**
-- Allows browsing and filtering of transportation routes and stations
-- Supports multiple transportation companies (KMB, CTB, MTR, etc.)
-- Provides search functionality for finding specific routes/stations
-- Implements pagination for efficient data loading
+This screen provides a comprehensive listing of all public transportation options:
 
-**Implementation Details:**
-- Fetches transportation data from different APIs on component mount
-- Uses state management to handle filtering and searching
-- Implements tabs for switching between routes and stations views
-- Provides transport company-specific styling for visual distinction
-- Handles navigation to appropriate detail screens based on selection
+1. **Data Management**:
+   - Fetches and combines data from multiple transit providers (KMB, MTR)
+   - Implements pagination for handling large datasets efficiently
+   - Supports both route and station browsing modes
 
-### Route Planning Screen
+2. **Filtering System**:
+   - Company filter tabs with visual indicators
+   - Text-based search across multiple fields (route numbers, origins, destinations)
+   - Filter persistence during mode switching
 
-**File:** `app/(tabs)/plan.tsx`
+3. **Dynamic Rendering**:
+   - Different card styles based on transport company
+   - Adaptive UI for different transport types
+   - Consistent navigation pattern to appropriate detail screens
 
-**Functionality:**
-- Allows users to plan journeys between two locations
-- Supports searching for bus stops and MTR stations as origin/destination
-- Offers option to use current location as starting point
-- Generates multiple route options with different transportation modes
-- Displays journey details with step-by-step instructions
-- Integrates with weather data to suggest optimal routes
+### Route Planning Screen (`app/(tabs)/plan.tsx`)
 
-**Implementation Details:**
-- Uses `expo-location` to get user's current position
-- Implements search functionality for finding stops/stations
-- Generates sample journeys with bus, MTR, and combined options
-- Calculates distances and travel times for each journey segment
-- Renders an interactive map showing the selected route
-- Adjusts recommendations based on weather conditions
+The route planning screen enables users to find transportation routes between locations:
 
-### Nearby Screen
+1. **Location Selection**:
+   - Search interface for origin and destination points
+   - Current location integration using `expo-location`
+   - Interactive search results with stop/station details
 
-**File:** `app/(tabs)/nearby.tsx`
+2. **Journey Generation**:
+   - Creates multiple route options combining different transport modes
+   - Calculates walking distances, transit times, and transfers
+   - Weather-aware routing that adapts to current conditions
 
-**Functionality:**
-- Finds transit stops near the user's current location
-- Allows filtering by distance (250m, 500m, 1km)
-- Supports filtering by transportation type (Bus/MTR)
-- Displays results on an interactive map and in a list
-- Shows distance to each stop from current location
+3. **Route Visualization**:
+   - Interactive map showing the complete journey
+   - Color-coded path segments for different transport types
+   - Step-by-step instructions with distance and time estimates
 
-**Implementation Details:**
-- Requests location permissions using `expo-location`
-- Fetches nearby stops from both KMB and MTR APIs
-- Combines and normalizes data into a unified format
-- Renders results on a map with custom markers for each transport type
-- Provides UI controls for adjusting search radius and filters
-- Allows navigation to stop details with a single tap
+4. **Weather Integration**:
+   - Fetches real-time weather data for the user's location
+   - Adjusts route recommendations based on weather conditions
+   - Provides weather protection scores for different journey options
 
-### Bus Route Detail Screen
+### Nearby Screen (`app/(tabs)/nearby.tsx`)
 
-**File:** `app/bus/[routeId].tsx`
+The nearby screen finds transportation options close to the user's current location:
 
-**Functionality:**
-- Displays detailed information about a specific bus route
-- Shows list of all stops along the route in sequence
-- Visualizes the route on an interactive map
-- Highlights the stop nearest to user's current location
-- Provides quick navigation to stop details
-- Allows adding/removing routes from favorites
+1. **Location Services**:
+   - Permission handling for location access
+   - High-precision location tracking
+   - Distance calculation for nearby stops
 
-**Implementation Details:**
-- Uses dynamic routing with parameters to load specific route data
-- Fetches route details including stops, origin, and destination
-- Renders a polyline on the map connecting all stops
-- Uses location services to find the nearest stop to user
-- Implements favorite functionality with local storage
-- Supports both KMB and GMB bus companies with different data structures
+2. **Multi-Transport Integration**:
+   - Unified data structure for both KMB and MTR stops
+   - Combined display with type indicators
+   - Transport-specific filtering options
 
-### MTR Station Screen
+3. **Map Visualization**:
+   - Interactive map showing all nearby stops
+   - Custom markers for different transport types
+   - Focus controls to zoom to specific stops
 
-**File:** `app/mtr/[stationId].tsx`
+4. **Distance Filtering**:
+   - Adjustable search radius (250m, 500m, 1km)
+   - Dynamic updating based on selection
+   - Distance-based sorting of results
 
-**Functionality:**
-- Displays detailed information about an MTR station
-- Shows real-time train arrival information by line and platform
-- Displays station location on an interactive map
-- Provides navigation options to the station
-- Shows crowdedness predictions for upcoming trains
-- Allows adding/removing stations from favorites
+### Bus Route Detail Screen (`app/bus/[routeId].tsx`)
 
-**Implementation Details:**
-- Fetches station details and real-time arrival data
-- Classifies ETAs by line and destination for organized display
-- Implements favorites functionality with AsyncStorage
-- Provides platform-specific map navigation (iOS vs Android)
-- Integrates with crowd prediction system for enhanced information
-- Uses focus effects to refresh data when the screen is viewed
+This screen provides comprehensive information about a specific bus route:
 
-### MTR Line Screen
+1. **Dynamic Route Loading**:
+   - Parses URL parameters for route ID, bound, and service type
+   - Supports both KMB and GMB routes with different data structures
+   - Handles inbound/outbound directions separately
 
-**File:** `app/mtr/line/[lineId].tsx`
+2. **Location Awareness**:
+   - Determines the nearest stop to user's current position
+   - Highlights this stop in both the map and list
+   - Provides quick navigation to the closest stop
 
-**Functionality:**
-- Displays detailed information about an MTR train line
-- Shows all stations along the selected line in sequence
-- Visualizes the line on a map with colored polyline
-- Highlights interchange stations with multiple lines
-- Provides navigation to individual station details
+3. **Map Visualization**:
+   - Polyline showing the complete route path
+   - Markers for each stop with stop names and sequence numbers
+   - Current location marker for reference
 
-**Implementation Details:**
-- Fetches line data and all stations on the line
-- Renders a color-coded map view showing the entire line
-- Lists all stations with proper sequencing
-- Shows interchange information for stations connecting multiple lines
-- Implements proper localization for station names based on language setting
-- Uses the official MTR color scheme for line identification
+4. **Journey Recording**:
+   - Integration with achievement system
+   - Records route usage for tracking progress
+   - Provides navigation to achievements when unlocked
 
-### Achievements System
+### MTR Station Screen (`app/mtr/[stationId].tsx`)
 
-**File:** `app/achievements.tsx`
+This screen displays detailed information about an MTR station:
 
-**Functionality:**
-- Displays user's transportation achievements
-- Shows progress toward various transit-related goals
-- Categorizes achievements by type
-- Calculates completion percentages and points
+1. **Real-time Arrivals**:
+   - Fetches and processes ETA data from MTR API
+   - Classifies and groups arrivals by line and direction
+   - Displays platform information and service remarks
 
-**Implementation Details:**
-- Retrieves user achievement data from local storage
-- Renders achievements with visual indicators of progress
-- Implements filtering by achievement category
-- Displays achievement unlocking dates for completed items
-- Calculates statistics like total points and completion percentage
-- Uses color coding to distinguish achievement levels (bronze, silver, gold)
+2. **Station Information**:
+   - Shows station ID and name in multiple languages
+   - Displays all train lines serving the station with color coding
+   - Identifies interchange stations with special indicators
 
-## Contributors
+3. **Map Integration**:
+   - Shows exact station location on an interactive map
+   - Platform-specific map links (Google Maps on Android, Apple Maps on iOS)
+   - Navigation button to get directions to the station
 
-- Li Yanpei - Frontend Development / Server Deploy
-- Li Yuan - Group Member
-- LEE Meng Hin - Group Member
-- Chan Antony - Group Member
-- Sze Tsz Yam - Group Member
-- Poon Chun Him - Group Member
+4. **Crowd Prediction**:
+   - Integrates with settings to show/hide crowd indicators
+   - Predicts crowdedness levels based on time and historical data
+   - Visual indicators for different crowd levels
+
+### MTR Line Screen (`app/mtr/line/[lineId].tsx`)
+
+This screen shows comprehensive information about an MTR train line:
+
+1. **Line Information**:
+   - Displays line code, name, and terminal stations
+   - Color coding based on official MTR line colors
+   - Origin and destination information in multiple languages
+
+2. **Station Listing**:
+   - Shows all stations along the selected line in sequence
+   - Interchange stations marked with connecting lines
+   - Navigation to detailed station information
+
+3. **Map Visualization**:
+   - Interactive map showing the line path
+   - Color-coded polyline matching the line's official color
+   - Special markers for interchange stations
+
+### Bus Stop Detail Screen (`app/stop/[stopId].tsx`)
+
+This screen provides information about a specific bus stop:
+
+1. **Real-time Arrivals**:
+   - Fetches and displays estimated arrival times for all routes
+   - Groups arrivals by route and destination
+   - Shows multiple upcoming buses with timing information
+
+2. **Location Features**:
+   - Interactive map showing the stop's exact position
+   - Platform-specific navigation integration
+   - Distance calculation from current location
+
+3. **Favorites Management**:
+   - Local storage integration for saving favorite stops
+   - Toggle functionality for adding/removing favorites
+   - Visual feedback for favorite status
+
+### Achievements Screen (`app/achievements.tsx`)
+
+The achievements screen implements a gamification system for public transport usage:
+
+1. **Achievement Tracking**:
+   - Loads user progress from local storage
+   - Categorizes achievements by type (journey count, transport variety, etc.)
+   - Calculates completion percentages and total points
+
+2. **UI Implementation**:
+   - Category tabs for filtering different achievement types
+   - Progress bars showing completion status
+   - Visual indicators for unlocked achievements
+
+3. **Achievement Card Design**:
+   - Color coding based on achievement level (bronze, silver, gold)
+   - Icon representation of achievement type
+   - Progress tracking with current/required values
+
+### Settings Screen (`app/settings.tsx`)
+
+This screen allows users to customize app behavior:
+
+1. **Language Selection**:
+   - Toggle between English, Traditional Chinese, and Simplified Chinese
+   - Real-time UI updates when language changes
+   - Persistent storage of language preference
+
+2. **Feature Toggles**:
+   - Crowd prediction enable/disable option
+   - Visual toggle switches with state indicators
+   - Settings persistence across app restarts
+
+3. **UI Design**:
+   - Clean, sectioned layout for different setting categories
+   - Visual feedback for active settings
+   - Back navigation with state preservation
 
 ## License
 
-This project is licensed under the MIT License. See the LICENSE file for details.
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Support
+
+For any questions or issues, please open an issue on the GitHub repository.
