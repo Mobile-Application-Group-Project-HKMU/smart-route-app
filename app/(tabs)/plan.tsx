@@ -1,4 +1,5 @@
-// Import necessary React and React Native components
+// Route Planning Screen - Main component for planning journeys using different transportation modes
+// 路线规划界面 - 使用不同交通方式规划行程的主要组件
 import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
@@ -11,20 +12,25 @@ import {
   Platform,
 } from "react-native";
 // Import Expo routing and location services
+// 导入Expo路由和位置服务
 import { Stack, router } from "expo-router";
 import * as Location from "expo-location";
 // Import map components for route visualization
+// 导入地图组件用于路线可视化
 import MapView, { Marker, PROVIDER_GOOGLE, Polyline } from "react-native-maps";
 
 // Import custom UI components
+// 导入自定义UI组件
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { IconSymbol } from "@/components/ui/IconSymbol";
 // Import language context for multilingual support
+// 导入语言上下文以支持多语言
 import { useLanguage } from "@/contexts/LanguageContext";
 import ParallaxScrollView from "@/components/ParallaxScrollView";
 
 // Import utility functions for fetching transportation data
+// 导入获取交通数据的工具函数
 import { getAllStops as getAllKmbStops } from "@/util/kmb";
 import { getAllStops as getAllMtrStops } from "@/util/mtr";
 import { TransportStop, TransportMode } from "@/types/transport-types";
@@ -33,55 +39,74 @@ import { getWeatherForLocation, calculateWeatherScore } from "@/util/weather";
 import { WeatherInfo } from "@/components/WeatherInfo";
 
 // Define type for each step in a journey (walk, bus, or MTR)
+// 定义行程中每一步的类型（步行、巴士或地铁）
 type JourneyStep = {
-  type: "WALK" | "BUS" | "MTR";
-  from: TransportStop;
-  to: TransportStop;
-  distance?: number;
-  duration?: number;
-  route?: string;
-  company?: string;
+  type: "WALK" | "BUS" | "MTR";  // Transportation mode - 交通方式
+  from: TransportStop;           // Origin stop - 起始站点
+  to: TransportStop;             // Destination stop - 目的地站点
+  distance?: number;             // Distance in meters - 距离（米）
+  duration?: number;             // Duration in minutes - 时间（分钟）
+  route?: string;                // Route number/name - 路线号码/名称
+  company?: string;              // Transportation company - 交通公司
 };
 
 // Define type for a complete journey, consisting of multiple steps
+// 定义完整行程类型，由多个步骤组成
 type Journey = {
-  id: string;
-  steps: JourneyStep[];
-  totalDuration: number;
-  totalDistance: number;
-  weatherAdjusted?: boolean;
-  weatherProtected?: boolean;
+  id: string;                    // Unique journey ID - 唯一行程ID
+  steps: JourneyStep[];          // Array of journey steps - 行程步骤数组
+  totalDuration: number;         // Total journey time - 总行程时间
+  totalDistance: number;         // Total journey distance - 总行程距离
+  weatherAdjusted?: boolean;     // Whether route adjusted for weather - 路线是否因天气调整
+  weatherProtected?: boolean;    // Whether route offers weather protection - 路线是否提供天气保护
 };
 
 // Define type for search results with additional display information
+// 定义搜索结果类型，包含额外显示信息
 type SearchResult = TransportStop & {
-  displayName: string;
-  company: string;
+  displayName: string;           // Localized display name - 本地化显示名称
+  company: string;               // Transportation company - 交通公司
 };
 
 // Main component for route planning functionality
+// 路线规划功能的主要组件
 export default function RoutePlanScreen() {
   // Access translation and language functions from context
+  // 从上下文中获取翻译和语言功能
   const { t, language } = useLanguage();
+  
   // State for input text fields
+  // 输入文本字段的状态
   const [fromText, setFromText] = useState("");
   const [toText, setToText] = useState("");
+  
   // State for selected origin and destination stops
+  // 已选择的起始和目的地站点状态
   const [fromStop, setFromStop] = useState<SearchResult | null>(null);
   const [toStop, setToStop] = useState<SearchResult | null>(null);
+  
   // State for tracking which search field is active
+  // 跟踪哪个搜索字段处于活动状态
   const [searchingFrom, setSearchingFrom] = useState(false);
   const [searchingTo, setSearchingTo] = useState(false);
+  
   // State for search results and all available stops
+  // 搜索结果和所有可用站点的状态
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [allStops, setAllStops] = useState<SearchResult[]>([]);
+  
   // Loading states
+  // 加载状态
   const [loading, setLoading] = useState(false);
   const [loadingStops, setLoadingStops] = useState(true);
+  
   // State for journey planning results
+  // 行程规划结果的状态
   const [journeys, setJourneys] = useState<Journey[]>([]);
   const [selectedJourney, setSelectedJourney] = useState<Journey | null>(null);
+  
   // State for user's current location functionality
+  // 用户当前位置功能的状态
   const [useCurrentLocation, setUseCurrentLocation] = useState(false);
   const [userLocation, setUserLocation] =
     useState<Location.LocationObject | null>(null);
@@ -89,6 +114,7 @@ export default function RoutePlanScreen() {
   const [isWeatherAware, setIsWeatherAware] = useState(true);
 
   // Load all stops (KMB and MTR) when the component mounts or language changes
+  // 在组件挂载或语言更改时加载所有站点（KMB和MTR）
   useEffect(() => {
     const loadAllStops = async () => {
       try {
@@ -124,6 +150,7 @@ export default function RoutePlanScreen() {
   }, [language]);
 
   // Fetch weather data when location changes
+  // 当位置更改时获取天气数据
   useEffect(() => {
     async function fetchWeatherData() {
       if (!userLocation) return;
@@ -143,6 +170,7 @@ export default function RoutePlanScreen() {
   }, [userLocation]);
 
   // Handle search input changes and update search results
+  // 处理搜索输入更改并更新搜索结果
   const handleSearch = (text: string, isFrom: boolean) => {
     if (isFrom) {
       setFromText(text);
@@ -173,6 +201,7 @@ export default function RoutePlanScreen() {
   };
 
   // Handle selection of a stop from search results
+  // 处理从搜索结果中选择站点
   const handleSelectStop = (stop: SearchResult) => {
     if (searchingFrom) {
       setFromStop(stop);
@@ -188,6 +217,7 @@ export default function RoutePlanScreen() {
   };
 
   // Handle use of current location as the origin
+  // 处理使用当前位置作为起点
   const handleUseCurrentLocation = async () => {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
@@ -214,6 +244,7 @@ export default function RoutePlanScreen() {
   };
 
   // Handle journey planning based on selected stops or current location
+  // 根据选择的站点或当前位置处理行程规划
   const handlePlanJourney = async () => {
     if ((!fromStop && !useCurrentLocation) || !toStop) {
       Alert.alert(t("error"), t("select.both.locations"));
@@ -249,6 +280,7 @@ export default function RoutePlanScreen() {
   };
 
   // Find the nearest stop of a specific company to a given location
+  // 找到距离给定位置最近的特定公司站点
   const findNearestStop = (
     location: { lat: number; long: number },
     company: string
@@ -272,6 +304,7 @@ export default function RoutePlanScreen() {
   };
 
   // Generate sample journeys based on origin and destination
+  // 根据起点和目的地生成示例行程
   const generateSampleJourneys = (from: any, to: SearchResult): Journey[] => {
     const originLocation =
       useCurrentLocation && userLocation
@@ -584,29 +617,37 @@ export default function RoutePlanScreen() {
     ];
 
     // Apply weather considerations if enabled
+    // 如果启用，则应用天气考虑
     if (isWeatherAware && weatherData) {
       // Calculate weather score (0-100)
+      // 计算天气评分（0-100）
       const weatherScore = calculateWeatherScore(weatherData);
       
       // Adjust journeys based on weather conditions
+      // 根据天气条件调整行程
       journeys = journeys.map(journey => {
         // Calculate total outdoor walking distance
+        // 计算总户外步行距离
         const totalWalkingDistance = journey.steps
           .filter(step => step.type === "WALK")
           .reduce((sum, step) => sum + (step.distance ?? 0), 0);
         
         // For rainy weather, penalize journeys with more walking
+        // 对于雨天，惩罚步行较多的行程
         if (weatherScore < 50 && totalWalkingDistance > 500) {
           // Apply penalty to journeys with significant walking in bad weather
+          // 对在恶劣天气中步行较多的行程应用惩罚
           journey.totalDuration += Math.floor(totalWalkingDistance / 100);
           journey.weatherAdjusted = true;
         }
         
         // For very bad weather, prioritize indoor/covered routes (MTR)
+        // 对于非常恶劣的天气，优先考虑室内/覆盖路线（MTR）
         if (weatherScore < 30) {
           const hasMTR = journey.steps.some(step => step.type === "MTR");
           if (hasMTR) {
             // Boost MTR journeys in bad weather
+            // 在恶劣天气中提升MTR行程
             journey.totalDuration -= 5;
             journey.weatherProtected = true;
           }
@@ -616,6 +657,7 @@ export default function RoutePlanScreen() {
       });
       
       // Re-sort journeys after applying weather adjustments
+      // 应用天气调整后重新排序行程
       journeys.sort((a, b) => a.totalDuration - b.totalDuration);
     }
     
@@ -626,6 +668,7 @@ export default function RoutePlanScreen() {
   };
 
   // Get a random route for a specific company (KMB or MTR)
+  // 获取特定公司（KMB或MTR）的随机路线
   const getRandomRoute = (company: string): string => {
     if (company === "KMB") {
       const routes = ["1", "1A", "5", "5C", "6", "7", "9"];
@@ -638,6 +681,7 @@ export default function RoutePlanScreen() {
   };
 
   // Get the appropriate icon for a transport type
+  // 获取交通类型的适当图标
   const getTransportIcon = (type: string) => {
     switch (type) {
       case "WALK":
@@ -652,6 +696,7 @@ export default function RoutePlanScreen() {
   };
 
   // Get the appropriate color for a transport type
+  // 获取交通类型的适当颜色
   const getTransportColor = (type: string) => {
     switch (type) {
       case "WALK":
@@ -666,6 +711,7 @@ export default function RoutePlanScreen() {
   };
 
   // Format distance in meters to a readable string
+  // 将距离（米）格式化为可读字符串
   const formatDistance = (meters: number) => {
     if (meters < 1000) {
       return `${meters}m`;
@@ -674,6 +720,7 @@ export default function RoutePlanScreen() {
   };
 
   // Navigate to transport details screen based on journey step
+  // 根据行程步骤导航到交通详情界面
   const navigateToTransportDetails = (step: JourneyStep) => {
     if (step.type === "BUS" && step.route) {
       router.push(`/bus/${step.route}?bound=O&serviceType=1`);

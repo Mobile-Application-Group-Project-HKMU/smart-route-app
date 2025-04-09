@@ -26,7 +26,6 @@ const { width, height } = Dimensions.get("window");
 const LATITUDE_DELTA = 0.01;
 const LONGITUDE_DELTA = LATITUDE_DELTA * (width / height);
 
-
 // Define a unified type for all transit stops (both KMB bus and MTR)
 type CombinedStop = {
   stop: string;         // Stop ID
@@ -52,27 +51,36 @@ export default function NearbyScreen() {
   const [nearbyStops, setNearbyStops] = useState<CombinedStop[]>([]);
   // State for managing search radius (default: 500m)
   const [radius, setRadius] = useState(500);
-  // States for filtering transit types
+  // States for filtering transit types (MTR and Bus)
+  // 用于筛选交通类型的状态（地铁和巴士）
   const [showMTR, setShowMTR] = useState(true);
   const [showBus, setShowBus] = useState(true);
   // Reference to the map component for programmatic control
+  // 地图组件的引用，用于编程控制地图
   const mapRef = useRef<MapView | null>(null);
-  // Get translation function and current language from context
+  // Get translation function and current language from language context
+  // 从语言上下文中获取翻译函数和当前语言设置
   const { t, language } = useLanguage();
 
-  // Function to fetch nearby stops from both KMB and MTR APIs
+  // Function to fetch nearby transit stops from both KMB and MTR APIs
+  // 从九巴(KMB)和港铁(MTR)API获取附近站点的函数
   const fetchNearbyStops = async (
-    latitude: number,
-    longitude: number,
-    searchRadius: number
+    latitude: number,     // 纬度
+    longitude: number,    // 经度
+    searchRadius: number  // 搜索半径（米）
   ) => {
     try {
+      // Set loading state and clear any previous errors
+      // 设置加载状态并清除之前的错误信息
       setLoading(true);
       setError(null);
 
-
       // Fetch KMB bus stops within the specified radius
+      // 获取指定半径内的九巴巴士站
       const kmbStops = await findNearbyStops(latitude, longitude, searchRadius);
+      
+      // Format KMB stops to match the CombinedStop type
+      // 将九巴站点格式化为统一的CombinedStop类型
       const kmbFormatted: CombinedStop[] = kmbStops.map((stop) => ({
         ...stop,
         type: "KMB",
@@ -80,16 +88,20 @@ export default function NearbyScreen() {
       }));
 
       // Fetch MTR stations within the specified radius
+      // 获取指定半径内的港铁站
       const mtrStations = await findNearbyMtrStops(
         latitude,
         longitude,
         searchRadius
       );
+      
+      // Format MTR stations to match the CombinedStop type
+      // 将港铁站点格式化为统一的CombinedStop类型
       const mtrFormatted: CombinedStop[] = mtrStations.map((station) => ({
         stop: station.stop,
         name_en: station.name_en,
         name_tc: station.name_tc,
-        name_sc: station.name_sc || station.name_tc,
+        name_sc: station.name_sc || station.name_tc, // Fallback to TC if SC not available 如果没有简体中文则使用繁体中文
         lat: station.lat,
         long: station.long,
         distance: station.distance,
@@ -97,23 +109,30 @@ export default function NearbyScreen() {
         type: "MTR",
       }));
 
-
-      // Combine and sort stops by distance
+      // Combine and sort stops by distance from user location
+      // 合并并按照距离用户的远近排序所有站点
       const combined = [...kmbFormatted, ...mtrFormatted].sort(
         (a, b) => a.distance - b.distance
       );
       setNearbyStops(combined);
     } catch (err) {
+      // Handle errors when fetching stops
+      // 处理获取站点时的错误
       setError("Failed to find nearby stops. Please try again.");
       console.error("Error fetching nearby stops:", err);
     } finally {
+      // Reset loading state regardless of success or failure
+      // 无论成功或失败都重置加载状态
       setLoading(false);
     }
   };
 
   // Function to request location permission and get current location
+  // 请求位置权限并获取当前位置的函数
   const requestLocationPermission = async () => {
     try {
+      // Set loading state and clear any previous errors
+      // 设置加载状态并清除之前的错误信息
       setLoading(true);
       setError(null);
 

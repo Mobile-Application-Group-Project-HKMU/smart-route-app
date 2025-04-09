@@ -365,6 +365,8 @@ export default function MtrStationScreen() {
             </ThemedText>
 
             <View style={styles.lineChips}>
+              {/* Map through and render all train lines for this station
+                  渲染该车站的所有地铁线路 */}
               {station.line_codes.map((line) => (
                 <TouchableOpacity
                   key={line}
@@ -383,6 +385,8 @@ export default function MtrStationScreen() {
               ))}
             </View>
 
+            {/* Display interchange notice if this station connects multiple lines
+                如果该车站是换乘站，显示换乘提示 */}
             {station.is_interchange && (
               <ThemedText style={styles.interchangeNote}>
                 {t("mtr.station.interchange") ||
@@ -391,9 +395,12 @@ export default function MtrStationScreen() {
             )}
           </ThemedView>
 
-          {/* Map View */}
+          {/* Map View - Shows station location (hidden on web platform)
+              地图视图 - 显示车站位置（在网页平台上隐藏） */}
           {Platform.OS !== "web" && (
             <View style={styles.mapContainer}>
+              {/* Interactive map centered on station coordinates
+                  以车站坐标为中心的交互式地图 */}
               <MapView
                 ref={mapRef}
                 style={styles.map}
@@ -407,6 +414,8 @@ export default function MtrStationScreen() {
                   longitudeDelta: 0.01,
                 }}
               >
+                {/* Station location marker
+                    车站位置标记 */}
                 <Marker
                   coordinate={{
                     latitude: station.lat,
@@ -416,6 +425,8 @@ export default function MtrStationScreen() {
                   pinColor="#0075C2"
                 />
               </MapView>
+              {/* Button to launch navigation to this station in maps app
+                  在地图应用中启动导航到该车站的按钮 */}
               <TouchableOpacity
                 style={styles.navigationButton}
                 onPress={openNavigation}

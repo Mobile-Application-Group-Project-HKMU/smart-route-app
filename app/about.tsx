@@ -1,4 +1,5 @@
 // Import necessary React and React Native components
+// 导入必要的React和React Native组件
 import { useEffect } from "react";
 import {
   StyleSheet,
@@ -8,18 +9,23 @@ import {
   ScrollView,
 } from "react-native";
 // Import navigation tools from Expo Router
+// 从Expo Router导入导航工具
 import { router, useLocalSearchParams } from "expo-router";
 
 // Import custom themed components from local directories
+// 从本地目录导入自定义主题组件
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 // Import language context for multilingual support
+// 导入语言上下文以支持多语言
 import { useLanguage } from "@/contexts/LanguageContext";
 
 // Define content for multiple languages (English, Traditional Chinese, Simplified Chinese)
+// 定义多语言内容（英文、繁体中文、简体中文）
 const CONTENT = {
   en: {
     // English language content
+    // 英语内容
     title: "Project Overview",
     teamTitle: "Technical Team Composition",
     termsTitle: "Usage Policy & Terms",
@@ -60,6 +66,7 @@ const CONTENT = {
   },
   "zh-Hant": {
     // Traditional Chinese content
+    // 繁体中文内容
     title: "項目概況",
     teamTitle: "技術團隊構成",
     termsTitle: "使用條款與政策",
@@ -100,6 +107,7 @@ const CONTENT = {
   },
   "zh-Hans": {
     // Simplified Chinese content
+    // 简体中文内容
     title: "项目概况",
     teamTitle: "技术团队构成",
     termsTitle: "使用条款与政策",
@@ -141,6 +149,7 @@ const CONTENT = {
 };
 
 // Array containing team member information
+// 包含团队成员信息的数组
 const TEAM_MEMBERS = [
   {
     name: "Li Yanpei",
@@ -181,25 +190,33 @@ const TEAM_MEMBERS = [
 ];
 
 // Main component for the About screen
+// 关于页面的主要组件
 export default function AboutScreen() {
-  // Get navigation parameters
+  // Get navigation parameters - checks if navigated from index page
+  // 获取导航参数 - 检查是否从索引页面导航而来
   const { fromIndex } = useLocalSearchParams();
   // Get current language from context
+  // 从上下文获取当前语言
   const { language } = useLanguage();
   // Select content based on current language
+  // 根据当前语言选择内容
   const content = CONTENT[language];
   // Get current color scheme (light/dark)
+  // 获取当前颜色方案（浅色/深色）
   const colorScheme = useColorScheme();
 
   // Effect to prevent direct navigation to this page
+  // 防止直接导航到此页面的效果钩子
   useEffect(() => {
     // Redirect to home if not navigated from index
+    // 如果不是从主页导航而来，则重定向到主页
     if (fromIndex !== "true") {
       router.replace("/");
     }
   }, [fromIndex]);
 
   // Function to open external links when team member is clicked
+  // 当点击团队成员时打开外部链接的函数
   const openLink = (url: string) => {
     if (url) {
       Linking.openURL(url);
@@ -207,10 +224,12 @@ export default function AboutScreen() {
   };
 
   // Render the about screen UI
+  // 渲染关于页面的UI
   return (
     <ThemedView style={styles.container}>
       <ScrollView style={styles.scrollView}>
         {/* University and project context section */}
+        {/* 大学和项目背景部分 */}
         <ThemedView style={styles.section}>
           <ThemedText style={styles.schoolName}>{content.school}</ThemedText>
           <ThemedView style={styles.contextBox}>
@@ -233,11 +252,13 @@ export default function AboutScreen() {
         </ThemedView>
 
         {/* Key features section */}
+        {/* 核心功能部分 */}
         <ThemedView style={styles.section}>
           <ThemedText style={styles.sectionTitle}>
             {content.keyFeatures.title}
           </ThemedText>
           {/* Map through and display all feature items */}
+          {/* 遍历并显示所有功能项 */}
           {content.keyFeatures.items.map((item, index) => (
             <ThemedText key={index} style={styles.listItem}>
               • {item}
@@ -246,6 +267,7 @@ export default function AboutScreen() {
         </ThemedView>
 
         {/* Technical specifications section */}
+        {/* 技术规格部分 */}
         <ThemedView style={styles.section}>
           <ThemedText style={styles.sectionTitle}>
             {content.technicalSpecifications.title}
@@ -258,6 +280,7 @@ export default function AboutScreen() {
         </ThemedView>
 
         {/* Team members section with clickable profiles */}
+        {/* 团队成员部分，带有可点击的个人资料 */}
         <ThemedView style={styles.section}>
           <ThemedText style={styles.sectionTitle}>
             {content.teamTitle}
@@ -280,6 +303,7 @@ export default function AboutScreen() {
         </ThemedView>
 
         {/* Policy and terms section */}
+        {/* 政策和条款部分 */}
         <ThemedView style={[styles.section, styles.policySection]}>
           <ThemedText style={styles.sectionTitle}>
             {content.termsTitle}
@@ -296,12 +320,14 @@ export default function AboutScreen() {
 }
 
 // Styles for the about screen
+// 关于页面的样式
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingTop: 50,
   },
   // Header styles for navigation and language switcher
+  // 导航和语言切换器的标题样式
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -363,6 +389,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 12,
   },
+  // Member information display styles
+  // 成员信息显示样式
   memberName: {
     fontWeight: "bold",
     fontSize: 15,
@@ -376,6 +404,8 @@ const styles = StyleSheet.create({
     marginTop: 2,
     opacity: 0.8,
   },
+  // Policy section with special styling
+  // 具有特殊样式的政策部分
   policySection: {
     backgroundColor: "rgba(255, 213, 128, 0.2)",
     borderRadius: 8,

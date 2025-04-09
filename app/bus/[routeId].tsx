@@ -426,9 +426,12 @@ export default function RouteDetailScreen() {
             </ThemedText>
           </ThemedView>
 
-
+          {/* Map display section - Shows the route path, bus stops, and user location 
+              地图显示部分 - 显示路线路径、巴士站点和用户位置 */}
           {stops.length > 0 && (
             <View style={styles.mapContainer}>
+              {/* MapView component to render the interactive map with route and stops
+                  MapView组件用于渲染包含路线和站点的交互式地图 */}
               <MapView
                 ref={mapRef}
                 provider={
@@ -438,21 +441,25 @@ export default function RouteDetailScreen() {
                 initialRegion={{
                   latitude: stops[0].lat,
                   longitude: stops[0].long,
-                  latitudeDelta: 0.05,
-                  longitudeDelta: 0.05,
+                  latitudeDelta: 0.05, // Controls zoom level - smaller value means more zoomed in
+                  longitudeDelta: 0.05, // 控制缩放级别 - 值越小意味着放大程度越高
                 }}
               >
+                {/* Polyline connecting all bus stops to visualize the complete route path
+                    连接所有巴士站点的折线，用于可视化完整的路线路径 */}
                 {stops.length > 1 && (
                   <Polyline
                     coordinates={stops.map((stop) => ({
                       latitude: stop.lat,
                       longitude: stop.long,
                     }))}
-                    strokeColor="#0a7ea4"
-                    strokeWidth={4}
+                    strokeColor="#0a7ea4" // Blue line color for the route
+                    strokeWidth={4}      // Line thickness
                   />
                 )}
 
+                {/* Markers for each bus stop along the route
+                    路线上每个巴士站点的标记 */}
                 {stops.map((stop, index) => (
                   <Marker
                     key={stop.stop}
@@ -466,11 +473,14 @@ export default function RouteDetailScreen() {
                       stop.name_sc
                     )}`}
                     description={`${t("sequence")}: ${stop.seq}`}
-                    pinColor={nearestStopIndex === index ? "blue" : undefined}
+                    pinColor={nearestStopIndex === index ? "blue" : undefined} // Highlight the nearest stop with blue marker
+                                                                               // 用蓝色标记突出显示最近的站点
                     onCalloutPress={() => handleStopPress(stop)}
                   />
                 ))}
 
+                {/* User's current location marker (if available)
+                    用户当前位置的标记（如果可用） */}
                 {userLocation && (
                   <Marker
                     coordinate={{
@@ -478,7 +488,8 @@ export default function RouteDetailScreen() {
                       longitude: userLocation.coords.longitude,
                     }}
                     title={t("yourLocation")}
-                    pinColor="green"
+                    pinColor="green" // Green marker for user location
+                                     // 绿色标记表示用户位置
                   />
                 )}
               </MapView>

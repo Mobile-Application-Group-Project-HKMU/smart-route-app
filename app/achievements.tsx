@@ -1,23 +1,37 @@
+// Achievements Screen - Displays user achievements with categorization and progress
+// 成就页面 - 显示用户成就，包括分类和进度
+
+// React and React Native imports (React 和 React Native 导入)
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, ScrollView, View, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Stack, router } from 'expo-router';
+
+// Component imports (组件导入)
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
+
+// Context and utilities imports (上下文和工具导入)
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Achievement, AchievementCategory, UserAchievements } from '@/types/achievement-types';
 import { getAchievementColor, getAchievementPoints, getUserAchievements } from '@/util/achievements';
 
 export default function AchievementsScreen() {
+  // Language context for i18n (用于国际化的语言上下文)
   const { t, language } = useLanguage();
+  // State for loading status (加载状态)
   const [loading, setLoading] = useState(true);
+  // State for user achievements data (用户成就数据)
   const [userAchievements, setUserAchievements] = useState<UserAchievements | null>(null);
+  // State for active category filter (当前选中的成就类别过滤器)
   const [activeCategory, setActiveCategory] = useState<AchievementCategory | 'ALL'>('ALL');
   
+  // Load achievements on component mount (组件挂载时加载成就)
   useEffect(() => {
     loadAchievements();
   }, []);
   
+  // Fetch user achievements from API (从API获取用户成就)
   const loadAchievements = async () => {
     setLoading(true);
     try {
@@ -30,6 +44,7 @@ export default function AchievementsScreen() {
     }
   };
   
+  // Filter achievements by category (按类别过滤成就)
   const getAchievementsForCategory = (category: AchievementCategory | 'ALL') => {
     if (!userAchievements) return [];
     
@@ -42,6 +57,7 @@ export default function AchievementsScreen() {
     );
   };
   
+  // Get translated category title (获取经过翻译的类别标题)
   const getCategoryTitle = (category: AchievementCategory | 'ALL') => {
     switch (category) {
       case 'ALL':
@@ -61,9 +77,11 @@ export default function AchievementsScreen() {
     }
   };
   
+  // Component for displaying achievement statistics (显示成就统计的组件)
   const renderAchievementStats = () => {
     if (!userAchievements) return null;
     
+    // Calculate statistics (计算统计数据)
     const totalAchievements = userAchievements.achievements.length;
     const unlockedAchievements = userAchievements.achievements.filter(
       a => a.status === 'UNLOCKED'
@@ -72,6 +90,7 @@ export default function AchievementsScreen() {
     
     return (
       <ThemedView style={styles.statsContainer}>
+        {/* Unlocked achievements count (已解锁成就数量) */}
         <View style={styles.statItem}>
           <ThemedText style={styles.statNumber}>{unlockedAchievements}</ThemedText>
           <ThemedText style={styles.statLabel}>
@@ -81,6 +100,7 @@ export default function AchievementsScreen() {
         
         <View style={styles.statDivider} />
         
+        {/* Completion percentage (完成百分比) */}
         <View style={styles.statItem}>
           <ThemedText style={styles.statNumber}>
             {Math.round((unlockedAchievements / totalAchievements) * 100)}%
@@ -92,6 +112,7 @@ export default function AchievementsScreen() {
         
         <View style={styles.statDivider} />
         
+        {/* Total achievement points (成就总积分) */}
         <View style={styles.statItem}>
           <ThemedText style={styles.statNumber}>{achievementPoints}</ThemedText>
           <ThemedText style={styles.statLabel}>
@@ -102,7 +123,9 @@ export default function AchievementsScreen() {
     );
   };
   
+  // Horizontal scrollable category tabs (可横向滚动的类别选项卡)
   const renderCategoryTabs = () => {
+    // Available categories (可用的类别)
     const categories: (AchievementCategory | 'ALL')[] = [
       'ALL',
       'JOURNEY_COUNT',
@@ -138,7 +161,9 @@ export default function AchievementsScreen() {
     );
   };
   
+  // Render individual achievement card (渲染单个成就卡片)
   const renderAchievement = (achievement: Achievement) => {
+    // Get color based on achievement level (根据成就级别获取颜色)
     const color = getAchievementColor(achievement.level);
     const isUnlocked = achievement.status === 'UNLOCKED';
     
@@ -150,6 +175,7 @@ export default function AchievementsScreen() {
           isUnlocked ? styles.unlockedCard : styles.lockedCard
         ]}
       >
+        {/* Achievement header with icon and title (带有图标和标题的成就头部) */}
         <View style={styles.achievementHeader}>
           <View 
             style={[
@@ -174,10 +200,12 @@ export default function AchievementsScreen() {
           </View>
         </View>
         
+        {/* Achievement description (成就描述) */}
         <ThemedText style={styles.achievementDescription}>
           {achievement.description[language]}
         </ThemedText>
         
+        {/* Progress bar (进度条) */}
         <View style={styles.progressContainer}>
           <View 
             style={[
@@ -190,10 +218,12 @@ export default function AchievementsScreen() {
           />
         </View>
         
+        {/* Progress text showing current/required values (显示当前/所需值的进度文本) */}
         <ThemedText style={styles.progressText}>
           {achievement.currentValue} / {achievement.requirement}
         </ThemedText>
         
+        {/* Unlocked date if achievement is unlocked (如果成就已解锁则显示解锁日期) */}
         {isUnlocked && achievement.unlockedAt && (
           <ThemedText style={styles.unlockedDate}>
             {t('achievements.unlockedOn')}: {achievement.unlockedAt instanceof Date 
@@ -207,6 +237,7 @@ export default function AchievementsScreen() {
     );
   };
   
+  // Loading indicator when data is being fetched (数据获取时的加载指示器)
   if (loading) {
     return (
       <ThemedView style={styles.loadingContainer}>
@@ -218,8 +249,10 @@ export default function AchievementsScreen() {
     );
   }
   
+  // Main render of the achievements screen (成就页面的主渲染)
   return (
     <ThemedView style={styles.container}>
+      {/* Screen header with back button (带有返回按钮的屏幕标题) */}
       <Stack.Screen
         options={{
           title: t('achievements.title'),
@@ -234,10 +267,12 @@ export default function AchievementsScreen() {
         }}
       />
       
+      {/* Scrollable content with stats, categories, and achievements (包含统计、类别和成就的可滚动内容) */}
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {renderAchievementStats()}
         {renderCategoryTabs()}
         
+        {/* Achievement cards container (成就卡片容器) */}
         <ThemedView style={styles.achievementsContainer}>
           {getAchievementsForCategory(activeCategory).map(renderAchievement)}
         </ThemedView>
@@ -246,6 +281,7 @@ export default function AchievementsScreen() {
   );
 }
 
+// Styles for the achievements screen (成就页面样式)
 const styles = StyleSheet.create({
   container: {
     flex: 1,

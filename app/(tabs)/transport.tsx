@@ -38,7 +38,6 @@ import {
   TransportMode,
 } from "@/types/transport-types";
 
-
 // Define transport filter types - can be "ALL" or a specific company
 type TransportFilter = "ALL" | TransportCompany;
 
@@ -47,86 +46,102 @@ export default function BusRoutesScreen() {
   // Get translation function and current language from context
   const { t, language } = useLanguage();
   // State for storing all available routes
+  // 用于存储所有可用的路线
   const [routes, setRoutes] = useState<TransportRoute[]>([]);
   // State for storing filtered routes based on search and filters
+  // 用于存储基于搜索和过滤条件筛选后的路线
   const [filteredRoutes, setFilteredRoutes] = useState<TransportRoute[]>([]);
   // State for storing all available stations/stops
+  // 用于存储所有可用的车站/站点
   const [stations, setStations] = useState<TransportStop[]>([]);
   // State for storing filtered stations based on search and filters
+  // 用于存储基于搜索和过滤条件筛选后的车站
   const [filteredStations, setFilteredStations] = useState<TransportStop[]>([]);
   // Loading state for data fetching
+  // 数据加载状态
   const [loading, setLoading] = useState(true);
   // State for the current search query
+  // 当前搜索查询的状态
   const [searchQuery, setSearchQuery] = useState("");
   // State for the current search type (routes or stations)
+  // 当前搜索类型状态（路线或车站）
   const [searchType, setSearchType] = useState<"routes" | "stations">("routes");
   // State for current page in pagination
+  // 分页中当前页面的状态
   const [currentPage, setCurrentPage] = useState(1);
   // State for the transport company filter
+  // 交通公司过滤器的状态
   const [transportFilter, setTransportFilter] =
     useState<TransportFilter>("ALL");
   // Number of items to show per page
+  // 每页显示的项目数量
   const itemsPerPage = 10;
 
   // Define colors for different transport companies
+  // 定义不同交通公司的颜色方案
   const transportColors: Record<
     TransportFilter,
     { light: string; dark: string; text: string }
   > = {
-    ALL: { light: "#8B4513", dark: "#8B4513", text: "#FFFFFF" },
-    KMB: { light: "#FF5151", dark: "#B30000", text: "#FFFFFF" },
-    CTB: { light: "#FFDD00", dark: "#CC9900", text: "#000000" },
-    NLB: { light: "#00CCCC", dark: "#008888", text: "#FFFFFF" },
-    HKKF: { light: "#4D94FF", dark: "#0066CC", text: "#FFFFFF" },
-    MTR: { light: "#E60012", dark: "#B30000", text: "#FFFFFF" },
-    LR: { light: "#95CA3E", dark: "#6B9130", text: "#FFFFFF" },
-    LRF: { light: "#FF9900", dark: "#CC7A00", text: "#FFFFFF" },
-    SF: { light: "#8959A8", dark: "#5F3E73", text: "#FFFFFF" },
-    FF: { light: "#4078C0", dark: "#2C5499", text: "#FFFFFF" },
-    NWFB: { light: "#9370DB", dark: "#6A3CA0", text: "#FFFFFF" },
-    GMB: { light: "#76B947", dark: "#4E7A30", text: "#FFFFFF" },
+    ALL: { light: "#8B4513", dark: "#8B4513", text: "#FFFFFF" }, // All companies / 所有公司
+    KMB: { light: "#FF5151", dark: "#B30000", text: "#FFFFFF" }, // Kowloon Motor Bus / 九龙巴士
+    CTB: { light: "#FFDD00", dark: "#CC9900", text: "#000000" }, // Citybus / 城巴
+    NLB: { light: "#00CCCC", dark: "#008888", text: "#FFFFFF" }, // New Lantao Bus / 新大屿山巴士
+    HKKF: { light: "#4D94FF", dark: "#0066CC", text: "#FFFFFF" }, // Hong Kong & Kowloon Ferry / 港九小轮
+    MTR: { light: "#E60012", dark: "#B30000", text: "#FFFFFF" }, // Mass Transit Railway / 港铁
+    LR: { light: "#95CA3E", dark: "#6B9130", text: "#FFFFFF" }, // Light Rail / 轻铁
+    LRF: { light: "#FF9900", dark: "#CC7A00", text: "#FFFFFF" }, // Light Rail Feeder / 轻铁接驳
+    SF: { light: "#8959A8", dark: "#5F3E73", text: "#FFFFFF" }, // Star Ferry / 天星小轮
+    FF: { light: "#4078C0", dark: "#2C5499", text: "#FFFFFF" }, // First Ferry / 港九小轮
+    NWFB: { light: "#9370DB", dark: "#6A3CA0", text: "#FFFFFF" }, // New World First Bus / 新巴
+    GMB: { light: "#76B947", dark: "#4E7A30", text: "#FFFFFF" }, // Green Minibus / 绿色小巴
   };
 
   // Effect hook to fetch transport data on component mount and language change
+  // 在组件挂载和语言更改时获取交通数据的副作用钩子
   useEffect(() => {
     const fetchData = async () => {
       try {
-        setLoading(true);
-        let allRoutes: TransportRoute[] = [];
-        let allStations: TransportStop[] = [];
+        setLoading(true); // Start loading indicator / 启动加载指示器
+        let allRoutes: TransportRoute[] = []; // Container for all routes / 存储所有路线的容器
+        let allStations: TransportStop[] = []; // Container for all stations / 存储所有车站的容器
 
         // Fetch KMB routes and stops
+        // 获取九巴路线和站点数据
         const kmbRoutes = await getAllKmbRoutes();
         const kmbStops = await getAllKmbStops();
 
         // Convert KMB routes to TransportRoute format
+        // 将九巴路线转换为统一的TransportRoute格式
         const kmbTransportRoutes = kmbRoutes.map((route) => ({
           ...route,
-          orig_tc: route.orig_tc ? String(route.orig_tc) : undefined,
-          dest_tc: route.dest_tc ? String(route.dest_tc) : undefined,
-          co: "KMB",
-          mode: "BUS" as TransportMode,
+          orig_tc: route.orig_tc ? String(route.orig_tc) : undefined, // Ensure origin in Traditional Chinese is a string / 确保繁体中文起点为字符串
+          dest_tc: route.dest_tc ? String(route.dest_tc) : undefined, // Ensure destination in Traditional Chinese is a string / 确保繁体中文终点为字符串
+          co: "KMB", // Set company code to KMB / 设置公司代码为KMB
+          mode: "BUS" as TransportMode, // Set transport mode to BUS / 设置交通模式为巴士
         })) as TransportRoute[];
 
-        allRoutes.push(...kmbTransportRoutes);
+        allRoutes.push(...kmbTransportRoutes); // Add KMB routes to collection / 将九巴路线添加到集合中
 
         // Convert KMB stops to TransportStop format
+        // 将九巴站点转换为统一的TransportStop格式
         const kmbTransportStops = kmbStops.map((stop) => ({
-          stop: stop.stop,
-          name_en: stop.name_en,
-          name_tc: stop.name_tc,
-          name_sc: stop.name_sc,
-          lat: stop.lat,
-          long: stop.long,
-          data_timestamp: stop.data_timestamp,
-          company: "KMB",
-          mode: "BUS" as TransportMode,
+          stop: stop.stop, // Stop ID / 站点ID
+          name_en: stop.name_en, // Stop name in English / 英文站点名称
+          name_tc: stop.name_tc, // Stop name in Traditional Chinese / 繁体中文站点名称
+          name_sc: stop.name_sc, // Stop name in Simplified Chinese / 简体中文站点名称
+          lat: stop.lat, // Latitude / 纬度
+          long: stop.long, // Longitude / 经度
+          data_timestamp: stop.data_timestamp, // Data timestamp / 数据时间戳
+          company: "KMB", // Set company code to KMB / 设置公司代码为KMB
+          mode: "BUS" as TransportMode, // Set transport mode to BUS / 设置交通模式为巴士
         })) as TransportStop[];
 
-        allStations.push(...kmbTransportStops);
+        allStations.push(...kmbTransportStops); // Add KMB stops to collection / 将九巴站点添加到集合中
 
         try {
           // Attempt to fetch MTR routes and stops
+          // 尝试获取港铁路线和站点数据
           const mtrRoutes = await getAllMtrRoutes(
             language as "en" | "zh-Hant" | "zh-Hans"
           );
@@ -154,6 +169,7 @@ export default function BusRoutesScreen() {
         }
 
         // Update state with all fetched data
+        // 使用所有获取的数据更新状态
         setRoutes(allRoutes);
         setFilteredRoutes(allRoutes);
         setStations(allStations);
@@ -169,16 +185,19 @@ export default function BusRoutesScreen() {
   }, [language]);
 
   // Apply filters when search query, routes, stations, search type, or transport filter changes
+  // 当搜索查询、路线、车站、搜索类型或交通过滤器更改时应用过滤器
   useEffect(() => {
     applyFilters();
   }, [searchQuery, routes, stations, searchType, transportFilter]);
 
   // Function to filter routes or stations based on search query and transport filter
+  // 根据搜索查询和交通过滤器筛选路线或车站的函数
   const applyFilters = () => {
     if (searchType === "routes") {
       let filtered = routes;
 
       // Filter by transport company if not "ALL"
+      // 如果不是“ALL”，则按交通公司过滤
       if (transportFilter !== "ALL") {
         filtered = filtered.filter(
           (route) => (route.co || "").toUpperCase() === transportFilter
@@ -186,6 +205,7 @@ export default function BusRoutesScreen() {
       }
 
       // Filter by search query if not empty
+      // 如果搜索查询不为空，则按查询过滤
       if (searchQuery.trim() !== "") {
         const query = searchQuery.toLowerCase();
         filtered = filtered.filter(
@@ -203,6 +223,7 @@ export default function BusRoutesScreen() {
       let filtered = stations;
 
       // Filter by transport company if not "ALL"
+      // 如果不是“ALL”，则按交通公司过滤
       if (transportFilter !== "ALL") {
         filtered = filtered.filter(
           (station) =>
@@ -211,6 +232,7 @@ export default function BusRoutesScreen() {
       }
 
       // Filter by search query if not empty
+      // 如果搜索查询不为空，则按查询过滤
       if (searchQuery.trim() !== "") {
         const query = searchQuery.toLowerCase();
         filtered = filtered.filter(
@@ -227,10 +249,12 @@ export default function BusRoutesScreen() {
     }
 
     // Reset to first page when filters change
+    // 当过滤器更改时重置到第一页
     setCurrentPage(1); 
   };
 
   // Handle press on a route item - navigate to appropriate detail screen
+  // 处理路线项的点击事件 - 导航到相应的详情页面
   const handleRoutePress = (route: TransportRoute) => {
     const company = (route.co || "KMB").toUpperCase();
 
@@ -251,6 +275,7 @@ export default function BusRoutesScreen() {
   };
 
   // Handle press on a stop/station item - navigate to appropriate detail screen
+  // 处理站点项的点击事件 - 导航到相应的详情页面
   const handleStopPress = (stop: TransportStop) => {
     const company = (stop.company || "KMB").toUpperCase();
 
@@ -265,6 +290,7 @@ export default function BusRoutesScreen() {
   };
 
   // Get the appropriate route card component based on the transport company
+  // 根据交通公司获取相应的路线卡片组件
   const getRouteCard = (route: TransportRoute, index: number) => {
     const company = (route.co || "KMB").toUpperCase() as TransportCompany;
     const key = `${route.route}-${route.bound}-${route.service_type}-${index}`;
@@ -328,6 +354,7 @@ export default function BusRoutesScreen() {
   };
 
   // Get items to display on current page based on pagination
+  // 根据分页获取当前页面要显示的项目
   const getDisplayedItems = () => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
@@ -339,6 +366,7 @@ export default function BusRoutesScreen() {
   };
 
   // Calculate total number of pages for pagination
+  // 计算分页的总页数
   const totalPages = Math.ceil(
     (searchType === "routes"
       ? filteredRoutes.length
@@ -346,6 +374,7 @@ export default function BusRoutesScreen() {
   );
 
   // Render pagination controls
+  // 渲染分页控件
   const renderPagination = () => {
     if (totalPages <= 1) return null;
 
@@ -381,6 +410,7 @@ export default function BusRoutesScreen() {
   };
 
   // Render transport company filter tabs
+  // 渲染交通公司过滤器标签
   const renderTransportTabs = () => {
     const availableCompanies = new Set(
       searchType === "routes"
@@ -433,6 +463,7 @@ export default function BusRoutesScreen() {
   };
 
   // Render station count information
+  // 渲染车站计数信息
   const renderStationCounts = () => {
     if (searchType !== "stations") return null;
 
@@ -457,6 +488,7 @@ export default function BusRoutesScreen() {
   };
 
   // Main render function for the component
+  // 组件的主要渲染函数
   return (
     <ParallaxScrollView
       headerBackgroundColor={{ light: "#FFD580", dark: "#8B4513" }}
@@ -594,20 +626,21 @@ export default function BusRoutesScreen() {
   );
 
   // Helper function to get color for station icon based on transport company
+  // 根据交通公司获取站点图标颜色的辅助函数
   function getStationIconColor(company: string | undefined): string {
     switch (company?.toUpperCase()) {
       case "KMB":
-        return "#B30000"; // Red for KMB
+        return "#B30000"; // Red for KMB / 九巴红色
       case "CTB":
-        return "#CC9900"; // Yellow for CTB
+        return "#CC9900"; // Yellow for CTB / 城巴黄色
       case "NLB":
-        return "#008888"; // Teal for NLB
+        return "#008888"; // Teal for NLB / 新大屿山巴士青色
       case "HKKF":
-        return "#0066CC"; // Blue for HKKF 
+        return "#0066CC"; // Blue for HKKF / 港九小轮蓝色
       case "MTR":
-        return "#E60012"; // Red for MTR
+        return "#E60012"; // Red for MTR / 港铁红色
       default:
-        return "#8B4513"; // Default brown
+        return "#8B4513"; // Default brown / 默认棕色
     }
   }
 }

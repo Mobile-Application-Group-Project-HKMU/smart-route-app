@@ -300,6 +300,8 @@ export default function HomeScreen() {
                         >
                           <ThemedView style={styles.favoriteCardContent}>
                             <ThemedView style={styles.mtrLineContainer}>
+                              {/* Render MTR line codes (limited to first 2 lines for space) 
+                                  渲染港铁线路代码（由于空间限制，最多显示前两条线路） */}
                               {item.line_codes.slice(0, 2).map((line) => (
                                 <ThemedView
                                   key={line}
@@ -314,6 +316,8 @@ export default function HomeScreen() {
                                 </ThemedView>
                               ))}
                             </ThemedView>
+                            {/* Display station name based on selected language 
+                                根据用户选择的语言显示车站名称 */}
                             <ThemedText
                               style={styles.stopName}
                               numberOfLines={2}
@@ -336,23 +340,34 @@ export default function HomeScreen() {
         )}
       </ThemedView>
 
-
+      {/* Achievements section - Button to navigate to achievements screen 
+          成就部分 - 用于导航到成就页面的按钮 */}
       <ThemedView style={styles.achievementsSection}>
         <TouchableOpacity
           style={styles.achievementsButton}
           onPress={navigateToAchievements}
         >
+          {/* Trophy icon for achievements button 
+              成就按钮的奖杯图标 */}
           <IconSymbol name="trophy.fill" size={24} color="#8B4513" />
           <ThemedText style={styles.achievementsButtonText}>
+            {/* Display achievements title in the current language 
+                按当前语言显示成就标题 */}
             {t("achievements.title")}
           </ThemedText>
         </TouchableOpacity>
       </ThemedView>
 
+      {/* About section - Button to navigate to about screen 
+          关于部分 - 用于导航到关于页面的按钮 */}
       <ThemedView style={styles.aboutSection}>
         <TouchableOpacity style={styles.aboutButton} onPress={navigateToAbout}>
+          {/* Information icon for about button
+              关于按钮的信息图标 */}
           <IconSymbol name="info.circle.fill" size={20} color="#8B4513" />
           <ThemedText style={styles.aboutButtonText}>
+            {/* Display about title in the current language
+                按当前语言显示关于标题 */}
             {t("home.about")}
           </ThemedText>
         </TouchableOpacity>

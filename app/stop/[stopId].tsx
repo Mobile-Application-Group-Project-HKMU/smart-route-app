@@ -1,4 +1,5 @@
 // Import necessary dependencies from libraries
+// 导入必要的库依赖
 import { useLocalSearchParams, Stack, router } from "expo-router";
 import { useEffect, useState, useCallback } from "react";
 import {
@@ -16,11 +17,13 @@ import { useFocusEffect } from "@react-navigation/native";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 
 // Import custom components
+// 导入自定义组件
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { IconSymbol } from "@/components/ui/IconSymbol";
 import { CrowdIndicator } from '@/components/CrowdIndicator';
 // Import utility functions for KMB data handling
+// 导入处理九巴数据的工具函数
 import {
   classifyStopETAs,
   getAllStops,
@@ -28,45 +31,67 @@ import {
   type Stop,
 } from "@/util/kmb";
 // Import datetime formatting utility
+// 导入日期时间格式化工具
 import { formatTransportTime } from "@/util/datetime";
 // Import favorites functionality
+// 导入收藏夹功能
 import {
   FavRouteStation,
   saveToLocalStorage,
   getFromLocalStorage,
 } from "@/util/favourite";
 // Import language context for localization
+// 导入语言上下文用于本地化
 import { useLanguage } from "@/contexts/LanguageContext";
+// Import crowd prediction utility
+// 导入人流预测工具
 import { predictCrowdLevel } from '@/util/crowdPrediction';
+// Import settings storage utility
+// 导入设置存储工具
 import { getSettings } from '@/util/settingsStorage';
 
 /**
  * StopETAScreen Component
+ * 巴士站到达时间屏幕组件
  * 
  * This screen displays information about a bus stop and the estimated arrival times
  * for buses that service this stop. It includes a map showing the stop location,
  * favorite functionality, and navigation options.
+ * 
+ * 此屏幕显示有关巴士站的信息和服务该站点的巴士的预计到达时间。
+ * 它包括显示站点位置的地图、收藏功能和导航选项。
  */
 export default function StopETAScreen() {
   // Get language context for translations
+  // 获取语言上下文用于翻译
   const { t, language } = useLanguage();
   // Get stop ID from route parameters
+  // 从路由参数中获取站点ID
   const { stopId } = useLocalSearchParams();
   // State for storing estimated arrival times
+  // 用于存储预计到达时间的状态
   const [etas, setEtas] = useState<ClassifiedETA[]>([]);
   // State for storing bus stop information
+  // 用于存储巴士站信息的状态
   const [stopInfo, setStopInfo] = useState<Stop | null>(null);
   // Loading states
+  // 加载状态
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   // State to track if this stop is in favorites
+  // 用于跟踪此站点是否在收藏夹中的状态
   const [isFavorite, setIsFavorite] = useState(false);
+  // State to control whether crowd predictions are shown
+  // 用于控制是否显示人流预测的状态
   const [showCrowdPredictions, setShowCrowdPredictions] = useState(true);
 
 
   /**
    * Check if the current stop is in the user's favorites
    * This runs when the component mounts or when the stopId changes
+   * 
+   * 检查当前站点是否在用户的收藏夹中
+   * 当组件挂载或stopId更改时运行
    */
   useEffect(() => {
     const checkFavorite = async () => {
@@ -84,6 +109,9 @@ export default function StopETAScreen() {
   /**
    * Fetch detailed information about the current bus stop
    * This retrieves data like name, coordinates, etc.
+   * 
+   * 获取有关当前巴士站的详细信息
+   * 这会检索名称、坐标等数据
    */
   useEffect(() => {
     const fetchStopInfo = async () => {
@@ -104,6 +132,9 @@ export default function StopETAScreen() {
   /**
    * Fetch estimated arrival times (ETAs) for buses at the current stop
    * This runs when the component gains focus or when the stopId changes
+   * 
+   * 获取当前站点的巴士预计到达时间(ETAs)
+   * 当组件获得焦点或stopId更改时运行
    */
   useFocusEffect(
     useCallback(() => {
@@ -137,6 +168,8 @@ export default function StopETAScreen() {
 
   /**
    * Refresh the estimated arrival times (ETAs) for buses at the current stop
+   * 
+   * 刷新当前站点的巴士预计到达时间(ETAs)
    */
   const refreshETAs = async () => {
     try {
@@ -154,6 +187,9 @@ export default function StopETAScreen() {
   /**
    * Toggle the current stop as a favorite
    * Adds or removes the stop from the user's favorites list
+   * 
+   * 将当前站点切换为收藏
+   * 从用户的收藏夹列表中添加或删除站点
    */
   const toggleFavorite = async () => {
     try {
@@ -167,9 +203,11 @@ export default function StopETAScreen() {
 
       if (isFavorite) {
         // Remove from favorites
+        // 从收藏夹中移除
         favorites.stationID = favorites.stationID.filter((id) => id !== stopId);
       } else {
         // Add to favorites
+        // 添加到收藏夹
         favorites.stationID.push(stopId as string);
       }
 
@@ -192,6 +230,8 @@ export default function StopETAScreen() {
 
   /**
    * Open navigation to the current stop using the device's map application
+   * 
+   * 使用设备的地图应用程序打开到当前站点的导航
    */
   const openNavigation = () => {
     if (!stopInfo) return;
@@ -208,9 +248,11 @@ export default function StopETAScreen() {
     let url = "";
     if (Platform.OS === "ios") {
       // Use Apple Maps for iOS
+      // 在iOS上使用Apple地图
       url = `maps:?q=${label}&ll=${lat},${long}`;
     } else {
       // Use Google Maps for Android
+      // 在Android上使用Google地图
       url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${long}&destination_place_id=${label}`;
     }
 
@@ -225,9 +267,12 @@ export default function StopETAScreen() {
 
   /**
    * Navigate to the route details screen for a specific bus route
-   * @param routeId - The ID of the bus route
-   * @param bound - The direction of the route (Inbound/Outbound)
-   * @param serviceType - The type of service for the route
+   * 
+   * 导航到特定巴士路线的路线详情屏幕
+   * 
+   * @param routeId - The ID of the bus route (巴士路线ID)
+   * @param bound - The direction of the route (Inbound/Outbound) (路线方向：入站/出站)
+   * @param serviceType - The type of service for the route (路线的服务类型)
    */
   const navigateToRoute = (
     routeId: string,
@@ -237,8 +282,14 @@ export default function StopETAScreen() {
     router.push(`/bus/${routeId}?bound=${bound}&serviceType=${serviceType}`);
   };
 
+  /**
+   * Load user settings on component mount
+   * 
+   * 在组件挂载时加载用户设置
+   */
   useEffect(() => {
     // Load settings
+    // 加载设置
     const loadSettings = async () => {
       const settings = await getSettings();
       setShowCrowdPredictions(settings.showCrowdPredictions);
@@ -247,6 +298,14 @@ export default function StopETAScreen() {
     loadSettings();
   }, []);
 
+  /**
+   * Render the ETA card for a specific route
+   * 
+   * 渲染特定路线的ETA卡片
+   * 
+   * @param eta - The ETA data for a route (路线的ETA数据)
+   * @param index - The index in the list (列表中的索引)
+   */
   const renderETA = (eta: ClassifiedETA, index: number) => {
     return (
       <ThemedView key={index} style={styles.etaCard}>
@@ -286,6 +345,7 @@ export default function StopETAScreen() {
               : t("stop.no.data");
             
             // Generate crowd prediction for this ETA
+            // 为此ETA生成人流预测
             const crowdPrediction = showCrowdPredictions && etaItem.eta !== null ? 
               predictCrowdLevel(eta.route, stopId as string, new Date(etaItem.eta)) : 
               null;
@@ -307,7 +367,7 @@ export default function StopETAScreen() {
                   </ThemedText>
                 )}
                 
-                {/* Add crowd indicator */}
+                {/* Add crowd indicator - 添加人流指示器 */}
                 {showCrowdPredictions && crowdPrediction && (
                   <CrowdIndicator 
                     level={crowdPrediction.level} 
@@ -361,6 +421,7 @@ export default function StopETAScreen() {
         <ActivityIndicator size="large" style={styles.loader} />
       ) : (
         <>
+          {/* Stop header section - 站点头部部分 */}
           <ThemedView style={styles.stopHeader}>
             <ThemedText type="title" style={styles.stopName}>
               {language === "en"
@@ -374,6 +435,7 @@ export default function StopETAScreen() {
             </ThemedText>
           </ThemedView>
 
+          {/* Map showing stop location - 显示站点位置的地图 */}
           {stopInfo && (
             <ThemedView style={styles.mapContainer}>
               <MapView
@@ -402,6 +464,7 @@ export default function StopETAScreen() {
                   }
                 />
               </MapView>
+              {/* Navigation button to open maps app - 打开地图应用的导航按钮 */}
               <TouchableOpacity
                 style={styles.navigationButton}
                 onPress={openNavigation}
@@ -418,6 +481,7 @@ export default function StopETAScreen() {
             </ThemedView>
           )}
 
+          {/* Refreshing indicator - 刷新指示器 */}
           {refreshing && (
             <ActivityIndicator
               size="small"
@@ -429,6 +493,7 @@ export default function StopETAScreen() {
             {t("stop.arrivals")}
           </ThemedText>
 
+          {/* No ETAs message or list of ETAs - 无到达时间信息或到达时间列表 */}
           {etas.length === 0 ? (
             <ThemedView style={styles.noETAs}>
               <ThemedText style={styles.noETAsText}>
@@ -443,6 +508,7 @@ export default function StopETAScreen() {
               }
               renderItem={({ item }) => (
                 <ThemedView style={styles.etaCard}>
+                  {/* Route header with route number and destination - 路线头部，包含路线号码和目的地 */}
                   <TouchableOpacity
                     onPress={() =>
                       navigateToRoute(
@@ -485,25 +551,30 @@ export default function StopETAScreen() {
                     </ThemedView>
                   </TouchableOpacity>
 
+                  {/* List of ETAs for this route - 此路线的到达时间列表 */}
                   <ThemedView style={styles.etaList}>
                     {item.etas.map((eta, index) => {
                       // Generate crowd prediction for this ETA
+                      // 为此ETA生成人流预测
                       const crowdPrediction = showCrowdPredictions && eta.eta !== null ? 
                         predictCrowdLevel(item.route, stopId as string, new Date(eta.eta)) : 
                         null;
                         
                       return (
                         <ThemedView key={index} style={styles.etaItem}>
+                          {/* Display arrival time - 显示到达时间 */}
                           <ThemedText style={styles.etaTime}>
                             {eta.eta
                               ? formatTransportTime(eta.eta, language, "relative")
                               : t("stop.no.data")}
                           </ThemedText>
+                          {/* Display any remarks - 显示任何备注 */}
                           {eta.rmk_en && (
                             <ThemedText style={styles.etaRemark}>
                               {language === "en" ? eta.rmk_en : eta.rmk_tc}
                             </ThemedText>
                           )}
+                          {/* Show crowd level indicator - 显示人流水平指示器 */}
                           {showCrowdPredictions && crowdPrediction && (
                             <CrowdIndicator 
                               level={crowdPrediction.level} 
@@ -527,6 +598,8 @@ export default function StopETAScreen() {
   );
 }
 
+// Styles for the component
+// 组件的样式
 const styles = StyleSheet.create({
   container: {
     flex: 1,
