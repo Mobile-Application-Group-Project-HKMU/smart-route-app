@@ -19,26 +19,26 @@ export interface WeatherData {
     };
   };
   hourly: {
-    dt: number;           // Timestamp | 时间戳
-    temp: number;         // Temperature | 温度
+    dt: number;           // Timestamp of the forecast hour | 预报小时的时间戳
+    temp: number;         // Temperature in Celsius | 摄氏温度
     weather: {
-      id: number;         // Weather condition ID | 天气状况ID
-      main: string;       // Main weather condition | 主要天气状况
-      description: string; // Weather description | 天气描述
-      icon: string;       // Weather icon code | 天气图标代码
+      id: number;         // Weather condition ID used for categorization | 用于分类的天气状况ID
+      main: string;       // Brief weather description (e.g., "Rain", "Clear") | 简短天气描述（如"雨"、"晴"）
+      description: string; // Detailed weather description | 详细天气描述
+      icon: string;       // Icon code for weather visualization | 用于天气可视化的图标代码
     }[];
-    pop: number;          // Probability of precipitation | 降水概率
+    pop: number;          // Probability of precipitation (0-1 scale) | 降水概率（0-1范围）
     rain?: {
-      '1h'?: number;      // Rain volume for last hour in mm | 过去一小时的降雨量(毫米)
+      '1h'?: number;      // Rain volume for the hour in millimeters (optional) | 该小时的降雨量（毫米，可选）
     };
-  }[];
+  }[];  // Array of hourly forecasts, typically for the next 24-48 hours | 每小时预报数组，通常包含未来24-48小时
 }
 
 // Interface for weather data cache
 // 天气数据缓存接口
 interface WeatherCache {
-  timestamp: number;     // When the data was cached | 数据缓存的时间戳
-  data: WeatherData;     // The actual weather data | 实际天气数据
+  timestamp: number;     // Unix timestamp when data was fetched (milliseconds) | 数据获取时的Unix时间戳（毫秒）
+  data: WeatherData;     // Cached weather data structure | 已缓存的天气数据结构
 }
 
 // Use a free API that doesn't require authentication

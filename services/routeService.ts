@@ -578,6 +578,7 @@ async function findBusJourneys(origin: TransportStop, destination: TransportStop
 
 /**
  * Create an MTR journey from a path of station IDs
+ * 根据站点ID路径创建MTR行程
  */
 function createMtrJourney(
   path: string[], 
@@ -585,22 +586,29 @@ function createMtrJourney(
   destination: TransportStop
 ): Journey {
   // Look up all stations in the path
+  // 查找路径中的所有站点
   const stations = path.map(stopId => 
     mtrStationsCache.find(s => s.stop === stopId) as TransportStop
   );
   
   // Create journey steps
+  // 创建行程步骤
   const steps: JourneyStep[] = [];
   let totalDistance = 0;
   let totalDuration = 0;
   
-  // Walking to first station
+  // Calculate walking distance to first station
+  // 计算步行到第一个站点的距离
   const walkToDistance = calculateDistance(
     origin.lat, origin.long, 
     stations[0].lat, stations[0].long
   );
+  // Calculate walking time based on average walking speed
+  // 根据平均步行速度计算步行时间
   const walkToDuration = Math.ceil(walkToDistance / WALKING_SPEED);
   
+  // Add walking step to journey
+  // 将步行步骤添加到行程中
   steps.push({
     type: "WALK",
     from: origin,
@@ -609,46 +617,65 @@ function createMtrJourney(
     duration: walkToDuration
   });
   
+  // Update total journey distance and duration
+  // 更新总行程距离和时间
   totalDistance += walkToDistance;
   totalDuration += walkToDuration;
   
-  // MTR journey
+  // Process each MTR segment in the journey
+  // 处理行程中的每个MTR段
   for (let i = 0; i < stations.length - 1; i++) {
+    // Calculate distance between consecutive stations
+    // 计算相邻站点之间的距离
     const mtrDistance = calculateDistance(
       stations[i].lat, stations[i].long,
       stations[i + 1].lat, stations[i + 1].long
     );
+    // Calculate MTR travel time based on average MTR speed
+    // 根据平均MTR速度计算MTR行程时间
     const mtrDuration = Math.ceil(mtrDistance / MTR_SPEED);
     
-    // Get the line code connecting these stations
+    // Find the actual stations from cache for detailed information
+    // 从缓存中查找实际站点以获取详细信息
     const station = mtrStationsCache.find(s => s.stop === stations[i].stop) as MtrStation;
     const nextStation = mtrStationsCache.find(s => s.stop === stations[i + 1].stop) as MtrStation;
     
+    // Determine which MTR line connects these stations (for coloring and information)
+    // 确定连接这些站点的MTR线路（用于着色和信息展示）
     const commonLines = station.line_codes?.filter(
       line => nextStation.line_codes?.includes(line)
     ) || ['MTR'];
     
+    // Add MTR segment to journey steps
+    // 将MTR段添加到行程步骤中
     steps.push({
       type: "MTR",
       from: stations[i],
       to: stations[i + 1],
       distance: mtrDistance,
       duration: mtrDuration,
-      route: commonLines[0], // Use the first common line
+      route: commonLines[0], // Use the first common line | 使用第一条共同线路
       company: "MTR"
     });
     
+    // Update total journey metrics
+    // 更新总行程指标
     totalDistance += mtrDistance;
     totalDuration += mtrDuration;
   }
   
-  // Walking from last station to destination
+  // Calculate walking distance from last station to destination
+  // 计算从最后一个站点到目的地的步行距离
   const walkFromDistance = calculateDistance(
     stations[stations.length - 1].lat, stations[stations.length - 1].long,
     destination.lat, destination.long
   );
+  // Calculate walking time based on average walking speed
+  // 根据平均步行速度计算步行时间
   const walkFromDuration = Math.ceil(walkFromDistance / WALKING_SPEED);
   
+  // Add walking step to journey
+  // 将步行步骤添加到行程中
   steps.push({
     type: "WALK",
     from: stations[stations.length - 1],
@@ -657,15 +684,19 @@ function createMtrJourney(
     duration: walkFromDuration
   });
   
+  // Update total journey distance and duration
+  // 更新总行程距离和时间
   totalDistance += walkFromDistance;
   totalDuration += walkFromDuration;
   
+  // Return the complete journey object
+  // 返回完整的行程对象
   return {
     id: generateUUID(),
     steps,
     totalDistance,
     totalDuration,
-    weatherProtected: true // Most of journey is in MTR, which is indoor
+    weatherProtected: true // Most of journey is in MTR, which is indoor | 大部分行程在MTR内，属于室内
   };
 }
 

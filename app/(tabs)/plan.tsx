@@ -185,20 +185,33 @@ export default function RoutePlanScreen() {
       setSearchingTo(true);
     }
 
+    // Clear search results if search text is empty
+    // 如果搜索文本为空，清除搜索结果
     if (!text.trim()) {
       setSearchResults([]);
       return;
     }
 
+    // Convert query to lowercase for case-insensitive search
+    // 将查询转换为小写以进行不区分大小写的搜索
     const query = text.toLowerCase();
+    
+    // Filter all stops based on search query and limit to top 10 results
+    // 根据搜索查询过滤所有站点，并限制为前10个结果
     const results = allStops
       .filter(
         (stop) =>
+          // Match against display name (current language)
+          // 匹配显示名称（当前语言）
           stop.displayName.toLowerCase().includes(query) ||
+          // Match against English name if available
+          // 如果有英文名称，则匹配英文名称
           (stop.name_en && stop.name_en.toLowerCase().includes(query)) ||
+          // Match against Chinese name if available
+          // 如果有中文名称，则匹配中文名称
           (stop.name_tc && stop.name_tc.includes(query))
       )
-      .slice(0, 10);
+      .slice(0, 10); // Limit to 10 results for better performance - 限制为10个结果以提高性能
 
     setSearchResults(results);
   };
@@ -206,14 +219,24 @@ export default function RoutePlanScreen() {
   // Handle selection of a stop from search results
   // 处理从搜索结果中选择站点
   const handleSelectStop = (stop: SearchResult) => {
+    // If searching for origin location
+    // 如果正在搜索起始位置
     if (searchingFrom) {
       setFromStop(stop);
       setFromText(stop.displayName);
+      // Disable current location feature when a specific stop is selected
+      // 当选择特定站点时，禁用当前位置功能
       setUseCurrentLocation(false);
-    } else if (searchingTo) {
+    } 
+    // If searching for destination location
+    // 如果正在搜索目的地位置
+    else if (searchingTo) {
       setToStop(stop);
       setToText(stop.displayName);
     }
+    
+    // Clear search results and reset search state after selection
+    // 选择后清除搜索结果并重置搜索状态
     setSearchResults([]);
     setSearchingFrom(false);
     setSearchingTo(false);
@@ -223,22 +246,49 @@ export default function RoutePlanScreen() {
   // 处理使用当前位置作为起点
   const handleUseCurrentLocation = async () => {
     try {
+      // Request location permission from the user
+      // 向用户请求位置权限
       const { status } = await Location.requestForegroundPermissionsAsync();
+      
+      // If permission is denied, show alert and return
+      // 如果权限被拒绝，显示提醒并返回
       if (status !== "granted") {
         Alert.alert(t("permission.denied"), t("location.permission.denied"));
         return;
       }
 
+      // Show loading indicator while getting location
+      // 获取位置时显示加载指示器
       setLoading(true);
+      
+      // Get user's current GPS coordinates
+      // 获取用户当前的GPS坐标
       const location = await Location.getCurrentPositionAsync({});
+      
+      // Store location in state for later use in route planning
+      // 将位置存储在状态中，以便稍后用于路线规划
       setUserLocation(location);
+      
+      // Enable current location mode
+      // 启用当前位置模式
       setUseCurrentLocation(true);
+      
+      // Update the display text to show "Current Location"
+      // 更新显示文本以显示"当前位置"
       setFromText(t("current.location"));
+      
+      // Clear any previously selected origin stop
+      // 清除任何先前选择的起始站点
       setFromStop(null);
+      
+      // Reset search states and results
+      // 重置搜索状态和结果
       setSearchingFrom(false);
       setSearchingTo(false);
       setSearchResults([]);
     } catch (error) {
+      // Log and show error if location retrieval fails
+      // 如果位置获取失败，记录并显示错误
       console.error("Error getting location:", error);
       Alert.alert(t("error"), t("error.getting.location"));
     } finally {
