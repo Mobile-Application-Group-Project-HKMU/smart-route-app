@@ -35,41 +35,57 @@ type Journey = {
  * @param destination Ending location 
  * @returns Array of possible journeys 
  */ 
-export async function fetchRoutes( 
-  origin: TransportStop, 
-  destination: TransportStop 
-): Promise<Journey[]> { 
-  try { 
-    // 构建高德地图 API 请求的参数 
-    const params = { 
-      origin: `${origin.long},${origin.lat}`,  
-      destination: `${destination.long},${destination.lat}`,  
-      key: GAODE_API_KEY, 
-      city: "your_city_code", // 替换为实际的城市代码 
-      extensions: "all", 
-    }; 
- 
-    // 发送 API 请求 
-    const response = await axios.get(ROUTE_API_ENDPOINT,  { params }); 
- 
-    if (response.status  !== 200) { 
-      throw new Error(`API request failed with status: ${response.status}`);  
-    } 
- 
-    const data = response.data;  
- 
-    // 检查 API 返回结果是否成功 
-    if (data.status  === "1") { 
-      return transformResponseToJourneys(data, origin, destination); 
-    } else { 
-      throw new Error(`API response error: ${data.info}`);  
-    } 
-  } catch (error) { 
-    console.error("Error  fetching routes:", error); 
-    // If API fails, fall back to locally calculated routes 
-    return generateFallbackRoutes(origin, destination); 
-  } 
-} 
+export async function fetchRoutes(
+    origin: TransportStop,
+    destination: TransportStop 
+  ): Promise<Journey[]> {
+    try {
+      // 动态获取城市代码（示例：通过经纬度反查）
+      const cityCode = await getCityCodeByLocation(origin.lat, origin.long);
+
+      async function getCityCodeByLocation(lat: number, long: number): Promise<string> {
+        // Example implementation: Replace with actual API call or logic
+        const response = await axios.get(`https://restapi.amap.com/v3/geocode/regeo`, {
+          params: {
+            location: `${long},${lat}`,
+            key: GAODE_API_KEY,
+          },
+        });
+        if (response.data.status === "1") {
+          return response.data.regeocode.addressComponent.citycode || "0000";
+        } else {
+          throw new Error("Failed to fetch city code");
+        }
+      }
+      const params = {
+        origin: `${origin.long},${origin.lat}`, 
+        destination: `${destination.long},${destination.lat}`, 
+        key: GAODE_API_KEY,
+        city: cityCode,
+        extensions: "all",
+      };
+   
+      const response = await axios.get(ROUTE_API_ENDPOINT,  { params });
+      if (response.status  !== 200) {
+        throw new Error(`API请求失败: ${response.status}`); 
+      }
+   
+      const data = response.data; 
+      if (data.status  === "1") {
+        return transformResponseToJourneys(data, origin, destination);
+      } else {
+        // 根据错误码提供具体提示 
+        if (data.info  === "USERKEY_PLAT_NOMATCH") {
+          throw new Error("API密钥与平台不匹配，请检查配置");
+        }
+        throw new Error(`API错误: ${data.info}`); 
+      }
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(" 路线获取失败:", errorMessage); 
+      return generateFallbackRoutes(origin, destination);
+    }
+  }
  
 /** 
  * Transform API response into journey objects 
