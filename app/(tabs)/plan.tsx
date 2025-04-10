@@ -44,31 +44,31 @@ import { fetchRoutes } from "@/services/routeService";
 // Define type for each step in a journey (walk, bus, or MTR)
 // 定义行程中每一步的类型（步行、巴士或地铁）
 type JourneyStep = {
-  type: "WALK" | "BUS" | "MTR" | "TRANSIT" | "SUBWAY" | "TRAM" | "RAIL";  // Transportation mode - 交通方式
-  from: TransportStop;           // Origin stop - 起始站点
-  to: TransportStop;             // Destination stop - 目的地站点
-  distance?: number;             // Distance in meters - 距离（米）
-  duration?: number;             // Duration in minutes - 时间（分钟）
-  route?: string;                // Route number/name - 路线号码/名称
-  company?: string;              // Transportation company - 交通公司
+  type: "WALK" | "BUS" | "MTR" | "TRANSIT" | "SUBWAY" | "TRAM" | "RAIL"; // Transportation mode - 交通方式
+  from: TransportStop; // Origin stop - 起始站点
+  to: TransportStop; // Destination stop - 目的地站点
+  distance?: number; // Distance in meters - 距离（米）
+  duration?: number; // Duration in minutes - 时间（分钟）
+  route?: string; // Route number/name - 路线号码/名称
+  company?: string; // Transportation company - 交通公司
 };
 
 // Define type for a complete journey, consisting of multiple steps
 // 定义完整行程类型，由多个步骤组成
 type Journey = {
-  id: string;                    // Unique journey ID - 唯一行程ID
-  steps: JourneyStep[];          // Array of journey steps - 行程步骤数组
-  totalDuration: number;         // Total journey time - 总行程时间
-  totalDistance: number;         // Total journey距离
-  weatherAdjusted?: boolean;     // Whether route adjusted for weather - 路线是否因天气调整
-  weatherProtected?: boolean;    // Whether route offers weather protection - 路线是否提供天气保护
+  id: string; // Unique journey ID - 唯一行程ID
+  steps: JourneyStep[]; // Array of journey steps - 行程步骤数组
+  totalDuration: number; // Total journey time - 总行程时间
+  totalDistance: number; // Total journey距离
+  weatherAdjusted?: boolean; // Whether route adjusted for weather - 路线是否因天气调整
+  weatherProtected?: boolean; // Whether route offers weather protection - 路线是否提供天气保护
 };
 
 // Define type for search results with additional display information
 // 定义搜索结果类型，包含额外显示信息
 type SearchResult = TransportStop & {
-  displayName: string;           // Localized display name - 本地化显示名称
-  company: string;               // Transportation company - 交通公司
+  displayName: string; // Localized display name - 本地化显示名称
+  company: string; // Transportation company - 交通公司
 };
 
 // Main component for route planning functionality
@@ -77,37 +77,37 @@ export default function RoutePlanScreen() {
   // Access translation and language functions from context
   // 从上下文中获取翻译和语言功能
   const { t, language } = useLanguage();
-  
+
   // State for input text fields
   // 输入文本字段的状态
   const [fromText, setFromText] = useState("");
   const [toText, setToText] = useState("");
-  
+
   // State for selected origin and destination stops
   // 已选择的起始和目的地站点状态
   const [fromStop, setFromStop] = useState<SearchResult | null>(null);
   const [toStop, setToStop] = useState<SearchResult | null>(null);
-  
+
   // State for tracking which search field is active
   // 跟踪哪个搜索字段处于活动状态
   const [searchingFrom, setSearchingFrom] = useState(false);
   const [searchingTo, setSearchingTo] = useState(false);
-  
+
   // State for search results and all available stops
   // 搜索结果和所有可用站点的状态
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [allStops, setAllStops] = useState<SearchResult[]>([]);
-  
+
   // Loading states
   // 加载状态
   const [loading, setLoading] = useState(false);
   const [loadingStops, setLoadingStops] = useState(true);
-  
+
   // State for journey planning results
   // 行程规划结果的状态
   const [journeys, setJourneys] = useState<Journey[]>([]);
   const [selectedJourney, setSelectedJourney] = useState<Journey | null>(null);
-  
+
   // State for user's current location functionality
   // 用户当前位置功能的状态
   const [useCurrentLocation, setUseCurrentLocation] = useState(false);
@@ -157,7 +157,7 @@ export default function RoutePlanScreen() {
   useEffect(() => {
     async function fetchWeatherData() {
       if (!userLocation) return;
-      
+
       try {
         const data = await getWeatherForLocation(
           userLocation.coords.latitude,
@@ -165,10 +165,10 @@ export default function RoutePlanScreen() {
         );
         setWeatherData(data);
       } catch (error) {
-        console.error('Failed to fetch weather data:', error);
+        console.error("Failed to fetch weather data:", error);
       }
     }
-    
+
     fetchWeatherData();
   }, [userLocation]);
 
@@ -264,7 +264,7 @@ export default function RoutePlanScreen() {
               name_en: "Current Location",
               name_tc: "當前位置",
               stop: "CURRENT_LOCATION",
-              mode: "WALK" as TransportMode
+              mode: "WALK" as TransportMode,
             }
           : fromStop;
 
@@ -274,13 +274,13 @@ export default function RoutePlanScreen() {
 
       // Fetch real journey data instead of using sample journeys
       const journeyData = await fetchRoutes(origin, toStop);
-      
+
       // Apply weather considerations if enabled
       if (isWeatherAware && weatherData) {
         const weatherScore = calculateWeatherScore(weatherData);
         applyWeatherConsiderations(journeyData, weatherScore);
       }
-      
+
       setJourneys(journeyData);
       if (journeyData.length > 0) {
         setSelectedJourney(journeyData[0]);
@@ -294,22 +294,25 @@ export default function RoutePlanScreen() {
   };
 
   // Apply weather considerations to journeys
-  const applyWeatherConsiderations = (journeys: Journey[], weatherScore: number) => {
-    journeys.forEach(journey => {
+  const applyWeatherConsiderations = (
+    journeys: Journey[],
+    weatherScore: number
+  ) => {
+    journeys.forEach((journey) => {
       const totalWalkingDistance = journey.steps
-        .filter(step => step.type === "WALK")
+        .filter((step) => step.type === "WALK")
         .reduce((sum, step) => sum + (step.distance ?? 0), 0);
-  
-      const hasMTR = journey.steps.some(step => 
+
+      const hasMTR = journey.steps.some((step) =>
         ["MTR", "SUBWAY", "RAIL"].includes(step.type)
       );
-      
+
       // For rainy weather, penalize journeys with more walking
       if (weatherScore < 50 && totalWalkingDistance > 500) {
         journey.totalDuration += Math.floor(totalWalkingDistance / 100);
         journey.weatherAdjusted = true;
       }
-      
+
       // For very bad weather, prioritize indoor/covered routes (MTR)
       if (weatherScore < 30) {
         if (hasMTR) {
@@ -318,7 +321,7 @@ export default function RoutePlanScreen() {
         }
       }
     });
-    
+
     // Re-sort journeys after applying weather adjustments
     journeys.sort((a, b) => a.totalDuration - b.totalDuration);
   };
@@ -382,16 +385,16 @@ export default function RoutePlanScreen() {
         if (route) {
           // Maps to the MTR_COLORS from mtr.ts
           const mtrLineColors: Record<string, string> = {
-            'AEL': '#00888E', // Airport Express
-            'TCL': '#F3982D', // Tung Chung Line
-            'TML': '#9C2E00', // Tuen Ma Line
-            'TKL': '#7E3C99', // Tseung Kwan O Line
-            'EAL': '#5EB7E8', // East Rail Line
-            'TWL': '#C41E3A', // Tsuen Wan Line
-            'ISL': '#0075C2', // Island Line
-            'KTL': '#00A040', // Kwun Tong Line
-            'SIL': '#CBD300', // South Island Line
-            'DRL': '#B5A45D'  // Disneyland Resort Line
+            AEL: "#00888E", // Airport Express
+            TCL: "#F3982D", // Tung Chung Line
+            TML: "#9C2E00", // Tuen Ma Line
+            TKL: "#7E3C99", // Tseung Kwan O Line
+            EAL: "#5EB7E8", // East Rail Line
+            TWL: "#C41E3A", // Tsuen Wan Line
+            ISL: "#0075C2", // Island Line
+            KTL: "#00A040", // Kwun Tong Line
+            SIL: "#CBD300", // South Island Line
+            DRL: "#B5A45D", // Disneyland Resort Line
           };
           return mtrLineColors[route] || "#E60012";
         }
@@ -419,7 +422,10 @@ export default function RoutePlanScreen() {
   const navigateToTransportDetails = (step: JourneyStep) => {
     if (step.type === "BUS" && step.route) {
       router.push(`/bus/${step.route}?bound=O&serviceType=1`);
-    } else if ((step.type === "MTR" || step.type === "SUBWAY" || step.type === "RAIL") && step.route) {
+    } else if (
+      (step.type === "MTR" || step.type === "SUBWAY" || step.type === "RAIL") &&
+      step.route
+    ) {
       router.push({
         pathname: "/mtr/line/[lineId]",
         params: { lineId: step.route },
@@ -518,21 +524,25 @@ export default function RoutePlanScreen() {
         {weatherData && (
           <View style={styles.weatherContainer}>
             <WeatherInfo weatherData={weatherData} compact={true} />
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.weatherToggle}
               onPress={() => setIsWeatherAware(!isWeatherAware)}
             >
-              <ThemedView style={[
-                styles.toggleSwitch, 
-                isWeatherAware ? styles.toggleActive : {}
-              ]}>
-                <View style={[
-                  styles.toggleKnob,
-                  isWeatherAware ? styles.toggleKnobActive : {}
-                ]} />
+              <ThemedView
+                style={[
+                  styles.toggleSwitch,
+                  isWeatherAware ? styles.toggleActive : {},
+                ]}
+              >
+                <View
+                  style={[
+                    styles.toggleKnob,
+                    isWeatherAware ? styles.toggleKnobActive : {},
+                  ]}
+                />
               </ThemedView>
               <ThemedText style={styles.weatherToggleText}>
-                {t('weatherAwareRouting')}
+                {t("weatherAwareRouting")}
               </ThemedText>
             </TouchableOpacity>
           </View>
@@ -624,100 +634,40 @@ export default function RoutePlanScreen() {
                 onPress={() => setSelectedJourney(journey)}
               >
                 <ThemedText style={styles.journeyDuration}>
-                  {Math.round(journey.totalDuration)} {t("minutes")}
+                  {formatDistance(journey.totalDistance)}
                 </ThemedText>
-                
-                {/* Transport mode summary with colored bars */}
-                <ThemedView style={styles.transportModeSummary}>
+                <ThemedView style={styles.journeyModeIcons}>
                   {journey.steps
-                    .filter(step => step.duration && step.duration > 1)
+                    .filter((step) => step.type !== "WALK")
                     .map((step, index) => (
-                      <View 
+                      <IconSymbol
                         key={index}
-                        style={[
-                          styles.transportModeBar,
-                          { 
-                            backgroundColor: getTransportColor(step.type, step.route),
-                            flex: step.duration || 1,
-                          }
-                        ]}
+                        name={getTransportIcon(step.type)}
+                        size={16}
+                        color={getTransportColor(step.type, step.route)}
                       />
                     ))}
                 </ThemedView>
-                
-                {/* Transport mode icons with details */}
-                <ThemedView style={styles.journeyModeIcons}>
-                  {journey.steps
-                    .filter(step => step.type !== "WALK")
-                    .map((step, index) => (
-                      <ThemedView key={index} style={styles.modeIconContainer}>
-                        <IconSymbol
-                          name={getTransportIcon(step.type)}
-                          size={16}
-                          color={getTransportColor(step.type, step.route)}
-                        />
-                        {step.route && (
-                          <ThemedText style={styles.routeText}>
-                            {step.route}
-                          </ThemedText>
-                        )}
-                      </ThemedView>
-                    ))}
-                </ThemedView>
-                
-                {/* Time breakdown */}
-                <ThemedView style={styles.journeyTimeBreakdown}>
-                  {/* Walking time */}
-                  {journey.steps.filter(s => s.type === "WALK").length > 0 && (
-                    <ThemedView style={styles.timeItem}>
-                      <IconSymbol name="figure.walk" size={12} color="#555555" />
-                      <ThemedText style={styles.timeText}>
-                        {Math.round(journey.steps
-                          .filter(s => s.type === "WALK")
-                          .reduce((sum, s) => sum + (s.duration || 0), 0))}{t("min")}
-                      </ThemedText>
-                    </ThemedView>
-                  )}
-                  
-                  {/* Bus time */}
-                  {journey.steps.filter(s => s.type === "BUS").length > 0 && (
-                    <ThemedView style={styles.timeItem}>
-                      <IconSymbol name="bus" size={12} color="#FF5151" />
-                      <ThemedText style={styles.timeText}>
-                        {Math.round(journey.steps
-                          .filter(s => s.type === "BUS")
-                          .reduce((sum, s) => sum + (s.duration || 0), 0))}{t("min")}
-                      </ThemedText>
-                    </ThemedView>
-                  )}
-                  
-                  {/* MTR time */}
-                  {journey.steps.filter(s => ["MTR", "SUBWAY", "RAIL"].includes(s.type)).length > 0 && (
-                    <ThemedView style={styles.timeItem}>
-                      <IconSymbol name="tram" size={12} color="#E60012" />
-                      <ThemedText style={styles.timeText}>
-                        {Math.round(journey.steps
-                          .filter(s => ["MTR", "SUBWAY", "RAIL"].includes(s.type))
-                          .reduce((sum, s) => sum + (s.duration || 0), 0))}{t("min")}
-                      </ThemedText>
-                    </ThemedView>
-                  )}
-                </ThemedView>
-                
                 {journey.weatherAdjusted && (
                   <ThemedView style={styles.weatherBadge}>
                     <IconSymbol name="umbrella.fill" size={14} color="#FFF" />
                     <ThemedText style={styles.weatherBadgeText}>
-                      {t('routeAdjustedForWeather')}
+                      {t("routeAdjustedForWeather")}
                     </ThemedText>
                   </ThemedView>
                 )}
-                
+
                 {journey.weatherProtected && (
-                  <ThemedView style={[styles.weatherBadge, styles.protectedBadge]}>
-                    <IconSymbol name="checkmark.circle.fill" size={14} color="#FFF" />
+                  <ThemedView
+                    style={[styles.weatherBadge, styles.protectedBadge]}
+                  >
+                    <IconSymbol
+                      name="checkmark.circle.fill"
+                      size={14}
+                      color="#FFF"
+                    />
                     <ThemedText style={styles.weatherBadgeText}>
-                      {t('weatherProtectedRoute')}
+                      {t("weatherProtectedRoute")}
                     </ThemedText>
                   </ThemedView>
                 )}
@@ -728,53 +678,8 @@ export default function RoutePlanScreen() {
           {selectedJourney && (
             <ThemedView style={styles.journeyDetails}>
               <ThemedText style={styles.journeySummary}>
-                {Math.round(selectedJourney.totalDuration)} {t("minutes")} • {formatDistance(selectedJourney.totalDistance)}
+                {formatDistance(selectedJourney.totalDistance)}
               </ThemedText>
-                
-              <ThemedView style={styles.journeySummaryRow}>
-                {/* Summary for walking */}
-                {selectedJourney.steps.some(s => s.type === "WALK") && (
-                  <ThemedView style={styles.journeySummaryItem}>
-                    <IconSymbol name="figure.walk" size={18} color="#555555" />
-                    <ThemedText style={styles.journeySummaryText}>
-                      {Math.round(selectedJourney.steps
-                        .filter(s => s.type === "WALK")
-                        .reduce((sum, s) => sum + (s.duration || 0), 0))} {t("min")}
-                    </ThemedText>
-                  </ThemedView>
-                )}
-                
-                {/* Summary for bus */}
-                {selectedJourney.steps.some(s => s.type === "BUS") && (
-                  <ThemedView style={styles.journeySummaryItem}>
-                    <IconSymbol name="bus" size={18} color="#FF5151" />
-                    <ThemedText style={styles.journeySummaryText}>
-                      {selectedJourney.steps
-                        .filter(s => s.type === "BUS")
-                        .map(s => s.route)
-                        .join(", ")} • {Math.round(selectedJourney.steps
-                        .filter(s => s.type === "BUS")
-                        .reduce((sum, s) => sum + (s.duration || 0), 0))} {t("min")}
-                    </ThemedText>
-                  </ThemedView>
-                )}
-                
-                {/* Summary for MTR */}
-                {selectedJourney.steps.some(s => ["MTR", "SUBWAY", "RAIL"].includes(s.type)) && (
-                  <ThemedView style={styles.journeySummaryItem}>
-                    <IconSymbol name="tram" size={18} color="#E60012" />
-                    <ThemedText style={styles.journeySummaryText}>
-                      {selectedJourney.steps
-                        .filter(s => ["MTR", "SUBWAY", "RAIL"].includes(s.type))
-                        .map(s => s.route)
-                        .filter((v, i, a) => a.indexOf(v) === i) // unique routes
-                        .join(", ")} • {Math.round(selectedJourney.steps
-                        .filter(s => ["MTR", "SUBWAY", "RAIL"].includes(s.type))
-                        .reduce((sum, s) => sum + (s.duration || 0), 0))} {t("min")}
-                    </ThemedText>
-                  </ThemedView>
-                )}
-              </ThemedView>
 
               {Platform.OS !== "web" && fromStop && toStop && (
                 <View style={styles.mapContainer}>
@@ -842,7 +747,12 @@ export default function RoutePlanScreen() {
                     <ThemedView
                       style={[
                         styles.stepIconContainer,
-                        { backgroundColor: getTransportColor(step.type, step.route) },
+                        {
+                          backgroundColor: getTransportColor(
+                            step.type,
+                            step.route
+                          ),
+                        },
                       ]}
                     >
                       <IconSymbol
@@ -856,8 +766,10 @@ export default function RoutePlanScreen() {
                         {step.type === "WALK"
                           ? t("walk")
                           : step.type === "BUS"
-                          ? `${t("take")} ${step.company} ${t("bus")} ${step.route || ''}`
-                          : `${t("take")} ${t("mtr")} ${step.route || ''}`}
+                          ? `${t("take")} ${step.company} ${t("bus")} ${
+                              step.route || ""
+                            }`
+                          : `${t("take")} ${t("mtr")} ${step.route || ""}`}
                       </ThemedText>
                       <ThemedText style={styles.stepFromTo}>
                         {language === "en"
@@ -897,9 +809,9 @@ export default function RoutePlanScreen() {
         </ThemedView>
       )}
 
-      {!loading && 
-        !loadingStops && 
-        journeys.length === 0 && 
+      {!loading &&
+        !loadingStops &&
+        journeys.length === 0 &&
         (fromStop || useCurrentLocation || toStop) && (
           <ThemedView style={styles.emptyStateContainer}>
             <IconSymbol name="map" size={60} color="#8B4513" />
@@ -909,8 +821,8 @@ export default function RoutePlanScreen() {
           </ThemedView>
         )}
 
-      {!loading && 
-        !loadingStops && 
+      {!loading &&
+        !loadingStops &&
         journeys.length === 0 &&
         !fromStop &&
         !toStop &&
@@ -933,25 +845,6 @@ const styles = StyleSheet.create({
     left: -35,
     position: "absolute",
     opacity: 0.7,
-  },
-  journeySummaryRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    marginBottom: 16,
-    gap: 12,
-  },
-  journeySummaryItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
-    borderRadius: 8,
-    padding: 8,
-    gap: 8,
-  },
-  journeySummaryText: {
-    fontSize: 14,
-    color: '#8B4513',
   },
   searchContainer: {
     marginBottom: 16,
@@ -1090,7 +983,7 @@ const styles = StyleSheet.create({
   journeyDetails: {
     flex: 1,
     marginTop: 16,
-    backgroundColor: "#FFD580",
+    backgroundColor: "#FFFFFF",
     borderRadius: 12,
     padding: 16,
     shadowColor: "#000",
@@ -1128,7 +1021,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginRight: 14,
-    backgroundColor: "#FFD580",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.2,
@@ -1163,7 +1055,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
   },
-  stepMetaText: { 
+  stepMetaText: {
     fontSize: 14,
     color: "#8B4513",
     opacity: 0.7,
@@ -1179,31 +1071,31 @@ const styles = StyleSheet.create({
   },
   viewRouteText: { fontSize: 13, fontWeight: "500", color: "#8B4513" },
   weatherContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: 16,
   },
   weatherToggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     flex: 1,
   },
   toggleSwitch: {
     width: 36,
     height: 20,
     borderRadius: 10,
-    backgroundColor: '#E0E0E0',
+    backgroundColor: "#E0E0E0",
     padding: 2,
   },
   toggleActive: {
-    backgroundColor: '#0a7ea4',
+    backgroundColor: "#0a7ea4",
   },
   toggleKnob: {
     width: 16,
     height: 16,
     borderRadius: 8,
-    backgroundColor: 'white',
+    backgroundColor: "white",
   },
   toggleKnobActive: {
     transform: [{ translateX: 16 }],
@@ -1213,57 +1105,20 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   weatherBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#0a7ea4',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#0a7ea4",
     borderRadius: 12,
     paddingHorizontal: 8,
     paddingVertical: 2,
     marginTop: 4,
   },
   protectedBadge: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: "#4CAF50",
   },
   weatherBadgeText: {
-    color: 'white',
+    color: "white",
     fontSize: 10,
     marginLeft: 4,
   },
-  transportModeSummary: {
-    flexDirection: 'row',
-    height: 6,
-    width: '100%',
-    marginTop: 8,
-    borderRadius: 3,
-    overflow: 'hidden',
-  },
-  transportModeBar: {
-    height: '100%',
-  },
-  modeIconContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginRight: 8,
-  },
-  routeText: {
-    fontSize: 12,
-    marginLeft: 4,
-    color: '#8B4513',
-  },
-  journeyTimeBreakdown: {
-    flexDirection: 'row',
-    marginTop: 8,
-    gap: 8,
-  },
-  timeItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  timeText: {
-    fontSize: 12,
-    color: '#8B4513',
-  },
 });
-
-
