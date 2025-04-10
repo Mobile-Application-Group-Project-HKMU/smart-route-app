@@ -624,20 +624,86 @@ export default function RoutePlanScreen() {
                 onPress={() => setSelectedJourney(journey)}
               >
                 <ThemedText style={styles.journeyDuration}>
-                  {formatDistance(journey.totalDistance)}
+                  {Math.round(journey.totalDuration)} {t("minutes")}
                 </ThemedText>
-                <ThemedView style={styles.journeyModeIcons}>
+                
+                {/* Transport mode summary with colored bars */}
+                <ThemedView style={styles.transportModeSummary}>
                   {journey.steps
-                    .filter((step) => step.type !== "WALK")
+                    .filter(step => step.duration && step.duration > 1)
                     .map((step, index) => (
-                      <IconSymbol
+                      <View 
                         key={index}
-                        name={getTransportIcon(step.type)}
-                        size={16}
-                        color={getTransportColor(step.type, step.route)}
+                        style={[
+                          styles.transportModeBar,
+                          { 
+                            backgroundColor: getTransportColor(step.type, step.route),
+                            flex: step.duration || 1,
+                          }
+                        ]}
                       />
                     ))}
                 </ThemedView>
+                
+                {/* Transport mode icons with details */}
+                <ThemedView style={styles.journeyModeIcons}>
+                  {journey.steps
+                    .filter(step => step.type !== "WALK")
+                    .map((step, index) => (
+                      <ThemedView key={index} style={styles.modeIconContainer}>
+                        <IconSymbol
+                          name={getTransportIcon(step.type)}
+                          size={16}
+                          color={getTransportColor(step.type, step.route)}
+                        />
+                        {step.route && (
+                          <ThemedText style={styles.routeText}>
+                            {step.route}
+                          </ThemedText>
+                        )}
+                      </ThemedView>
+                    ))}
+                </ThemedView>
+                
+                {/* Time breakdown */}
+                <ThemedView style={styles.journeyTimeBreakdown}>
+                  {/* Walking time */}
+                  {journey.steps.filter(s => s.type === "WALK").length > 0 && (
+                    <ThemedView style={styles.timeItem}>
+                      <IconSymbol name="figure.walk" size={12} color="#555555" />
+                      <ThemedText style={styles.timeText}>
+                        {Math.round(journey.steps
+                          .filter(s => s.type === "WALK")
+                          .reduce((sum, s) => sum + (s.duration || 0), 0))}{t("min")}
+                      </ThemedText>
+                    </ThemedView>
+                  )}
+                  
+                  {/* Bus time */}
+                  {journey.steps.filter(s => s.type === "BUS").length > 0 && (
+                    <ThemedView style={styles.timeItem}>
+                      <IconSymbol name="bus" size={12} color="#FF5151" />
+                      <ThemedText style={styles.timeText}>
+                        {Math.round(journey.steps
+                          .filter(s => s.type === "BUS")
+                          .reduce((sum, s) => sum + (s.duration || 0), 0))}{t("min")}
+                      </ThemedText>
+                    </ThemedView>
+                  )}
+                  
+                  {/* MTR time */}
+                  {journey.steps.filter(s => ["MTR", "SUBWAY", "RAIL"].includes(s.type)).length > 0 && (
+                    <ThemedView style={styles.timeItem}>
+                      <IconSymbol name="tram" size={12} color="#E60012" />
+                      <ThemedText style={styles.timeText}>
+                        {Math.round(journey.steps
+                          .filter(s => ["MTR", "SUBWAY", "RAIL"].includes(s.type))
+                          .reduce((sum, s) => sum + (s.duration || 0), 0))}{t("min")}
+                      </ThemedText>
+                    </ThemedView>
+                  )}
+                </ThemedView>
+                
                 {journey.weatherAdjusted && (
                   <ThemedView style={styles.weatherBadge}>
                     <IconSymbol name="umbrella.fill" size={14} color="#FFF" />
@@ -662,8 +728,53 @@ export default function RoutePlanScreen() {
           {selectedJourney && (
             <ThemedView style={styles.journeyDetails}>
               <ThemedText style={styles.journeySummary}>
-                {formatDistance(selectedJourney.totalDistance)}
+                {Math.round(selectedJourney.totalDuration)} {t("minutes")} • {formatDistance(selectedJourney.totalDistance)}
               </ThemedText>
+                
+              <ThemedView style={styles.journeySummaryRow}>
+                {/* Summary for walking */}
+                {selectedJourney.steps.some(s => s.type === "WALK") && (
+                  <ThemedView style={styles.journeySummaryItem}>
+                    <IconSymbol name="figure.walk" size={18} color="#555555" />
+                    <ThemedText style={styles.journeySummaryText}>
+                      {Math.round(selectedJourney.steps
+                        .filter(s => s.type === "WALK")
+                        .reduce((sum, s) => sum + (s.duration || 0), 0))} {t("min")}
+                    </ThemedText>
+                  </ThemedView>
+                )}
+                
+                {/* Summary for bus */}
+                {selectedJourney.steps.some(s => s.type === "BUS") && (
+                  <ThemedView style={styles.journeySummaryItem}>
+                    <IconSymbol name="bus" size={18} color="#FF5151" />
+                    <ThemedText style={styles.journeySummaryText}>
+                      {selectedJourney.steps
+                        .filter(s => s.type === "BUS")
+                        .map(s => s.route)
+                        .join(", ")} • {Math.round(selectedJourney.steps
+                        .filter(s => s.type === "BUS")
+                        .reduce((sum, s) => sum + (s.duration || 0), 0))} {t("min")}
+                    </ThemedText>
+                  </ThemedView>
+                )}
+                
+                {/* Summary for MTR */}
+                {selectedJourney.steps.some(s => ["MTR", "SUBWAY", "RAIL"].includes(s.type)) && (
+                  <ThemedView style={styles.journeySummaryItem}>
+                    <IconSymbol name="tram" size={18} color="#E60012" />
+                    <ThemedText style={styles.journeySummaryText}>
+                      {selectedJourney.steps
+                        .filter(s => ["MTR", "SUBWAY", "RAIL"].includes(s.type))
+                        .map(s => s.route)
+                        .filter((v, i, a) => a.indexOf(v) === i) // unique routes
+                        .join(", ")} • {Math.round(selectedJourney.steps
+                        .filter(s => ["MTR", "SUBWAY", "RAIL"].includes(s.type))
+                        .reduce((sum, s) => sum + (s.duration || 0), 0))} {t("min")}
+                    </ThemedText>
+                  </ThemedView>
+                )}
+              </ThemedView>
 
               {Platform.OS !== "web" && fromStop && toStop && (
                 <View style={styles.mapContainer}>
@@ -786,9 +897,9 @@ export default function RoutePlanScreen() {
         </ThemedView>
       )}
 
-      {!loading &&
-        !loadingStops &&
-        journeys.length === 0 &&
+      {!loading && 
+        !loadingStops && 
+        journeys.length === 0 && 
         (fromStop || useCurrentLocation || toStop) && (
           <ThemedView style={styles.emptyStateContainer}>
             <IconSymbol name="map" size={60} color="#8B4513" />
@@ -798,8 +909,8 @@ export default function RoutePlanScreen() {
           </ThemedView>
         )}
 
-      {!loading &&
-        !loadingStops &&
+      {!loading && 
+        !loadingStops && 
         journeys.length === 0 &&
         !fromStop &&
         !toStop &&
@@ -822,6 +933,25 @@ const styles = StyleSheet.create({
     left: -35,
     position: "absolute",
     opacity: 0.7,
+  },
+  journeySummaryRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    marginBottom: 16,
+    gap: 12,
+  },
+  journeySummaryItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    borderRadius: 8,
+    padding: 8,
+    gap: 8,
+  },
+  journeySummaryText: {
+    fontSize: 14,
+    color: '#8B4513',
   },
   searchContainer: {
     marginBottom: 16,
@@ -960,7 +1090,7 @@ const styles = StyleSheet.create({
   journeyDetails: {
     flex: 1,
     marginTop: 16,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#FFD580",
     borderRadius: 12,
     padding: 16,
     shadowColor: "#000",
@@ -998,6 +1128,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginRight: 14,
+    backgroundColor: "#FFD580",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.2,
@@ -1033,8 +1164,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   stepMetaText: { 
-    fontSize: 14, 
-    color: "#8B4513", 
+    fontSize: 14,
+    color: "#8B4513",
     opacity: 0.7,
     marginRight: 8,
   },
@@ -1097,6 +1228,41 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 10,
     marginLeft: 4,
+  },
+  transportModeSummary: {
+    flexDirection: 'row',
+    height: 6,
+    width: '100%',
+    marginTop: 8,
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  transportModeBar: {
+    height: '100%',
+  },
+  modeIconContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  routeText: {
+    fontSize: 12,
+    marginLeft: 4,
+    color: '#8B4513',
+  },
+  journeyTimeBreakdown: {
+    flexDirection: 'row',
+    marginTop: 8,
+    gap: 8,
+  },
+  timeItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  timeText: {
+    fontSize: 12,
+    color: '#8B4513',
   },
 });
 
