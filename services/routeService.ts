@@ -1,253 +1,182 @@
-import { TransportStop } from "@/types/transport-types";
-import { generateUUID } from "@/util/uniqueId";
-import { calculateDistance } from "@/util/calculateDistance";
-
-// API endpoint for route planning
-const ROUTE_API_ENDPOINT = "https://api.hktransit.org/v1/routes";
-
-// Define type for each step in a journey
-type JourneyStep = {
-  type: "WALK" | "BUS" | "MTR";
-  from: TransportStop;
-  to: TransportStop;
-  distance?: number;
-  duration?: number;
-  route?: string;
-  company?: string;
-};
-
-// Define type for a complete journey
-type Journey = {
-  id: string;
-  steps: JourneyStep[];
-  totalDuration: number;
-  totalDistance: number;
-  weatherAdjusted?: boolean;
-  weatherProtected?: boolean;
-};
-
-/**
- * Fetch available routes between origin and destination
- * @param origin Starting location
- * @param destination Ending location
- * @returns Array of possible journeys
- */
-export async function fetchRoutes(
-  origin: TransportStop,
-  destination: TransportStop
-): Promise<Journey[]> {
-  try {
-    // Make API request to get route data
-    const response = await fetch(
-      `${ROUTE_API_ENDPOINT}?origin_lat=${origin.lat}&origin_lng=${origin.long}&dest_lat=${destination.lat}&dest_lng=${destination.long}`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json"
-        }
-      }
-    );
-    
-    if (!response.ok) {
-      throw new Error(`API request failed with status: ${response.status}`);
-    }
-    
-    const data = await response.json();
-    
-    // Transform API response into our Journey format
-    return transformResponseToJourneys(data, origin, destination);
-  } catch (error) {
-    console.error("Error fetching routes:", error);
-    
-    // If API fails, fall back to locally calculated routes
-    return generateFallbackRoutes(origin, destination);
-  }
-}
-
-/**
- * Transform API response into journey objects
- */
-function transformResponseToJourneys(
-  apiResponse: any,
-  origin: TransportStop,
-  destination: TransportStop
-): Journey[] {
-  // Implementation depends on actual API response structure
-  // For now, using fallback as a placeholder
-  return generateFallbackRoutes(origin, destination);
-}
-
-/**
- * Generate fallback routes when API is unavailable
- */
-function generateFallbackRoutes(
-  origin: TransportStop,
-  destination: TransportStop
-): Journey[] {
-  const directDistance = calculateDistance(
-    origin.lat,
-    origin.long,
-    destination.lat,
-    destination.long
-  );
-  
-  // For shorter distances, offer a direct walking option
-  const journeys: Journey[] = [];
-  
-  if (directDistance < 2000) {
-    // Walking journey for short distances
-    const walkTime = Math.round((directDistance / 80) * 60); // 80m per minute
-    journeys.push({
-      id: generateUUID(),
-      steps: [
-        {
-          type: "WALK",
-          from: origin,
-          to: destination,
-          distance: Math.round(directDistance),
-          duration: walkTime
-        }
-      ],
-      totalDuration: walkTime,
-      totalDistance: Math.round(directDistance),
-      weatherAdjusted: false,
-      weatherProtected: false
-    });
-  }
-  
-  // Bus journey
-  const busRoutes = ["1", "1A", "5", "5C", "6", "7", "9", "11K", "11X", "40X"];
-  const busRoute = busRoutes[Math.floor(Math.random() * busRoutes.length)];
-  
-  const busJourney = createMultiStepJourney(
-    origin,
-    destination,
-    [
-      { type: "WALK", distanceFactor: 0.2, speedFactor: 80 },
-      { type: "BUS", distanceFactor: 0.7, speedFactor: 500, route: busRoute, company: "KMB" },
-      { type: "WALK", distanceFactor: 0.1, speedFactor: 80 }
-    ]
-  );
-  journeys.push(busJourney);
-  
-  // MTR journey
-  const mtrRoutes = ["TWL", "ISL", "TKL", "EAL", "SIL", "TML", "KTL"];
-  const mtrRoute = mtrRoutes[Math.floor(Math.random() * mtrRoutes.length)];
-  
-  const mtrJourney = createMultiStepJourney(
-    origin,
-    destination,
-    [
-      { type: "WALK", distanceFactor: 0.15, speedFactor: 80 },
-      { type: "MTR", distanceFactor: 0.75, speedFactor: 1000, route: mtrRoute, company: "MTR" },
-      { type: "WALK", distanceFactor: 0.1, speedFactor: 80 }
-    ]
-  );
-  journeys.push(mtrJourney);
-  
-  // Combined journey
-  const combinedJourney = createMultiStepJourney(
-    origin,
-    destination,
-    [
-      { type: "WALK", distanceFactor: 0.1, speedFactor: 80 },
-      { type: "BUS", distanceFactor: 0.3, speedFactor: 500, route: busRoutes[1], company: "KMB" },
-      { type: "WALK", distanceFactor: 0.1, speedFactor: 80 },
-      { type: "MTR", distanceFactor: 0.4, speedFactor: 1000, route: mtrRoutes[2], company: "MTR" },
-      { type: "WALK", distanceFactor: 0.1, speedFactor: 80 }
-    ]
-  );
-  journeys.push(combinedJourney);
-  
-  return journeys;
-}
-
-/**
- * Helper to create a multi-step journey
- */
-function createMultiStepJourney(
-  origin: TransportStop,
-  destination: TransportStop,
-  stepConfigs: Array<{
-    type: "WALK" | "BUS" | "MTR";
-    distanceFactor: number;
-    speedFactor: number;
-    route?: string;
-    company?: string;
-  }>
-): Journey {
-  const directDistance = calculateDistance(
-    origin.lat,
-    origin.long,
-    destination.lat,
-    destination.long
-  );
-  
-  let totalDistance = 0;
-  let totalDuration = 0;
-  const steps: JourneyStep[] = [];
-  let currentPoint = { ...origin };
-  
-  // Create each step of the journey
-  stepConfigs.forEach((config, index) => {
-    const nextPoint = createIntermediatePoint(
-      currentPoint,
-      destination,
-      index === stepConfigs.length - 1
-    );
-    
-    const stepDistance = Math.round(directDistance * config.distanceFactor);
-    const stepDuration = Math.round((stepDistance / config.speedFactor) * 60);
-    
-    steps.push({
-      type: config.type,
-      from: currentPoint,
-      to: nextPoint,
-      distance: stepDistance,
-      duration: stepDuration,
-      route: config.route,
-      company: config.company
-    });
-    
-    totalDistance += stepDistance;
-    totalDuration += stepDuration;
-    currentPoint = nextPoint;
-  });
-  
-  return {
-    id: generateUUID(),
-    steps,
-    totalDuration,
-    totalDistance,
-    weatherAdjusted: false,
-    weatherProtected: false
-  };
-}
-
-/**
- * Create an intermediate point between two locations
- */
-function createIntermediatePoint(
-  start: TransportStop,
-  end: TransportStop,
-  isLastPoint: boolean
-): TransportStop {
-  if (isLastPoint) {
-    return end;
-  }
-  
-  // Create a point between start and end
-  const factor = Math.random() * 0.5 + 0.25; // 0.25 to 0.75
-  const lat = start.lat + (end.lat - start.lat) * factor;
-  const long = start.long + (end.long - start.long) * factor;
-  
-  return {
-    lat,
-    long,
-    name_en: `Via Point ${Math.round(factor * 100)}`,
-    name_tc: `途經點 ${Math.round(factor * 100)}`,
-    stop: `VP${Math.round(factor * 100)}`,
-    mode: "WALK"
-  };
-}
+import { TransportStop } from "@/types/transport-types"; 
+import { generateUUID } from "@/util/uniqueId"; 
+import { calculateDistance } from "@/util/calculateDistance"; 
+import axios from "axios"; 
+ 
+// 高德地图 API Key，需要替换为你自己的 Key 
+const GAODE_API_KEY = "6a20f25ef26e7c79e20011360d5de199"; 
+// 高德地图公交路线规划 API 端点 
+const ROUTE_API_ENDPOINT = `https://restapi.amap.com/v3/direction/transit/integrated`;  
+ 
+// Define type for each step in a journey 
+type JourneyStep = { 
+  type: "WALK" | "BUS" | "MTR"; 
+  from: TransportStop; 
+  to: TransportStop; 
+  distance?: number; 
+  duration?: number; 
+  route?: string; 
+  company?: string; 
+}; 
+ 
+// Define type for a complete journey 
+type Journey = { 
+  id: string; 
+  steps: JourneyStep[]; 
+  totalDuration: number; 
+  totalDistance: number; 
+  weatherAdjusted?: boolean; 
+  weatherProtected?: boolean; 
+}; 
+ 
+/** 
+ * Fetch available routes between origin and destination 
+ * @param origin Starting location 
+ * @param destination Ending location 
+ * @returns Array of possible journeys 
+ */ 
+export async function fetchRoutes( 
+  origin: TransportStop, 
+  destination: TransportStop 
+): Promise<Journey[]> { 
+  try { 
+    // 构建高德地图 API 请求的参数 
+    const params = { 
+      origin: `${origin.long},${origin.lat}`,  
+      destination: `${destination.long},${destination.lat}`,  
+      key: GAODE_API_KEY, 
+      city: "your_city_code", // 替换为实际的城市代码 
+      extensions: "all", 
+    }; 
+ 
+    // 发送 API 请求 
+    const response = await axios.get(ROUTE_API_ENDPOINT,  { params }); 
+ 
+    if (response.status  !== 200) { 
+      throw new Error(`API request failed with status: ${response.status}`);  
+    } 
+ 
+    const data = response.data;  
+ 
+    // 检查 API 返回结果是否成功 
+    if (data.status  === "1") { 
+      return transformResponseToJourneys(data, origin, destination); 
+    } else { 
+      throw new Error(`API response error: ${data.info}`);  
+    } 
+  } catch (error) { 
+    console.error("Error  fetching routes:", error); 
+    // If API fails, fall back to locally calculated routes 
+    return generateFallbackRoutes(origin, destination); 
+  } 
+} 
+ 
+/** 
+ * Transform API response into journey objects 
+ */ 
+function transformResponseToJourneys( 
+  apiResponse: any, 
+  origin: TransportStop, 
+  destination: TransportStop 
+): Journey[] { 
+  const journeys: Journey[] = []; 
+  const routes = apiResponse.route.transits;  
+ 
+  routes.forEach((route:  any) => { 
+    const steps: JourneyStep[] = []; 
+    let totalDuration = route.duration;  
+    let totalDistance = 0; 
+ 
+    route.segments.forEach((segment:  any) => { 
+      segment.steps.forEach((step:  any) => { 
+        const stepType = step.mode  === "WALK" ? "WALK" : "BUS"; 
+        const from = { 
+          lat: step.start_location.lat,  
+          long: step.start_location.lng,  
+          name_en: step.start_stop?.name  || "Start Point", 
+          name_tc: step.start_stop?.name  || "起點", 
+          stop: step.start_stop?.id  || "SP", 
+          mode: stepType, 
+        } as TransportStop; 
+        const to = { 
+          lat: step.end_location.lat,  
+          long: step.end_location.lng,  
+          name_en: step.end_stop?.name  || "End Point", 
+          name_tc: step.end_stop?.name  || "終點", 
+          stop: step.end_stop?.id  || "EP", 
+          mode: stepType, 
+        } as TransportStop; 
+        const distance = step.distance;  
+        const duration = step.duration;  
+        const routeName = step.bus?.buslines?.[0]?.name;  
+        const company = step.bus?.buslines?.[0]?.company;  
+ 
+        steps.push({  
+          type: stepType, 
+          from, 
+          to, 
+          distance, 
+          duration, 
+          route: routeName, 
+          company, 
+        }); 
+ 
+        totalDistance += distance; 
+      }); 
+    }); 
+ 
+    journeys.push({  
+      id: generateUUID(), 
+      steps, 
+      totalDuration: parseInt(totalDuration), 
+      totalDistance, 
+      weatherAdjusted: false, 
+      weatherProtected: false, 
+    }); 
+  }); 
+ 
+  return journeys; 
+} 
+ 
+/** 
+ * Generate fallback routes when API is unavailable 
+ */ 
+function generateFallbackRoutes( 
+  origin: TransportStop, 
+  destination: TransportStop 
+): Journey[] { 
+  const directDistance = calculateDistance( 
+    origin.lat,  
+    origin.long,  
+    destination.lat,  
+    destination.long  
+  ); 
+ 
+  // For shorter distances, offer a direct walking option 
+  const journeys: Journey[] = []; 
+ 
+  if (directDistance < 2000) { 
+    // Walking journey for short distances 
+    const walkTime = Math.round((directDistance  / 80) * 60); // 80m per minute 
+    journeys.push({  
+      id: generateUUID(), 
+      steps: [ 
+        { 
+          type: "WALK", 
+          from: origin, 
+          to: destination, 
+          distance: Math.round(directDistance),  
+          duration: walkTime, 
+        }, 
+      ], 
+      totalDuration: walkTime, 
+      totalDistance: Math.round(directDistance),  
+      weatherAdjusted: false, 
+      weatherProtected: false, 
+    }); 
+  } 
+ 
+  // 这里可以根据实际情况添加更多的本地计算路线逻辑 
+  return journeys; 
+} 
+ 

@@ -5,7 +5,7 @@
  */
 
 // Transport mode type
-export type TransportMode = 'BUS' | 'MINIBUS' | 'MTR' | 'FERRY' | 'WALK';
+export type TransportMode = 'BUS' | 'MINIBUS' | 'MTR' | 'FERRY' | 'WALK'| "TRANSIT";
 
 // Enhanced TransportCompany type
 export type TransportCompany = 
