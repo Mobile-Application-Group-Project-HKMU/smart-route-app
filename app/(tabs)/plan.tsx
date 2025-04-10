@@ -44,7 +44,7 @@ import { fetchRoutes } from "@/services/routeService";
 // Define type for each step in a journey (walk, bus, or MTR)
 // 定义行程中每一步的类型（步行、巴士或地铁）
 type JourneyStep = {
-  type: "WALK" | "BUS" | "MTR";  // Transportation mode - 交通方式
+  type: "WALK" | "BUS" | "MTR" | "TRANSIT" | "SUBWAY" | "TRAM" | "RAIL";  // Transportation mode - 交通方式
   from: TransportStop;           // Origin stop - 起始站点
   to: TransportStop;             // Destination stop - 目的地站点
   distance?: number;             // Distance in meters - 距离（米）
@@ -296,10 +296,13 @@ export default function RoutePlanScreen() {
   // Apply weather considerations to journeys
   const applyWeatherConsiderations = (journeys: Journey[], weatherScore: number) => {
     journeys.forEach(journey => {
-      // Calculate total outdoor walking distance
       const totalWalkingDistance = journey.steps
         .filter(step => step.type === "WALK")
         .reduce((sum, step) => sum + (step.distance ?? 0), 0);
+  
+      const hasMTR = journey.steps.some(step => 
+        ["MTR", "SUBWAY", "RAIL"].includes(step.type)
+      );
       
       // For rainy weather, penalize journeys with more walking
       if (weatherScore < 50 && totalWalkingDistance > 500) {
@@ -309,7 +312,6 @@ export default function RoutePlanScreen() {
       
       // For very bad weather, prioritize indoor/covered routes (MTR)
       if (weatherScore < 30) {
-        const hasMTR = journey.steps.some(step => step.type === "MTR");
         if (hasMTR) {
           journey.totalDuration -= 5;
           journey.weatherProtected = true;
@@ -354,7 +356,12 @@ export default function RoutePlanScreen() {
       case "BUS":
         return "bus";
       case "MTR":
+      case "SUBWAY":
+      case "RAIL":
+      case "TRAM":
         return "tram";
+      case "TRANSIT":
+        return "arrow.right";
       default:
         return "arrow.right";
     }
@@ -362,14 +369,37 @@ export default function RoutePlanScreen() {
 
   // Get the appropriate color for a transport type
   // 获取交通类型的适当颜色
-  const getTransportColor = (type: string) => {
+  const getTransportColor = (type: string, route?: string) => {
     switch (type) {
       case "WALK":
         return "#555555";
       case "BUS":
         return "#FF5151";
       case "MTR":
+      case "SUBWAY":
+      case "RAIL":
+        // Use actual MTR line colors if route is specified
+        if (route) {
+          // Maps to the MTR_COLORS from mtr.ts
+          const mtrLineColors: Record<string, string> = {
+            'AEL': '#00888E', // Airport Express
+            'TCL': '#F3982D', // Tung Chung Line
+            'TML': '#9C2E00', // Tuen Ma Line
+            'TKL': '#7E3C99', // Tseung Kwan O Line
+            'EAL': '#5EB7E8', // East Rail Line
+            'TWL': '#C41E3A', // Tsuen Wan Line
+            'ISL': '#0075C2', // Island Line
+            'KTL': '#00A040', // Kwun Tong Line
+            'SIL': '#CBD300', // South Island Line
+            'DRL': '#B5A45D'  // Disneyland Resort Line
+          };
+          return mtrLineColors[route] || "#E60012";
+        }
         return "#E60012";
+      case "TRAM":
+        return "#00A86B";
+      case "TRANSIT":
+        return "#4682B4";
       default:
         return "#000000";
     }
@@ -389,7 +419,7 @@ export default function RoutePlanScreen() {
   const navigateToTransportDetails = (step: JourneyStep) => {
     if (step.type === "BUS" && step.route) {
       router.push(`/bus/${step.route}?bound=O&serviceType=1`);
-    } else if (step.type === "MTR" && step.route) {
+    } else if ((step.type === "MTR" || step.type === "SUBWAY" || step.type === "RAIL") && step.route) {
       router.push({
         pathname: "/mtr/line/[lineId]",
         params: { lineId: step.route },
@@ -604,7 +634,7 @@ export default function RoutePlanScreen() {
                         key={index}
                         name={getTransportIcon(step.type)}
                         size={16}
-                        color={getTransportColor(step.type)}
+                        color={getTransportColor(step.type, step.route)}
                       />
                     ))}
                 </ThemedView>
@@ -685,8 +715,8 @@ export default function RoutePlanScreen() {
                           },
                           { latitude: step.to.lat, longitude: step.to.long },
                         ]}
-                        strokeColor={getTransportColor(step.type)}
-                        strokeWidth={3}
+                        strokeColor={getTransportColor(step.type, step.route)}
+                        strokeWidth={step.type === "WALK" ? 2 : 4}
                       />
                     ))}
                   </MapView>
@@ -701,7 +731,7 @@ export default function RoutePlanScreen() {
                     <ThemedView
                       style={[
                         styles.stepIconContainer,
-                        { backgroundColor: getTransportColor(step.type) },
+                        { backgroundColor: getTransportColor(step.type, step.route) },
                       ]}
                     >
                       <IconSymbol
@@ -715,8 +745,8 @@ export default function RoutePlanScreen() {
                         {step.type === "WALK"
                           ? t("walk")
                           : step.type === "BUS"
-                          ? `${t("take")} ${step.company} ${t("bus")}${step.route ? ` ${step.route}` : ''}`
-                          : `${t("take")} ${t("mtr")}${step.route ? ` ${step.route}` : ''}`}
+                          ? `${t("take")} ${step.company} ${t("bus")} ${step.route || ''}`
+                          : `${t("take")} ${t("mtr")} ${step.route || ''}`}
                       </ThemedText>
                       <ThemedText style={styles.stepFromTo}>
                         {language === "en"
