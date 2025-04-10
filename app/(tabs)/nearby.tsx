@@ -16,7 +16,7 @@ import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { IconSymbol } from "@/components/ui/IconSymbol";
-import { findNearbyStops, type Stop } from "@/util/kmb";
+import { findNearbyStops } from "@/util/kmb";
 import { findNearbyStops as findNearbyMtrStops } from "@/util/mtr";
 import ParallaxScrollView from "@/components/ParallaxScrollView";
 import { useLanguage } from "@/contexts/LanguageContext";

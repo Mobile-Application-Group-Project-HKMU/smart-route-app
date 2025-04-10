@@ -38,6 +38,9 @@ import { calculateDistance } from "@/util/calculateDistance";
 import { getWeatherForLocation, calculateWeatherScore } from "@/util/weather";
 import { WeatherInfo } from "@/components/WeatherInfo";
 
+// Import real journey API service
+import { fetchRoutes } from "@/services/routeService";
+
 // Define type for each step in a journey (walk, bus, or MTR)
 // 定义行程中每一步的类型（步行、巴士或地铁）
 type JourneyStep = {
@@ -56,7 +59,7 @@ type Journey = {
   id: string;                    // Unique journey ID - 唯一行程ID
   steps: JourneyStep[];          // Array of journey steps - 行程步骤数组
   totalDuration: number;         // Total journey time - 总行程时间
-  totalDistance: number;         // Total journey distance - 总行程距离
+  totalDistance: number;         // Total journey距离
   weatherAdjusted?: boolean;     // Whether route adjusted for weather - 路线是否因天气调整
   weatherProtected?: boolean;    // Whether route offers weather protection - 路线是否提供天气保护
 };
@@ -258,6 +261,10 @@ export default function RoutePlanScreen() {
           ? {
               lat: userLocation.coords.latitude,
               long: userLocation.coords.longitude,
+              name_en: "Current Location",
+              name_tc: "當前位置",
+              stop: "CURRENT_LOCATION",
+              mode: "WALK" as TransportMode
             }
           : fromStop;
 
@@ -265,11 +272,18 @@ export default function RoutePlanScreen() {
         throw new Error("Origin location not available");
       }
 
-      const journeys = generateSampleJourneys(origin, toStop);
-      setJourneys(journeys);
-
-      if (journeys.length > 0) {
-        setSelectedJourney(journeys[0]);
+      // Fetch real journey data instead of using sample journeys
+      const journeyData = await fetchRoutes(origin, toStop);
+      
+      // Apply weather considerations if enabled
+      if (isWeatherAware && weatherData) {
+        const weatherScore = calculateWeatherScore(weatherData);
+        applyWeatherConsiderations(journeyData, weatherScore);
+      }
+      
+      setJourneys(journeyData);
+      if (journeyData.length > 0) {
+        setSelectedJourney(journeyData[0]);
       }
     } catch (error) {
       console.error("Error planning journey:", error);
@@ -277,6 +291,34 @@ export default function RoutePlanScreen() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Apply weather considerations to journeys
+  const applyWeatherConsiderations = (journeys: Journey[], weatherScore: number) => {
+    journeys.forEach(journey => {
+      // Calculate total outdoor walking distance
+      const totalWalkingDistance = journey.steps
+        .filter(step => step.type === "WALK")
+        .reduce((sum, step) => sum + (step.distance ?? 0), 0);
+      
+      // For rainy weather, penalize journeys with more walking
+      if (weatherScore < 50 && totalWalkingDistance > 500) {
+        journey.totalDuration += Math.floor(totalWalkingDistance / 100);
+        journey.weatherAdjusted = true;
+      }
+      
+      // For very bad weather, prioritize indoor/covered routes (MTR)
+      if (weatherScore < 30) {
+        const hasMTR = journey.steps.some(step => step.type === "MTR");
+        if (hasMTR) {
+          journey.totalDuration -= 5;
+          journey.weatherProtected = true;
+        }
+      }
+    });
+    
+    // Re-sort journeys after applying weather adjustments
+    journeys.sort((a, b) => a.totalDuration - b.totalDuration);
   };
 
   // Find the nearest stop of a specific company to a given location
@@ -301,383 +343,6 @@ export default function RoutePlanScreen() {
       }
       return nearest;
     }, null as { stop: SearchResult; distance: number } | null)!.stop;
-  };
-
-  // Generate sample journeys based on origin and destination
-  // 根据起点和目的地生成示例行程
-  const generateSampleJourneys = (from: any, to: SearchResult): Journey[] => {
-    const originLocation =
-      useCurrentLocation && userLocation
-        ? {
-            lat: userLocation.coords.latitude,
-            long: userLocation.coords.longitude,
-          }
-        : { lat: from.lat, long: from.long };
-    const destinationLocation = { lat: to.lat, long: to.long };
-
-    const isOriginKmb =
-      fromStop && fromStop.company === "KMB" && !useCurrentLocation;
-    const isOriginMtr =
-      fromStop && fromStop.company === "MTR" && !useCurrentLocation;
-    const isDestinationKmb = to.company === "KMB";
-    const isDestinationMtr = to.company === "MTR";
-
-    const startBusStop = isOriginKmb
-      ? fromStop
-      : findNearestStop(originLocation, "KMB");
-    const endBusStop = isDestinationKmb
-      ? to
-      : findNearestStop(destinationLocation, "KMB");
-
-    const busJourneySteps: JourneyStep[] = [];
-    if (!isOriginKmb && startBusStop) {
-      const walkDistance = calculateDistance(
-        originLocation.lat,
-        originLocation.long,
-        startBusStop.lat,
-        startBusStop.long
-      );
-      busJourneySteps.push({
-        type: "WALK",
-        from: {
-          lat: originLocation.lat,
-          long: originLocation.long,
-          name_en: useCurrentLocation
-            ? "Current Location"
-            : fromStop?.displayName || "Origin",
-          name_tc: useCurrentLocation
-            ? "当前位置"
-            : fromStop?.displayName || "起点",
-          stop: "origin",
-          mode: "WALK",
-        },
-        to: startBusStop,
-        distance: Math.round(walkDistance),
-        duration: Math.round((walkDistance / 80) * 60),
-      });
-    }
-    if (startBusStop && endBusStop) {
-      const busDistance = calculateDistance(
-        startBusStop.lat,
-        startBusStop.long,
-        endBusStop.lat,
-        endBusStop.long
-      );
-      busJourneySteps.push({
-        type: "BUS",
-        from: startBusStop,
-        to: endBusStop,
-        route: getRandomRoute("KMB"),
-        company: "KMB",
-        distance: Math.round(busDistance),
-        duration: Math.round((busDistance / 500) * 60),
-      });
-    }
-    if (!isDestinationKmb && endBusStop) {
-      const walkDistance = calculateDistance(
-        endBusStop.lat,
-        endBusStop.long,
-        destinationLocation.lat,
-        destinationLocation.long
-      );
-      busJourneySteps.push({
-        type: "WALK",
-        from: endBusStop,
-        to: {
-          lat: destinationLocation.lat,
-          long: destinationLocation.long,
-          name_en: to.displayName,
-          name_tc: to.name_tc,
-          stop: to.stop,
-          mode: to.mode,
-        },
-        distance: Math.round(walkDistance),
-        duration: Math.round((walkDistance / 80) * 60),
-      });
-    }
-
-    const startMtrStation = isOriginMtr
-      ? fromStop
-      : findNearestStop(originLocation, "MTR");
-    const endMtrStation = isDestinationMtr
-      ? to
-      : findNearestStop(destinationLocation, "MTR");
-
-    const mtrJourneySteps: JourneyStep[] = [];
-    if (!isOriginMtr && startMtrStation) {
-      const walkDistance = calculateDistance(
-        originLocation.lat,
-        originLocation.long,
-        startMtrStation.lat,
-        startMtrStation.long
-      );
-      mtrJourneySteps.push({
-        type: "WALK",
-        from: {
-          lat: originLocation.lat,
-          long: originLocation.long,
-          name_en: useCurrentLocation
-            ? "Current Location"
-            : fromStop?.displayName || "Origin",
-          name_tc: useCurrentLocation
-            ? "当前位置"
-            : fromStop?.displayName || "起点",
-          stop: "origin",
-          mode: "WALK",
-        },
-        to: startMtrStation,
-        distance: Math.round(walkDistance),
-        duration: Math.round((walkDistance / 80) * 60),
-      });
-    }
-    if (startMtrStation && endMtrStation) {
-      const mtrDistance = calculateDistance(
-        startMtrStation.lat,
-        startMtrStation.long,
-        endMtrStation.lat,
-        endMtrStation.long
-      );
-      mtrJourneySteps.push({
-        type: "MTR",
-        from: startMtrStation,
-        to: endMtrStation,
-        route: getRandomRoute("MTR"),
-        company: "MTR",
-        distance: Math.round(mtrDistance),
-        duration: Math.round((mtrDistance / 1000) * 60),
-      });
-    }
-    if (!isDestinationMtr && endMtrStation) {
-      const walkDistance = calculateDistance(
-        endMtrStation.lat,
-        endMtrStation.long,
-        destinationLocation.lat,
-        destinationLocation.long
-      );
-      mtrJourneySteps.push({
-        type: "WALK",
-        from: endMtrStation,
-        to: {
-          lat: destinationLocation.lat,
-          long: destinationLocation.long,
-          name_en: to.displayName,
-          name_tc: to.name_tc,
-          stop: to.stop,
-          mode: to.mode,
-        },
-        distance: Math.round(walkDistance),
-        duration: Math.round((walkDistance / 80) * 60),
-      });
-    }
-
-    const midLat = (originLocation.lat + destinationLocation.lat) / 2;
-    const midLong = (originLocation.long + destinationLocation.long) / 2;
-    const transferMtr = findNearestStop({ lat: midLat, long: midLong }, "MTR");
-    const transferBus = transferMtr
-      ? findNearestStop(transferMtr, "KMB")
-      : null;
-
-    const transferJourneySteps: JourneyStep[] = [];
-    if (!isOriginKmb && startBusStop) {
-      const walkDistance = calculateDistance(
-        originLocation.lat,
-        originLocation.long,
-        startBusStop.lat,
-        startBusStop.long
-      );
-      transferJourneySteps.push({
-        type: "WALK",
-        from: {
-          lat: originLocation.lat,
-          long: originLocation.long,
-          name_en: useCurrentLocation
-            ? "Current Location"
-            : fromStop?.displayName || "Origin",
-          name_tc: useCurrentLocation
-            ? "当前位置"
-            : fromStop?.displayName || "起点",
-          stop: "origin",
-          mode: "WALK",
-        },
-        to: startBusStop,
-        distance: Math.round(walkDistance),
-        duration: Math.round((walkDistance / 80) * 60),
-      });
-    }
-    if (startBusStop && transferBus) {
-      const busDistance = calculateDistance(
-        startBusStop.lat,
-        startBusStop.long,
-        transferBus.lat,
-        transferBus.long
-      );
-      transferJourneySteps.push({
-        type: "BUS",
-        from: startBusStop,
-        to: transferBus,
-        route: getRandomRoute("KMB"),
-        company: "KMB",
-        distance: Math.round(busDistance),
-        duration: Math.round((busDistance / 500) * 60),
-      });
-    }
-    if (transferBus && transferMtr) {
-      const walkDistance = calculateDistance(
-        transferBus.lat,
-        transferBus.long,
-        transferMtr.lat,
-        transferMtr.long
-      );
-      transferJourneySteps.push({
-        type: "WALK",
-        from: transferBus,
-        to: transferMtr,
-        distance: Math.round(walkDistance),
-        duration: Math.round((walkDistance / 80) * 60),
-      });
-    }
-    if (transferMtr && endMtrStation) {
-      const mtrDistance = calculateDistance(
-        transferMtr.lat,
-        transferMtr.long,
-        endMtrStation.lat,
-        endMtrStation.long
-      );
-      transferJourneySteps.push({
-        type: "MTR",
-        from: transferMtr,
-        to: endMtrStation,
-        route: getRandomRoute("MTR"),
-        company: "MTR",
-        distance: Math.round(mtrDistance),
-        duration: Math.round((mtrDistance / 1000) * 60),
-      });
-    }
-    if (!isDestinationMtr && endMtrStation) {
-      const walkDistance = calculateDistance(
-        endMtrStation.lat,
-        endMtrStation.long,
-        destinationLocation.lat,
-        destinationLocation.long
-      );
-      transferJourneySteps.push({
-        type: "WALK",
-        from: endMtrStation,
-        to: {
-          lat: destinationLocation.lat,
-          long: destinationLocation.long,
-          name_en: to.displayName,
-          name_tc: to.name_tc,
-          stop: to.stop,
-          mode: to.mode,
-        },
-        distance: Math.round(walkDistance),
-        duration: Math.round((walkDistance / 80) * 60),
-      });
-    }
-
-    const busJourneyTotalDistance = busJourneySteps.reduce(
-      (sum, step) => sum + (step.distance || 0),
-      0
-    );
-    const mtrJourneyTotalDistance = mtrJourneySteps.reduce(
-      (sum, step) => sum + (step.distance || 0),
-      0
-    );
-    const transferJourneyTotalDistance = transferJourneySteps.reduce(
-      (sum, step) => sum + (step.distance || 0),
-      0
-    );
-
-    let journeys = [
-      {
-        id: "1",
-        steps: busJourneySteps,
-        totalDuration: 0,
-        totalDistance: busJourneyTotalDistance,
-        weatherAdjusted: false,
-        weatherProtected: false,
-      },
-      {
-        id: "2",
-        steps: mtrJourneySteps,
-        totalDuration: 0,
-        totalDistance: mtrJourneyTotalDistance,
-        weatherAdjusted: false,
-        weatherProtected: false,
-      },
-      {
-        id: "3",
-        steps: transferJourneySteps,
-        totalDuration: 0,
-        totalDistance: transferJourneyTotalDistance,
-        weatherAdjusted: false,
-        weatherProtected: false,
-      },
-    ];
-
-    // Apply weather considerations if enabled
-    // 如果启用，则应用天气考虑
-    if (isWeatherAware && weatherData) {
-      // Calculate weather score (0-100)
-      // 计算天气评分（0-100）
-      const weatherScore = calculateWeatherScore(weatherData);
-      
-      // Adjust journeys based on weather conditions
-      // 根据天气条件调整行程
-      journeys = journeys.map(journey => {
-        // Calculate total outdoor walking distance
-        // 计算总户外步行距离
-        const totalWalkingDistance = journey.steps
-          .filter(step => step.type === "WALK")
-          .reduce((sum, step) => sum + (step.distance ?? 0), 0);
-        
-        // For rainy weather, penalize journeys with more walking
-        // 对于雨天，惩罚步行较多的行程
-        if (weatherScore < 50 && totalWalkingDistance > 500) {
-          // Apply penalty to journeys with significant walking in bad weather
-          // 对在恶劣天气中步行较多的行程应用惩罚
-          journey.totalDuration += Math.floor(totalWalkingDistance / 100);
-          journey.weatherAdjusted = true;
-        }
-        
-        // For very bad weather, prioritize indoor/covered routes (MTR)
-        // 对于非常恶劣的天气，优先考虑室内/覆盖路线（MTR）
-        if (weatherScore < 30) {
-          const hasMTR = journey.steps.some(step => step.type === "MTR");
-          if (hasMTR) {
-            // Boost MTR journeys in bad weather
-            // 在恶劣天气中提升MTR行程
-            journey.totalDuration -= 5;
-            journey.weatherProtected = true;
-          }
-        }
-        
-        return journey;
-      });
-      
-      // Re-sort journeys after applying weather adjustments
-      // 应用天气调整后重新排序行程
-      journeys.sort((a, b) => a.totalDuration - b.totalDuration);
-    }
-    
-    setJourneys(journeys);
-    setSelectedJourney(journeys[0]);
-    
-    return journeys;
-  };
-
-  // Get a random route for a specific company (KMB or MTR)
-  // 获取特定公司（KMB或MTR）的随机路线
-  const getRandomRoute = (company: string): string => {
-    if (company === "KMB") {
-      const routes = ["1", "1A", "5", "5C", "6", "7", "9"];
-      return routes[Math.floor(Math.random() * routes.length)];
-    } else if (company === "MTR") {
-      const routes = ["TWL", "ISL", "TKL", "EAL", "SIL"];
-      return routes[Math.floor(Math.random() * routes.length)];
-    }
-    return "";
   };
 
   // Get the appropriate icon for a transport type
@@ -1050,9 +715,8 @@ export default function RoutePlanScreen() {
                         {step.type === "WALK"
                           ? t("walk")
                           : step.type === "BUS"
-                          ? `${t("take")} ${step.company} ${t("bus")}`
-                          : `${t("take")} ${t("mtr")}`}
-                        {step.route && ` ${step.route}`}
+                          ? `${t("take")} ${step.company} ${t("bus")}${step.route ? ` ${step.route}` : ''}`
+                          : `${t("take")} ${t("mtr")}${step.route ? ` ${step.route}` : ''}`}
                       </ThemedText>
                       <ThemedText style={styles.stepFromTo}>
                         {language === "en"
@@ -1062,9 +726,16 @@ export default function RoutePlanScreen() {
                         {language === "en" ? step.to.name_en : step.to.name_tc}
                       </ThemedText>
                       <ThemedView style={styles.stepMeta}>
-                        <ThemedText style={styles.stepMetaText}>
-                          {formatDistance(step.distance || 0)}
-                        </ThemedText>
+                        <ThemedView style={styles.stepMetaInfo}>
+                          <ThemedText style={styles.stepMetaText}>
+                            {formatDistance(step.distance || 0)}
+                          </ThemedText>
+                          {step.duration && (
+                            <ThemedText style={styles.stepMetaText}>
+                              • {Math.round(step.duration)} {t("minutes")}
+                            </ThemedText>
+                          )}
+                        </ThemedView>
                         {step.type !== "WALK" && (
                           <TouchableOpacity
                             style={styles.viewRouteButton}
@@ -1327,7 +998,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 4,
   },
-  stepMetaText: { fontSize: 14, color: "#8B4513", opacity: 0.7 },
+  stepMetaInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  stepMetaText: { 
+    fontSize: 14, 
+    color: "#8B4513", 
+    opacity: 0.7,
+    marginRight: 8,
+  },
   viewRouteButton: {
     backgroundColor: "white",
     paddingHorizontal: 14,
