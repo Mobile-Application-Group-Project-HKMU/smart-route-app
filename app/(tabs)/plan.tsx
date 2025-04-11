@@ -793,16 +793,13 @@ export default function RoutePlanScreen() {
               {weatherData && <WeatherInfo weatherData={weatherData} />}
 
               <ThemedView>
-                {selectedJourney.steps.map((step, index) => (
+              {selectedJourney.steps.map((step, index) => (
                   <ThemedView key={index} style={styles.journeyStep}>
                     <ThemedView
                       style={[
                         styles.stepIconContainer,
                         {
-                          backgroundColor: getTransportColor(
-                            step.type,
-                            step.route
-                          ),
+                          backgroundColor: getTransportColor(step.type, step.route),
                         },
                       ]}
                     >
@@ -817,17 +814,11 @@ export default function RoutePlanScreen() {
                         {step.type === "WALK"
                           ? t("walk")
                           : step.type === "BUS"
-                          ? `${t("take")} ${step.company} ${t("bus")} ${
-                              step.route || ""
-                            }`
+                          ? `${t("take")} ${step.company} ${t("bus")} ${step.route || ""}`
                           : `${t("take")} ${t("mtr")} ${step.route || ""}`}
                       </ThemedText>
                       <ThemedText style={styles.stepFromTo}>
-                        {language === "en"
-                          ? step.from.name_en
-                          : step.from.name_tc}
-                        <ThemedText>{" → "}</ThemedText>
-                        {language === "en" ? step.to.name_en : step.to.name_tc}
+                        {`${language === "en" ? step.from.name_en : step.from.name_tc} → ${language === "en" ? step.to.name_en : step.to.name_tc}`}
                       </ThemedText>
                       <ThemedView style={styles.stepMeta}>
                         <ThemedView style={styles.stepMetaInfo}>
@@ -836,8 +827,7 @@ export default function RoutePlanScreen() {
                           </ThemedText>
                           {step.duration && (
                             <ThemedText style={styles.stepMetaText}>
-                              <ThemedText>{" • "}</ThemedText>
-                              {Math.round(step.duration)} {t("minutes")}
+                              {` • ${Math.round(step.duration)} ${t("minutes")}`}
                             </ThemedText>
                           )}
                         </ThemedView>
