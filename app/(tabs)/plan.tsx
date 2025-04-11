@@ -461,10 +461,9 @@ export default function RoutePlanScreen() {
 
   // Format distance in meters to a readable string, now as integers
   // 将距离（米）格式化为可读字符串，现在为整数
-  const formatDistance = (meters: number) => {
-    if (meters < 1000) {
-      return `${Math.round(meters)}m`;
-    }
+  const formatDistance = (meters: number | null | undefined): string => {
+    if (meters === undefined || meters === null) return "未知距离";
+    if (meters < 1000) return `${Math.round(meters)}米`;
     return `${Math.round(meters / 1000)}km`;
   };
 
@@ -818,7 +817,7 @@ export default function RoutePlanScreen() {
                           : `${t("take")} ${t("mtr")} ${step.route || ""}`}
                       </ThemedText>
                       <ThemedText style={styles.stepFromTo}>
-                        {`${language === "en" ? step.from.name_en : step.from.name_tc} → ${language === "en" ? step.to.name_en : step.to.name_tc}`}
+                        {`${language === "en" ? (step.from.name_en || '') : (step.from.name_tc || '')} → ${language === "en" ? (step.to.name_en || '') : (step.to.name_tc || '')}`}
                       </ThemedText>
                       <ThemedView style={styles.stepMeta}>
                         <ThemedView style={styles.stepMetaInfo}>
