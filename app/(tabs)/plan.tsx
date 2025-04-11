@@ -81,6 +81,7 @@ export default function RoutePlanScreen() {
   // State for input text fields
   // 输入文本字段的状态
   const [fromText, setFromText] = useState("");
+
   const [toText, setToText] = useState("");
 
   // State for selected origin and destination stops
@@ -458,13 +459,13 @@ export default function RoutePlanScreen() {
     }
   };
 
-  // Format distance in meters to a readable string
-  // 将距离（米）格式化为可读字符串
+  // Format distance in meters to a readable string, now as integers
+  // 将距离（米）格式化为可读字符串，现在为整数
   const formatDistance = (meters: number) => {
     if (meters < 1000) {
-      return `${meters}m`;
+      return `${Math.round(meters)}m`;
     }
-    return `${(meters / 1000).toFixed(1)}km`;
+    return `${Math.round(meters / 1000)}km`;
   };
 
   // Navigate to transport details screen based on journey step
@@ -824,8 +825,8 @@ export default function RoutePlanScreen() {
                       <ThemedText style={styles.stepFromTo}>
                         {language === "en"
                           ? step.from.name_en
-                          : step.from.name_tc}{" "}
-                        →{" "}
+                          : step.from.name_tc}
+                        <ThemedText>{" → "}</ThemedText>
                         {language === "en" ? step.to.name_en : step.to.name_tc}
                       </ThemedText>
                       <ThemedView style={styles.stepMeta}>
@@ -835,7 +836,8 @@ export default function RoutePlanScreen() {
                           </ThemedText>
                           {step.duration && (
                             <ThemedText style={styles.stepMetaText}>
-                              • {Math.round(step.duration)} {t("minutes")}
+                              <ThemedText>{" • "}</ThemedText>
+                              {Math.round(step.duration)} {t("minutes")}
                             </ThemedText>
                           )}
                         </ThemedView>
