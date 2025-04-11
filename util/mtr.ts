@@ -312,6 +312,71 @@ export function clearCache(): void {
   apiCache.clear();
 }
 
+/**
+ * Gets the nearest MTR stations to a point with sorting criteria
+ * 获取距离指定点最近的港铁站，附带排序条件
+ * 
+ * @param point - The reference point to measure distance from
+ * @param point - 用于测量距离的参考点
+ * @param maxDistance - Maximum distance in meters to consider (default: 1000)
+ * @param maxDistance - 要考虑的最大距离，单位为米（默认：1000）
+ * @param maxResults - Maximum number of results to return (default: 5)
+ * @param maxResults - 要返回的最大结果数（默认：5）
+ * @param linePriority - Optional array of line codes to prioritize in results
+ * @param linePriority - 可选的线路代码数组，用于优先考虑结果
+ * @returns Promise with array of stations sorted by distance and optional line priority
+ * @returns 包含按距离和可选线路优先级排序的站点数组的Promise
+ */
+export async function getNearestStations(
+  point: {lat: number, long: number},
+  maxDistance: number = 1000,
+  maxResults: number = 5,
+  linePriority?: string[]
+): Promise<Array<MtrStation & { distance: number }>> {
+  try {
+    const nearbyStations = await findNearbyStations(point.lat, point.long, maxDistance);
+    
+    if (!linePriority) {
+      // Just sort by distance if no line priority
+      return nearbyStations.slice(0, maxResults);
+    }
+    
+    // Score stations by both distance and line priority
+    const scoredStations = nearbyStations.map(station => {
+      let priorityScore = 0;
+      
+      // Calculate priority score based on matching lines
+      if (station.line_codes) {
+        for (const line of station.line_codes) {
+          const priorityIndex = linePriority.indexOf(line);
+          if (priorityIndex >= 0) {
+            // Higher score for higher priority lines (lower index in priority array)
+            priorityScore += (linePriority.length - priorityIndex);
+          }
+        }
+      }
+      
+      // Return station with its combined score (distance is still primary factor)
+      return {
+        ...station,
+        priorityScore
+      };
+    }).sort((a, b) => {
+      // If priority scores differ significantly, prioritize by score
+      if (Math.abs(a.priorityScore - b.priorityScore) > 1) {
+        return b.priorityScore - a.priorityScore;
+      }
+      // Otherwise sort by distance
+      return a.distance - b.distance;
+    });
+    
+    return scoredStations.slice(0, maxResults);
+  } catch (error) {
+    console.error('Failed to get nearest MTR stations', error);
+    return [];
+  }
+}
+
 export {
   getAllLines as getAllRoutes,
   getAllStations as getAllStops,
